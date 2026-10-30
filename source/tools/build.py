@@ -384,7 +384,7 @@ def main():
     global PRODUCT, VERSION
     ap = argparse.ArgumentParser()
     ap.add_argument("--release", metavar="X.Y", help="release build: identity FM-1_95Y (0.Y) / FM-1_96Y (1.Y), "
-                    "version string X.Y; K-GLITCH provisionally uses only 0.7–0.9")
+                    "version string X.Y; K-GLITCH provisionally uses only 0.7 to 0.9")
     ap.add_argument("--sdk", type=Path, help="JieLi AC79 SDK checkout (default: $AC79_SDK)")
     a = ap.parse_args()
     name = "k-glitch.fwsc"
@@ -392,10 +392,9 @@ def main():
         m = re.fullmatch(r"(\d)\.(\d)(\.\d)?(-[A-Za-z0-9]+)?", a.release)
         if not m:
             raise SystemExit(f"--release {a.release}: use X.Y, X.Y.Z or X.Y-suffix, one digit each")
-        if int(m[1]) > 1:
-            raise SystemExit(f"--release {a.release}: the inherited scheme covers majors 0 (FM-1_95Y) and 1 (FM-1_96Y)")
-        if int(m[1]) == 0 and int(m[2]) < 7:
-            raise SystemExit(f"--release {a.release}: K-GLITCH starts at provisional 0.7; older KAWA identities are reserved")
+        if int(m[1]) != 0 or not 7 <= int(m[2]) <= 9:
+            raise SystemExit(f"--release {a.release}: K-GLITCH provisionally uses only 0.7 to 0.9 (FM-1_957..959); "
+                             "audit other firmware identities before extending this range")
         PRODUCT = f"FM-1_9{5 + int(m[1])}{m[2]}"
         VERSION = m[1] + "." + m[2] + (m[3] or "")
         name = f"k-glitch-{a.release}.fwsc"
