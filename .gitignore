@@ -1,4 +1,7 @@
 /build/
+/work/
+__pycache__/
+*.py[cod]
 *.fwsc
 *.o
 *.elf

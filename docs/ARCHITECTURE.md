@@ -1,44 +1,29 @@
-# K-GLITCH architecture (proposal)
+# K-GLITCH architecture
 
-## Operating model
+## Firmware base
 
-K-GLITCH is a standalone instrument. Sound originates in on-device synthesis and optional bundled samples. An internal post-source audio tap feeds a rolling capture ring. The player reads the ring at a separately controlled position/rate, making short repeats, reverse scans, freezes and scratch gestures possible without external audio input.
+K-GLITCH uses the KAWA FM-1 firmware as its starting point. This is an intentional GPL-3.0-only derivative; source files retain upstream notices and `LICENSING.md` records which portions came from Omnipotard, Leo Kuroshita / Hügelton Instruments, SLOOP and Dinghy. The imported source revision is recorded in the root README.
 
-## Real-time audio graph
+KAWA already supplies a standalone six-track sound engine (pulse, 4-bit waves, noise, six-operator FM, synthesized drums and user samples), sequencer, live controls and DSP. No external line input is involved in the core sound path.
 
-1. **Sources:** a small number of integer oscillators/noise voices and bounded sample voices.
-2. **Mix/capture:** sum to a defined internal bus and write to a power-of-two ring. Capture must never wait on UI, storage or USB.
-3. **Read head:** choose start, length, direction, playback ratio and crossfade. Clamp every read to valid captured history; no uninitialized memory is audible.
-4. **Effects:** optional rate/bit reduction, ring modulation and saturating distortion. Keep state per effect small and avoid floating point.
-5. **Output:** saturating stereo conversion with a reliable bypass/stop path.
+## Internal capture and glitch path
 
-The exact graph location and sample format depend on the selected platform audio API and available RAM. Effects should be processed in the existing audio callback/block; no heap allocation, file I/O, locks or unbounded loops belong in that callback. Control changes cross into audio through small, atomic or interrupt-safe parameter snapshots, subject to the platform's actual guarantees.
+`source/firmware/src/kawa_fx.c` captures the selected internal live bus in a 32,768-frame circular buffer. At 44.1 kHz this is about 0.743 seconds. Stereo signed 16-bit samples are packed in a 32-bit word, using 128 KiB for the ring. The audio callback reads the same buffer for synced loop and stutter, scratch, reverse, freeze, tape-stop, dive and roll effects. The capture is produced by the FM-1's sound engines and sequencer, not by an input jack.
 
-## FM-1 facts from the KAWA technical reference
+Other effects include bit crushing, sample-rate reduction, filters, ring modulation, gating, distortion, echo, reverb and vinyl-style noise. A buffer effect can run with the existing synthesis and sequencer; the intended K-GLITCH direction is to make these transformations easier to perform and to add bounded autonomous rhythmic variation.
 
-KAWA's `source/firmware/src/platform.c` documents a 240x240 screen, 27 note keys, buttons and encoders, USB-MIDI, and class-compliant stereo USB audio. Its current target path uses 44.1 kHz and 256 stereo frames per I2S half-buffer, approximately 5.8 ms per half. Its build notes state that the target has no FPU and enforce image/RAM/pool limits. These are reference-repository observations, not a complete independent hardware specification and not a K-GLITCH validation.
+## Real-time and UI split
 
-At 44.1 kHz, a mono signed 16-bit capture ring would consume 88,200 bytes per second; stereo would consume 176,400 bytes per second, before bookkeeping or other firmware memory. A one-second stereo ring is therefore likely too costly until the usable RAM budget is measured. A compact mono or short stereo ring and sample-rate/bit-depth choices must be benchmarked on the real target.
+- **Audio interrupt:** process fixed-size chunks, synthesize voices, update the capture ring and effects, then write stereo output. KAWA keeps I/O, storage and panel drawing outside this path.
+- **Main loop:** scan keys and encoders, update the tracker, edit parameters and publish event/control state for the interrupt.
+- **Live panel:** retain the FM-1's screen, keys, buttons and encoders as a hands-on performance surface. K-GLITCH-specific page and gesture changes remain to be designed.
 
-## Thread and control split
+KAWA documents 44.1 kHz stereo output in 256-frame I2S halves (about 5.8 ms per half), an integer-only target without an FPU, and build-time image/RAM/pool checks. These are inherited source/build constraints; they do not demonstrate that additional DSP or buffer sizes fit K-GLITCH's eventual budget.
 
-- **Audio callback/interrupt:** read immutable control snapshot; render sources; write capture; read/process output; advance bounded state.
-- **Main loop:** scan keys/encoders, update pages, quantize event requests, generate bounded pattern variation, publish parameter snapshots.
-- **Storage/USB:** outside audio callback. Sample imports and presets are future work and must not stall audio.
+## Constraints and measurements still required
 
-## Playable live interface
-
-Proposed pages: **PLAY** (source, tempo, pattern and master), **BUFFER** (length, capture tap, loop size, reverse/freeze), **GLITCH** (stutter division, probability, density, swing), and **FX** (crush, ring, drive). Dedicated hardware buttons should provide immediate hold/toggle gestures for freeze, stutter and panic/stop where the button map allows. Encoders set bounded parameters; note keys trigger source pitches or mapped slices. The exact mapping requires a physical-device interaction pass.
-
-Randomization is seeded and constrained: probability controls whether a musical event changes; intensity limits the range; quantized mode changes only at musical boundaries; a clear bypass/stop remains available. Defaults should be rhythmic and safe, with chaotic behavior opt-in.
-
-## Open platform questions / required measurements
-
-- Identify the exact FM-1/JieLi target, SDK/toolchain revision, platform APIs and package identity allowed for a separate firmware.
-- Measure free RAM after platform, UI and source state; calculate ring sizes from the measured budget.
-- Measure worst-case cycles per 256-frame audio block for each source/effect combination, including UI and USB load; retain interrupt headroom.
-- Verify callback concurrency, cache/alignment requirements, audio sample format, channel routing, clipping behavior and safe parameter handoff.
-- Determine whether flash-backed samples can be streamed without audio stalls and what storage region is safe for a separate project.
-- Test boot, recovery, USB audio, controls, sustained playback, buffer wrap, effect extremes, random event density and update recovery on physical hardware.
-
-Until these questions are resolved, no CPU, RAM or latency budget is guaranteed.
+- The current 128 KiB ring already consumes a substantial fixed memory allocation. Measure free RAM on the actual target before enlarging it or adding voices/state.
+- Profile worst-case cycles per audio block with multiple voices, each effect, USB traffic and display activity. Preserve margin below the interrupt deadline.
+- Check clipping, wraparound, rapid effect changes and random-event density with host-side stress checks and on-device listening.
+- K-GLITCH currently selects provisional identity `FM-1_957` (0.7) in its own build tree. Confirm that this identity is unused in the user's firmware releases and test recovery/update before any installation. The inherited KAWA build scheme has a constrained `FM-1_95N` / `FM-1_96N` identity range.
+- No physical FM-1 build or validation is claimed yet.

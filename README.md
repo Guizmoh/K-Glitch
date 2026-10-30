@@ -1,36 +1,28 @@
 # K-GLITCH
 
-**An experimental glitch instrument for the M-VAVE FM-1.** K-GLITCH is planned as a self-contained sound source for IDM, breakcore and related live performance: no external line input is required.
+K-GLITCH is an FM-1 glitch instrument project based on the KAWA tracker firmware. The project is now a **working source-code fork**, not yet a separately validated firmware release.
 
-> **Status: architecture bootstrap.** This repository does not contain a working firmware image. It has not been built for, installed on, or tested with an FM-1. CPU, RAM, audio timing, controls and package compatibility must be measured before claiming hardware support.
+## What the KAWA base already gives us
 
-## Concept
+The imported firmware has six tracks with pulse, wavetable, noise, FM, drum and sample sound engines; a step/song sequencer; a live FX page; and a 32,768-frame stereo capture ring. At KAWA's 44.1 kHz target rate that ring holds about 0.74 seconds of the internally generated mix. Its buffer effects include synced loops and stutters, scratch, reverse, freeze and tape-stop. Other live effects include bit crushing, sample-rate reduction, ring modulation and distortion. These functions operate on the FM-1's own output mix; an external line input is not required.
 
-Generate sound inside the instrument, capture that sound into a small rolling audio buffer, then perform playable micro-loops, stutters, reverses, freezes, scratches and tape stops. A rhythmic engine can vary patterns by bounded probability and human-controlled intensity. The design aims for immediate live control rather than unattended random noise.
+This is a firmware starting point, not a new autonomous glitch workflow yet. The capture ring and effects come from KAWA; K-GLITCH-specific randomized performance modes, interface changes and later DSP work are still on the roadmap.
 
-## Planned sound path
+## Build and development
 
-```text
-Synth voices / factory samples -> mixer -> capture ring -> glitch reader -> destruction FX -> stereo output
-                                            ^                    ^
-                                      capture tap        live controls + clock
-```
+See [`source/BUILDING.md`](source/BUILDING.md) for the upstream host simulator, browser emulator and FM-1 package builds. The FM-1 package build requires the JieLi pi32v2 toolchain and the specified AC79 SDK files. This checkout was not built or validated on an FM-1 during the bootstrap.
 
-The capture buffer records the internal mix (or a selectable internal bus); it does not imply a physical line-in. Planned sources include compact oscillators/noise and bundled, license-cleared one-shots. Destruction effects include bit-depth and sample-rate reduction, ring modulation and waveshaping. Each effect must have a bypass and bounded parameters.
+`source/` is imported from KAWA commit [`958901e`](https://github.com/Guizmoh/Kawa-Tracker-Fm1/commit/958901e) with its existing source layout and build tooling. K-GLITCH changes the displayed product name, output package name and development package identity; firmware modules retain their KAWA file names to keep the inherited build working. The provisional package identity must be confirmed before any hardware installation.
 
-## Project status
+## Licensing and credits
 
-- [Architecture and technical constraints](docs/ARCHITECTURE.md)
+K-GLITCH retains KAWA's GPL-3.0-only license and the upstream [`LICENSING.md`](LICENSING.md), which identifies KAWA contributions by Omnipotard and the separate platform contributions by Leo Kuroshita / Hügelton Instruments, SLOOP and Dinghy. Third-party notices and font licenses remain under `source/`. Do not remove or replace those notices when adapting the firmware. The KAWA and K-WASUB repositories are reference projects; only KAWA source is included here.
+
+This project is not affiliated with or endorsed by M-VAVE or Hügelton Instruments.
+
+## Status
+
+- [Architecture and hardware constraints](docs/ARCHITECTURE.md)
 - [Feature roadmap](docs/ROADMAP.md)
-- `src/` contains clean-room interface scaffolding only; no KAWA source has been copied.
-- Firmware packaging, graphical interface, synthesis, sample playback, capture, DSP and hardware tests remain planned.
-
-## Reference and licensing
-
-The separate project uses [KAWA](https://github.com/Guizmoh/Kawa-Tracker-Fm1) as a technical reference for FM-1 platform facts and build constraints. KAWA identifies its firmware under GPL-3.0-only and credits platform components to Hügelton Instruments/Felucca and others. This bootstrap contains no copied KAWA code, assets, samples, generated tables or build scripts. If compatible code is later adapted, preserve its notices and attribution, comply with GPL-3.0-only and document each reused file and its origin in `THIRD_PARTY_NOTICES.md` before distribution.
-
-This repository's original scaffolding is offered under GPL-3.0-only; see [LICENSE](LICENSE). No affiliation with or endorsement by M-VAVE or Hügelton Instruments is implied.
-
-## Development
-
-There is no build system yet. The next engineering step is to select a minimal FM-1 platform base, pin its upstream revision and notices, then prove a silent boot and a low-cost oscillator before implementing the capture path. See [the roadmap](docs/ROADMAP.md).
+- [Upstream KAWA licensing and credits](LICENSING.md)
+- FM-1 CPU, free RAM, interrupt headroom, package identity and physical controls still need confirmation.

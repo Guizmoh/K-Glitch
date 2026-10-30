@@ -1,40 +1,37 @@
-# Roadmap
+# K-GLITCH roadmap
 
-## Phase 0 — repository and platform audit
+## Base brought forward from KAWA
 
-- [x] Establish a standalone project identity and document KAWA's reference constraints.
-- [ ] Decide which platform components can be reused, record exact origins and notices, and confirm compatible packaging.
-- [ ] Create a minimal build that boots and produces silence on target; preserve recovery and safe update behavior.
-- [ ] Record available RAM and worst-case audio-block cycles.
+- [x] FM-1 platform: display, keys, encoders, USB-MIDI, audio output, recovery and build checks.
+- [x] Internal synthesis and sample sources with six tracks and a step/song sequencer.
+- [x] Internal stereo capture ring (32,768 frames, about 0.74 s at 44.1 kHz).
+- [x] Live loop/stutter, scratch, reverse, freeze, tape-stop, dive and roll effects, plus crush, decimation, ring modulation and distortion.
+- [x] Preserve KAWA's GPL license and attribution, plus the platform and third-party notices.
 
-## Phase 1 — playable sound core
+These are inherited KAWA capabilities; their presence does not mean K-GLITCH has been hardware-tested.
 
-- [ ] One integer oscillator/noise source with note-key control and a master level.
-- [ ] Stable stereo output and panic/stop control.
-- [ ] Host-side deterministic audio harness and sample/block budget checks.
-- [ ] Verify FM-1 output and control mapping on physical hardware.
+## Phase 1 — establish a clean K-GLITCH build
 
-## Phase 2 — internal capture and basic glitches
+- [ ] Rebrand the remaining user-visible KAWA labels and generated package names.
+- [ ] Assign and verify a package identity that cannot be confused with a KAWA or K-WASUB release.
+- [ ] Run the host simulator, stress, UI, feature, format and loader checks.
+- [ ] Build the FM-1 package with pinned JieLi toolchain and AC79 SDK dependencies.
+- [ ] Measure image, pool, RAM and worst-case audio-block time; run on the physical FM-1.
 
-- [ ] Fixed-size capture ring with explicit memory accounting and wrap-safe reads.
-- [ ] Quantized stutter and micro-loop with adjustable division and probability.
-- [ ] Reverse, freeze, scratch gesture and tape-stop envelopes.
-- [ ] Exercise short/long buffers, rapid control movement and capture reset safely.
+## Phase 2 — autonomous performance layer
 
-## Phase 3 — source and destruction palette
+- [ ] Add a bounded auto-glitch sequencer for stutter, loop, reverse, freeze and tape-stop gestures.
+- [ ] Expose density, probability, intensity, quantization and variation rate as live controls.
+- [ ] Add a repeatable random seed and musical constraints, with immediate hold/bypass/stop controls.
+- [ ] Verify the automated gestures do not starve synthesis, exceed buffer history or create unsafe audio peaks.
 
-- [ ] License-cleared bundled samples and a compact sample voice.
-- [ ] Bit-depth reduction and sample-rate reduction.
-- [ ] Ring modulation and bounded distortion.
-- [ ] Compare CPU cost and audio quality, with per-effect bypass.
+## Phase 3 — focused instrument interface
 
-## Phase 4 — performance workflow
-
-- [ ] Clear live pages for source, buffer, rhythm and effects.
-- [ ] Pattern variation with probability, intensity, quantization and repeatable seed.
-- [ ] Presets and project persistence after safe storage design is verified.
-- [ ] User guide, release package, checksums and recovery instructions.
+- [ ] Design dedicated PLAY, BUFFER, GLITCH and FX pages using the FM-1's existing panel.
+- [ ] Keep the tracker and sound editing available as an advanced mode while making the glitch performance path direct.
+- [ ] Add useful presets and clear save/restore behavior after storage compatibility is reviewed.
+- [ ] Document the controls in French and English and prepare safe install/recovery instructions.
 
 ## Release gate
 
-Do not describe a release as FM-1-compatible until it builds reproducibly with pinned upstream dependencies, passes host checks, installs and recovers safely, and runs sustained audio/control stress tests on the physical FM-1 without missed blocks, crashes or data loss. Publish complete corresponding source and third-party notices.
+Do not publish an installable K-GLITCH firmware until the unique package identity is confirmed, the full corresponding source and notices are provided, automated checks pass, and sustained audio/control/update recovery are verified on real hardware.
