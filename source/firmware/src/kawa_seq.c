@@ -416,6 +416,23 @@ static void app_audio(int32_t *out, uint32_t n)
         s_again_row = (uint8_t)(s_row & ~3u);
     } else if (!(on >> LF_AGAIN & 1u))
         s_again = 0;
+    if (auto_glitch && sq_play && g_rowlen) {
+        static const uint8_t AUTO_FX[] = {LF_LOOP16, LF_LOOP32, LF_LOOP64, LF_STUT4, LF_STUT3,
+                                          LF_SCR, LF_SCRF, LF_REV, LF_ROLLUP, LF_TAPE, LF_DIVE, LF_FREEZE};
+        uint32_t grid = g_beatpos / g_rowlen;
+        if (grid != auto_glitch_grid) {
+            auto_glitch_grid = grid;
+            auto_glitch_mask = 0;
+            if ((xr(&rnd_isr) >> 8) % 100u < 55u) {
+                uint32_t pick = (xr(&rnd_isr) >> 8) % (uint32_t)(sizeof(AUTO_FX) / sizeof(AUTO_FX[0]));
+                auto_glitch_mask = 1u << AUTO_FX[pick];
+            }
+        }
+        on |= auto_glitch_mask;
+    } else {
+        auto_glitch_grid = 0xFFFFFFFFu;
+        auto_glitch_mask = 0;
+    }
     fx_block(on);
     for (c = 0; c < n; c += CHUNK) {
         int32_t L[CHUNK], R[CHUNK], BL[CHUNK], BR[CHUNK], E[CHUNK], V[CHUNK], mono[CHUNK];

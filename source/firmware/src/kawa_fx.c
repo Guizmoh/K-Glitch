@@ -34,6 +34,9 @@ static int32_t svf_lp[2], svf_bp[2];
 static uint32_t lfo_ph, ring_ph;
 static int32_t hold_l, hold_r, gate_g = 32767;
 static uint32_t hold_n;
+static uint8_t auto_glitch;                     /* K-GLITCH: autonomous buffer gestures, toggled on the FX page */
+static uint32_t auto_glitch_mask;               /* one beat-synchronised gesture at a time; audio interrupt only */
+static uint32_t auto_glitch_grid = 0xFFFFFFFFu;
 static uint8_t lv_target;                       /* the bus the live effects play on now: 0 the mix, 1..8 a track */
 
 static uint32_t cap_rd(uint32_t a) { return cap[a & CAPM]; }

@@ -1371,6 +1371,8 @@ static void draw_fx(void)
             else g_frame(x, 22, 54, 15, g_mix(C_BG, LBANK_COL[i], 120));
             g_text_c(x + 27, 22, LBANK_NAME[i], i == fx_bank ? C_INK : LBANK_COL[i], T_CROP | T_BOLD);
         }
+        g_rrect(89, 22, 25, 15, auto_glitch ? C_REC : C_BG2);
+        g_text_c(101, 22, "AUTO", auto_glitch ? C_WHITE : C_MID, T_CROP | T_BOLD);
         if (rec && sq_play) { g_rrect(116, 22, 28, 15, C_REC); g_text_c(130, 22, "REC", C_WHITE, T_CROP); }
         g_icon(150, 25, ICO_TARGET, KNOB_COL[3], 1);   /* where they play: KNOB 4 */
         if (lfx_target) {
@@ -1407,7 +1409,7 @@ static void draw_fx(void)
     }
     for (t = 0; t < NTRK; t++) { (void)t; }
     hint(0, TR("BANQUE", "BANK", "BANCO"), "", LBANK_NAME[fx_bank]);
-    hint_none(1);
+    hint(1, TR("AUTO GLITCH", "AUTO GLITCH", "AUTO GLITCH"), "", auto_glitch ? TR("OUI", "ON", "SI") : TR("NON", "OFF", "NO"));
     hint(2, TR("ENREG. LIVE", "REC LIVE", "GRABAR LIVE"), "REC", rec ? TR("OUI", "YES", "SI") : TR("NON", "NO", "NO"));
     if (lfx_target) { s[0] = 'T'; s[1] = (char)('0' + lfx_target); s[2] = 0; }
     else { s[0] = 0; str_cat(s, "MAST"); }
@@ -2482,6 +2484,7 @@ static void knob(uint32_t i, int32_t d)
         break;
     case PG_FX:
         if (i == 0u) { fx_bank = (uint8_t)clampi(fx_bank + d, 0, 1); lfx_keys = 0; }
+        else if (i == 1u) auto_glitch = (uint8_t)!auto_glitch;
         else if (i == 2u) rec = (uint8_t)clampi(rec + d, 0, 1);
         else if (i == 3u) { lfx_target = (uint8_t)clampi(lfx_target + d, 0, NTRK); lfx_keys = 0; }
         break;

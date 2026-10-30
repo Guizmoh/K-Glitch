@@ -20,10 +20,10 @@ These are inherited KAWA capabilities; their presence does not mean K-GLITCH has
 
 ## Phase 2 — autonomous performance layer
 
-- [ ] Add a bounded auto-glitch sequencer for stutter, loop, reverse, freeze and tape-stop gestures.
+- [x] Add a bounded auto-glitch sequencer for stutter, loop, reverse, freeze and tape-stop gestures (first pass: one existing buffer effect at a time, one sequencer row per decision).
 - [ ] Expose density, probability, intensity, quantization and variation rate as live controls.
 - [ ] Add a repeatable random seed and musical constraints, with immediate hold/bypass/stop controls.
-- [ ] Verify the automated gestures do not starve synthesis, exceed buffer history or create unsafe audio peaks.
+- [ ] Verify the automated gestures do not starve synthesis, exceed buffer history or create unsafe audio peaks on host and target hardware.
 
 ## Phase 3 — focused instrument interface
 

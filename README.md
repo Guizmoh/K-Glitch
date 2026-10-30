@@ -6,7 +6,7 @@ K-GLITCH is an FM-1 glitch instrument project based on the KAWA tracker firmware
 
 The imported firmware has six tracks with pulse, wavetable, noise, FM, drum and sample sound engines; a step/song sequencer; a live FX page; and a 32,768-frame stereo capture ring. At KAWA's 44.1 kHz target rate that ring holds about 0.74 seconds of the internally generated mix. Its buffer effects include synced loops and stutters, scratch, reverse, freeze and tape-stop. Other live effects include bit crushing, sample-rate reduction, ring modulation and distortion. These functions operate on the FM-1's own output mix; an external line input is not required.
 
-This is a firmware starting point, not a new autonomous glitch workflow yet. The capture ring and effects come from KAWA; K-GLITCH-specific randomized performance modes, interface changes and later DSP work are still on the roadmap.
+K-GLITCH now adds a first autonomous performance gesture on the FX page: turn KNOB 2 (the second encoder) to toggle AUTO GLITCH. While the sequencer plays, the firmware makes a 55% per-step chance to choose one internally buffered loop, stutter, scratch, reverse, roll, tape-stop, dive or freeze gesture. It is quantized to sequencer rows and uses the existing audio capture and effect engine; turning AUTO off or stopping playback releases it. The gesture state is live-only and is not stored in a project. Density/intensity controls, a dedicated performance page and hardware tuning remain planned.
 
 ## Build and development
 
@@ -26,3 +26,4 @@ This project is not affiliated with or endorsed by M-VAVE or Hügelton Instrumen
 - [Feature roadmap](docs/ROADMAP.md)
 - [Upstream KAWA licensing and credits](LICENSING.md)
 - FM-1 CPU, free RAM, interrupt headroom, package identity and physical controls still need confirmation.
+- AUTO GLITCH is implemented in source but has not been compiled for the FM-1 or validated on hardware.
