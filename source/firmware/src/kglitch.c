@@ -19,10 +19,10 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.3"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.4"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
-#define KG_STEPS 16u
+#define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */
 enum { KG_OUT_FM1, KG_OUT_MPC, KG_OUT_BOTH };
 /* the CC of each punch-in effect (PX_*): 20..31 then 102..116, clear of bank select, modulation, volume, pan,
  * sustain, the RPN / NRPN and the channel modes */
@@ -52,8 +52,9 @@ static const char *const KG_SHORT[PUNCH_NFX + 16u] = {
     "TOTL"};
 
 static struct {
-    volatile int8_t seq[KG_STEPS];    /* main writes (D-SEQ, MUTATE), ISR reads: PX_*, PUNCH_NFX + DD_*, or -1 */
-    volatile uint8_t step;            /* ISR: the 16th playing (0..15), for the screen */
+    volatile int8_t seq[KG_STEPS];    /* main writes (D-SEQ, MUTATE), ISR reads and records: PX_*, PUNCH_NFX + DD_*, or -1 */
+    volatile uint8_t sint[KG_STEPS];  /* each step's INTENSITY as recorded, + 1 (0: the effect's own) */
+    volatile uint8_t step;            /* ISR: the step of the sequence playing (0..len-1), for the screen */
     volatile int8_t now;              /* ISR: the effect asked for now (key, sequencer or AUTO), -1 none */
     volatile uint8_t src;             /* ISR: who asked: 0 none, 1 a key / MIDI, 2 the sequencer, 3 AUTO */
     uint32_t last16;                  /* the 16th last seen (beats * 4 + quarter), ~0 stopped */
@@ -63,9 +64,17 @@ static struct {
     uint8_t sent_ch;                  /* the channel it went out on (0..15) */
     int16_t sent_mac[4];              /* the macros (and INTENSITY) as last sent (-1: not yet) */
     uint32_t rnd;
-} kg = {.seq = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+} kg = {.seq = {[0 ... KG_STEPS - 1] = -1},
         .now = -1, .last16 = 0xFFFFFFFFu, .auto_fx = -1, .sent_fx = -1, .sent_mac = {-1, -1, -1, -1}, .rnd = 0x9E3779B9u};
 
+static volatile uint8_t kg_erase;                 /* UI: CLEAR (OCT- on the K-GLITCH pages) held: the steps passing are erased */
+static volatile uint8_t kg_recd;                  /* ISR: an effect was recorded (the screen: REC FX) */
+/* the effect sequence's length: SEQ OFF, 16, 32, 64 */
+static uint32_t kg_seqlen(void)
+{
+    static const uint8_t LEN[4] = {0, 16, 32, 64};
+    return LEN[(uint32_t)song.g[G_KSEQ] & 3u];
+}
 static uint32_t kg_rand(uint32_t *s)              /* xorshift32 */
 {
     uint32_t x = *s;
@@ -134,8 +143,9 @@ static int32_t kg_route(int32_t key)
     if (song.playing) {
         uint32_t s16 = clk_beat * 4u + clk_pos / ((uint32_t)FS * 15u);   /* (clk_pos: FS * 60 units a beat) */
         if (s16 != kg.last16) {                       /* a new 16th */
+            uint32_t len = kg_seqlen();
             kg.last16 = s16;
-            kg.step = (uint8_t)(s16 & (KG_STEPS - 1u));
+            kg.step = (uint8_t)(s16 % (len ? len : 16u));
             if (kg.auto_left)
                 kg.auto_left--;
             if (!kg.auto_left) {
@@ -152,11 +162,28 @@ static int32_t kg_route(int32_t key)
         kg.auto_left = 0;
     }
     kg.src = fx >= 0 ? 1u : 0u;
-    if (fx < 0 && song.playing && song.g[G_KSEQ] && kg.seq[kg.step] >= 0 && kg.seq[kg.step] < (int8_t)KG_NFX) {
+    kd_sint = 0;
+    if (song.playing && song.rec && fx >= 0 && !song.g[G_KSEQ])
+        song.g[G_KSEQ] = 1;                           /* (REC with the lane off: it records on 16 steps) */
+    if (song.playing && song.g[G_KSEQ]) {
+        if (kg_erase) {                               /* CLEAR held: the steps passing are erased (as the PO-33) */
+            kg.seq[kg.step] = -1;
+            kg.sint[kg.step] = 0;
+            if (fx < 0) fx = -2;                      /* (and nothing plays from the lane meanwhile) */
+        } else if (fx >= 0 && song.rec && fx < (int32_t)KG_NFX) {   /* REC: a pad's effect is written on its 16ths */
+            kg.seq[kg.step] = (int8_t)fx;
+            kg.sint[kg.step] = (uint8_t)(fx >= (int32_t)PUNCH_NFX ? kd_int[(fx - (int32_t)PUNCH_NFX) % DD_N] + 1u : 0u);
+            kg_recd = 1;
+        }
+    }
+    if (fx == -2)
+        fx = -1;
+    else if (fx < 0 && song.playing && song.g[G_KSEQ] && kg.seq[kg.step] >= 0 && kg.seq[kg.step] < (int8_t)KG_NFX) {
         fx = kg.seq[kg.step];
+        kd_sint = kg.sint[kg.step];                   /* (its recorded INTENSITY) */
         kg.src = 2;
     }
-    if (fx < 0 && kg.auto_fx >= 0) {
+    if (fx < 0 && kg.auto_fx >= 0 && !kg_erase) {
         fx = kg.auto_fx;
         kg.src = 3;
     }
@@ -192,9 +219,15 @@ static int32_t kg_route(int32_t key)
 static void kg_mutate(uint32_t seed)
 {
     static uint32_t s = 0x1234567u;
-    uint32_t i, dens = kg_pct(G_KDENS), chaos = kg_pct(G_KCHAOS);
+    uint32_t i, dens = kg_pct(G_KDENS), chaos = kg_pct(G_KCHAOS), len = kg_seqlen();
     s ^= seed * 2654435761u;
-    for (i = 0; i < KG_STEPS; i++) {
+    if (!len) {                                       /* (SEQ OFF: DICE turns it on, 16 steps) */
+        song.g[G_KSEQ] = 1;
+        len = 16;
+    }
+    for (i = 0; i < KG_STEPS; i++)
+        kg.sint[i] = 0;
+    for (i = 0; i < len; i++) {
         int8_t fx = -1;
         if ((i & 3u) == 0u && chaos <= 70u)
             fx = -1;
@@ -206,15 +239,18 @@ static void kg_mutate(uint32_t seed)
 static void kg_clear(void)
 {
     uint32_t i;
-    for (i = 0; i < KG_STEPS; i++)
+    for (i = 0; i < KG_STEPS; i++) {
         kg.seq[i] = -1;
+        kg.sint[i] = 0;
+    }
 }
 /* CLEAR (FX > DESTROY, KNOB 4): back to the original sound. Every effect let go (a held one too), AUTO, the effect
  * sequencer, CHOP's EVERY and CHAOS mode off, the rhythm back to its ORIGINAL; the effect sequence itself is kept
  * (SEQ ON plays it again). Main loop */
 static void kg_clean(void)
 {
-    song.g[G_KHOLD] = song.g[G_KAUTO] = song.g[G_KSEQ] = song.g[G_KEVERY] = song.g[G_KCMODE] = 0;
+    song.g[G_KHOLD] = song.g[G_KAUTO] = song.g[G_KEVERY] = song.g[G_KCMODE] = 0;
+    song.g[G_KSEQ] = 0;                              /* (the automation stays: SEQ 16 / 32 / 64 plays it again) */
     punch.req = -1;
     punch.keybit = 0;
     fm1_irq_off();

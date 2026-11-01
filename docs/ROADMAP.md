@@ -16,6 +16,7 @@
 - [x] Les 16 touches comme pads directs sur les pages K-GLITCH ; CLEAR (retour au son original).
 - [x] Les 3 modes : DRUMS (8 styles), CHOP (mutation du rythme : décaler, supprimer, répéter, rolls, ghosts, accents, longueurs ; RESTORE ; EVERY), CHAOS (0.3).
 - [ ] Comb filter dans FILTER CHAOS ; scratch avant/arrière plus « vinyle » ; stutter 3x / 8x en triolets.
+- [x] Automation de tous les effets (REC), intensité comprise, sur 16/32/64 pas ; CLEAR maintenu (OCT-) qui l'efface ; DICE de mutation du rythme (0.4).
 - [ ] Découpe de vrais breaks échantillonnés (moteur SLICE de SLOOP + samples utilisateur) pilotée par CHOP.
 - [ ] Plus de styles DRUMS, et des fills générés.
 - [ ] Sauvegarder la séquence d'effets et les macros avec le projet.

@@ -2200,14 +2200,15 @@ static void key_down(uint32_t k)
     kb_kind[k] = KS_NONE;
     kb_trk[k] = (uint8_t)sel;
     kb_n[k] = 0;
-    if (layer == LY_PLAY && kg_pads == 2u) {          /* K-GLITCH SEQ: a white key picks the step */
+    if (layer == LY_PLAY && kg_pads == 2u && !(song.rec && song.playing)) {   /* K-GLITCH SEQ: a white key picks the step
+                                                     * (recording: the keys are the pads, the lane fills up) */
         int32_t w = punch_key(k);
         if (w >= 0 && w < 16) {
             kg_keystep = (uint8_t)(w + 1);
             return;
         }
     }
-    if (layer == LY_PLAY && kg_pads == 1u)            /* K-GLITCH's pages: the keys are the punch-in pads */
+    if (layer == LY_PLAY && kg_pads)                  /* K-GLITCH's pages: the keys are the punch-in pads */
         layer = LY_FX;
     switch (layer) {
     case LY_FX: {                                     /* FX held: the keys pick a punch-in effect (white and black) */

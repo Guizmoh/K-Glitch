@@ -62,12 +62,13 @@ static struct {
  * moves it by up to MOVEMENT / 2 */
 static uint8_t kd_int[DD_N] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
 static volatile int8_t kd_lfo;                   /* the LFO now, -50..50 (kg_route, per block) */
+static volatile uint8_t kd_sint;                 /* a recorded step's INTENSITY + 1 (0: the effect's own; kg_route) */
 static volatile uint8_t kg_sel;                  /* the effect ALGORITHM selects (and a pad pressed): DD_* */
 static volatile uint8_t kg_pads;                 /* UI: the keys are pads (1: the K-GLITCH pages) or SEQ's steps (2) */
 static volatile uint8_t kg_keystep;              /* ISR: a white key pressed on SEQ, + 1 (the UI takes it) */
 static uint32_t dd_int(void)
 {
-    int32_t v = kd_int[(uint32_t)(kd.cur >= 0 ? kd.cur : 0) % DD_N] + kd_lfo;
+    int32_t v = (kd_sint ? kd_sint - 1 : kd_int[(uint32_t)(kd.cur >= 0 ? kd.cur : 0) % DD_N]) + kd_lfo;
     return (uint32_t)(v < 0 ? 0 : v > 100 ? 100 : v);
 }
 static uint32_t dd_beat(void) { return beat_samples(); }

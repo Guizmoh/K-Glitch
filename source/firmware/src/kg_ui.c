@@ -89,11 +89,20 @@ static void kg_u2a(char *b, uint32_t v)            /* an unsigned number, writte
 /* the page: 0 DESTROY, 1 DRUMS, 2 CHOP, 3 SEQ, 4 BANK, 5 CHAOS, 6 SETUP */
 UI_SMALL static uint32_t kg_pageno(void)
 {
-    static const uint8_t ID[7] = {G_KCHAOS, G_KSTYLE, G_KMUTR, G_KSTEP, G_KBANK, G_KCMODE, G_KTGT};
+    static const uint8_t ID[7] = {G_KCHAOS, G_KSTYLE, G_KDICE, G_KSTEP, G_KBANK, G_KCMODE, G_KTGT};
     uint32_t id = cur_page()->id[0], i;
     for (i = 0; i < 7u; i++)
         if (ID[i] == id) return i;
     return 0;
+}
+
+/* SEQ: the page of 16 steps shown: the one recording (or erasing) while PLAY runs, else the edited step's */
+UI_SMALL static uint32_t kg_seqpage(void)
+{
+    uint32_t len = kg_seqlen(), n = len > 16u ? len / 16u : 1u;
+    if (song.playing && (song.rec || kg_erase))
+        return (kg.step / 16u) % n;
+    return ((uint32_t)(song.g[G_KSTEP] - 1) / 16u) % n;
 }
 
 UI_SMALL static void kg_rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t fill, uint16_t edge)   /* rounded */
@@ -168,8 +177,8 @@ UI_SMALL static void kg_paint(void)
     static const char *const TITLE[7] = {"DRUM DESTROYER", "DRUMS", "CHOP / MUTATE", "EFFECT SEQUENCE", "THE 16 PADS",
                                          "CHAOS", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
-    static const char *const HINT[7] = {"ALGO FX | PRESETS INTENS | KEYS PADS", "K4 GENERATE | THE KEYS PLAY THE DRUMS",
-                                        "K1 MUTATE | K2 RESTORE | KEYS PADS", "WHITE KEY: STEP | K2 ITS FX | K4 DICE",
+    static const char *const HINT[7] = {"ALGO FX | PRESETS INTENS | OCT- CLEAR", "K4 GENERATE | THE KEYS PLAY THE DRUMS",
+                                        "K1 DICE | K2 MUTATE | K3 RESTORE", "KEY STEP (REC: PAD) | OCT- CLEAR",
                                         "KEYS PADS | HOLD: THE EFFECT STAYS", "AUTO + LFO + MUTATIONS ON THE BAR",
                                         "OUT: FM-1, MPC, BOTH | CH: THE MPC'S"};
     static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
@@ -215,7 +224,10 @@ UI_SMALL static void kg_paint(void)
         str_cpy(s + str_len(s), DRUM_KIT_NAMES[drum_kit()], sizeof s - str_len(s));
         break;
     case 2:
-        if (kr.mutated) {
+        if (kr.mutated && kr.recipe[0]) {
+            str_cpy(s, "DICE: ", sizeof s);
+            str_cpy(s + str_len(s), kr.recipe, sizeof s - str_len(s));
+        } else if (kr.mutated) {
             str_cpy(s, "MUTATED | ", sizeof s);
             kg_u2a(s + str_len(s), kr.changed);
             str_cpy(s + str_len(s), " CHANGES", sizeof s - str_len(s));
@@ -223,11 +235,25 @@ UI_SMALL static void kg_paint(void)
             str_cpy(s, kr.has ? "THE ORIGINAL" : "NOTHING MUTATED YET", sizeof s);
         break;
     case 3: {
-        uint32_t n = 0;
-        for (i = 0; i < KG_STEPS; i++) n += kg.seq[i] >= 0;
-        str_cpy(s, song.g[G_KSEQ] ? "SEQ ON | " : "SEQ OFF | ", sizeof s);
+        uint32_t n = 0, len = kg_seqlen();
+        if (song.playing && song.rec) {
+            str_cpy(s, "REC: PLAY THE PADS", sizeof s);
+            break;
+        }
+        for (i = 0; i < len; i++) n += kg.seq[i] >= 0;
+        if (!len) { str_cpy(s, "SEQ OFF", sizeof s); break; }
+        str_cpy(s, "PAGE ", sizeof s);
+        kg_u2a(s + str_len(s), kg_seqpage() + 1u);
+        str_cpy(s + str_len(s), "/", sizeof s - str_len(s));
+        kg_u2a(s + str_len(s), len / 16u);
+        str_cpy(s + str_len(s), " | ", sizeof s - str_len(s));
         kg_u2a(s + str_len(s), n);
-        str_cpy(s + str_len(s), " OF 16 STEPS", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " FX | STEP INT ", sizeof s - str_len(s));
+        {
+            uint32_t si = kg.sint[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS];
+            if (si) { kg_u2a(s + str_len(s), si - 1u); str_cpy(s + str_len(s), "%", sizeof s - str_len(s)); }
+            else str_cpy(s + str_len(s), "--", sizeof s - str_len(s));
+        }
         break;
     }
     case 4:
@@ -254,6 +280,8 @@ UI_SMALL static void kg_paint(void)
         if (song.g[G_KCMODE]) { tx -= kg_t5w("CHAOS") + 12; kg_tag(tx, 24, "CHAOS", KG_RED, KG_BG); }
         else if (song.g[G_KAUTO]) { tx -= kg_t5w("AUTO") + 12; kg_tag(tx, 24, "AUTO", KG_CYAN, KG_BG); }
         if (song.g[G_KHOLD]) { tx -= kg_t5w("HOLD") + 12; kg_tag(tx, 24, "HOLD", KG_AMB, KG_BG); }
+        if (kg_erase) { tx -= kg_t5w("CLEAR") + 12; kg_tag(tx, 24, "CLEAR", KG_INK, KG_BG); }
+        else if (song.playing && song.rec) { tx -= kg_t5w("REC") + 12; kg_tag(tx, 24, "REC", KG_RED, KG_INK); }
         if ((song.g[G_KLFO] || song.g[G_KCMODE]) && tx > 150) { tx -= kg_t5w("LFO") + 12; kg_tag(tx, 24, "LFO", KG_VIO, KG_BG); }
     }
     /* the graph panel: the pads, the drums or the effect sequence; the effect playing and the mix under it */
@@ -261,8 +289,10 @@ UI_SMALL static void kg_paint(void)
     if (pn == 1u || pn == 2u || pn == 5u)
         kg_drumgrid(55);
     else if (pn == 3u)
-        for (i = 0; i < KG_STEPS; i++) {
-            int32_t cx = 13 + (int32_t)(i & 7u) * 27, cy = 53 + (int32_t)(i >> 3) * 22, fx = kg.seq[i], lit = (int32_t)i == play;
+        for (i = 0; i < 16u; i++) {                   /* the page of 16 steps shown (kg_seqpage), each with its INTENSITY */
+            uint32_t at = kg_seqpage() * 16u + i;
+            int32_t cx = 13 + (int32_t)(i & 7u) * 27, cy = 53 + (int32_t)(i >> 3) * 22, fx = kg.seq[at], lit = (int32_t)at == play;
+            if (at >= kg_seqlen()) { kg_box(cx, cy, 25, 18, KG_RULE); continue; }
             if (fx >= 0 && fx < (int32_t)KG_NFX) {
                 uint16_t c = kg_fam(fx);
                 cv_rect(cx, cy, 25, 18, kg_mix(KG_PANEL, c, lit ? 256u : 180u));
@@ -271,8 +301,9 @@ UI_SMALL static void kg_paint(void)
                 kg_box(cx, cy, 25, 18, kg_mix(KG_PANEL, KG_RULE, 170));
                 cv_rect(cx + 11, cy + 8, 2, 2, (i & 3u) == 0u ? KG_MUTE : KG_RULE);
             }
-            if (lit) kg_box(cx - 1, cy - 1, 27, 20, KG_INK);
-            if ((int32_t)i == cur) cv_rect(cx + 3, cy + 19, 19, 2, KG_ACC);
+            if (kg.sint[at]) cv_rect(cx, cy + 16, (int32_t)(kg.sint[at] - 1u) / 4, 2, KG_INK);   /* (recorded INTENSITY) */
+            if (lit) kg_box(cx - 1, cy - 1, 27, 20, kg_erase ? KG_RED : KG_INK);
+            if ((int32_t)at == cur) cv_rect(cx + 3, cy + 19, 19, 2, KG_ACC);
         }
     else
         kg_pads16(now);
@@ -348,7 +379,9 @@ UI_SMALL static void kg_scope(void)
 UI_SMALL static uint32_t kg_signature(void)
 {
     uint32_t h = 2166136261u, i;
-    for (i = 0; i < KG_STEPS; i++) h = (h ^ (uint32_t)(kg.seq[i] + 2)) * 16777619u;
+    for (i = 0; i < KG_STEPS; i++) h = (h ^ (uint32_t)(kg.seq[i] + 2) ^ (uint32_t)kg.sint[i] << 8) * 16777619u;
+    h ^= (uint32_t)kg_erase * 0x45D9F3Bu + (uint32_t)(song.rec != 0) * 0x119DE1F3u;
+    h = str_hash(h, kr.recipe);
     h ^= (song.playing ? kg.step + 1u : 0u) * 977u + (uint32_t)(kg.now + 2) * 65537u + kg.src * 31u + ui.page * 7919u;
     for (i = G_KCHAOS; i < G_COUNT; i++) h = (h ^ (uint32_t)song.g[i]) * 16777619u;
     for (i = 0; i < DD_N; i++) h = (h ^ kd_int[i]) * 16777619u;
@@ -363,9 +396,10 @@ UI_SMALL static void kg_screen_draw(void)
 {
     uint32_t sig, pn = kg_pageno();
     kg_pads = (uint8_t)(pn == 3u ? 2u : pn == 1u ? 0u : 1u);   /* the keys: SEQ's steps, the drums (DRUMS), else pads */
-    if (kg_keystep) {                                   /* SEQ: a white key picked the step */
-        song.g[G_KSTEP] = kg_keystep;
-        song.g[G_KSFX] = (int16_t)(kg.seq[(kg_keystep - 1u) & 15u] + 1);
+    if (kg_keystep) {                                   /* SEQ: a white key picked the step (on the page shown) */
+        uint32_t at = kg_seqpage() * 16u + kg_keystep - 1u;
+        song.g[G_KSTEP] = (int16_t)(at + 1u);
+        song.g[G_KSFX] = (int16_t)(kg.seq[at % KG_STEPS] + 1);
         kg_keystep = 0;
     }
     song.g[G_KINT] = kd_int[kg_sel % DD_N];

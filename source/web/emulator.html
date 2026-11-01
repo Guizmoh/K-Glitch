@@ -64,6 +64,7 @@ button.primary { background: var(--acc); color: #1a0e04; border-color: var(--acc
 .octs { display: flex; gap: 10px; }
 .oct { flex: 1; border-radius: 8px; padding: 10px 4px; font: 700 11px/1 var(--f-disp); letter-spacing: .04em; background: var(--body-hi); }
 .oct.down { background: #4a3a2e; }
+.oct small { font: 600 9px/1 var(--f-mono); color: var(--acc); }
 .keys-scroll { overflow-x: auto; padding-bottom: 4px; }
 .keys { position: relative; height: 130px; min-width: 760px; user-select: none; touch-action: none; }
 .key { position: absolute; top: 0; border-radius: 0 0 6px 6px; cursor: pointer; }
@@ -96,7 +97,7 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
   <header>
     <div>
       <h1>K-<span>GLITCH</span></h1>
-      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.3</div>
+      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.4</div>
     </div>
     <div class="bar">
       <button id="lang" type="button">EN / FR</button>
@@ -137,9 +138,10 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
         <h2><span lang="fr">LES 3 MODES</span><span lang="en">THE 3 MODES</span></h2>
         <ul>
           <li><b>DRUMS</b> : <span lang="fr">K1 style (JUNGLE, BREAKCORE, DNB, DRILL, IDM, GLITCH, HALFTIME, FOOTWORK), K2 variation, K3 swing, K4 GO. Les touches y jouent la batterie.</span><span lang="en">K1 style (JUNGLE, BREAKCORE, DNB, DRILL, IDM, GLITCH, HALFTIME, FOOTWORK), K2 variation, K3 swing, K4 GO. The keys play the drums there.</span></li>
-          <li><b>CHOP</b> : <span lang="fr">K1 MUTATE (décale, supprime, répète, rolls, ghosts, longueurs), K2 RESTORE, K3 EVERY (mutation auto toutes les 1-8 mesures), K4 DRUMS / ALL. En orange : ce qui a changé.</span><span lang="en">K1 MUTATE (shift, delete, repeat, rolls, ghosts, lengths), K2 RESTORE, K3 EVERY (auto mutation every 1-8 bars), K4 DRUMS / ALL. Orange: what changed.</span></li>
+          <li><b>CHOP</b> : <span lang="fr">K1 DICE (une recette au hasard, affichée), K2 MUTATE (décale, supprime, répète, rolls, ghosts, accents, longueurs selon CHAOS / DENSITY), K3 RESTORE, K4 EVERY (auto toutes les 1-8 mesures). En orange : ce qui a changé.</span><span lang="en">K1 DICE (a random recipe, shown), K2 MUTATE (shift, delete, repeat, rolls, ghosts, accents, lengths by CHAOS / DENSITY), K3 RESTORE, K4 EVERY (auto every 1-8 bars). Orange: what changed.</span></li>
+          <li><b>AUTOMATION</b> : <span lang="fr"><b>REC</b> (Entrée) pendant la lecture : chaque pad joué s'enregistre sur ses 16es avec son intensité (page SEQ : 16, 32 ou 64 pas). <b>CLEAR</b> = OCT- (ou ⌫) maintenu : efface les effets des pas qui passent (comme le PO-33) ; à l'arrêt, maintenu 1 s : tout.</span><span lang="en"><b>REC</b> (Enter) while playing: every pad played is recorded on its 16ths with its intensity (SEQ page: 16, 32 or 64 steps). <b>CLEAR</b> = OCT- (or ⌫) held: erases the effects of the steps passing (as the PO-33); stopped, held 1 s: all of it.</span></li>
           <li><b>CHAOS</b> : <span lang="fr">K1 MODE : AUTO + LFO + mutations à chaque mesure, selon CHAOS.</span><span lang="en">K1 MODE: AUTO + LFO + mutations on every bar, by CHAOS.</span></li>
-          <li><b>SEQ</b> <span lang="fr">(une touche blanche = un pas, K2 son effet, K4 DICE), <b>BANK</b> (banque, intensité, HOLD, LFO), <b>SETUP</b> (sortie FM-1 / MPC / BOTH, canal).</span><span lang="en">(a white key = a step, K2 its effect, K4 DICE), <b>BANK</b> (bank, intensity, HOLD, LFO), <b>SETUP</b> (out FM-1 / MPC / BOTH, channel).</span></li>
+          <li><b>SEQ</b> <span lang="fr">(une touche blanche = un pas, K2 son effet, K3 longueur, K4 DICE, PRESETS l'intensité du pas), <b>BANK</b> (banque, intensité, HOLD, LFO), <b>SETUP</b> (sortie FM-1 / MPC / BOTH, canal).</span><span lang="en">(a white key = a step, K2 its effect, K3 length, K4 DICE, PRESETS the step's intensity), <b>BANK</b> (bank, intensity, HOLD, LFO), <b>SETUP</b> (out FM-1 / MPC / BOTH, channel).</span></li>
         </ul>
       </section>
       <section>
@@ -335,7 +337,7 @@ for (const [name, label] of BTN_GRID) {
 }
 for (const name of ["OCT_DOWN", "OCT_UP"]) {
   const id = BTN[name], el = document.createElement("button");
-  el.type = "button"; el.className = "oct"; el.textContent = name === "OCT_DOWN" ? "OCT-" : "OCT+";
+  el.type = "button"; el.className = "oct"; el.innerHTML = name === "OCT_DOWN" ? "OCT- <small>/ CLEAR</small>" : "OCT+";
   holdable(el, id); $("octs").appendChild(el); btnEls[id] = { el };
 }
 function makeEnc(parent, name, enc, cls, sub) {
@@ -407,13 +409,15 @@ window.addEventListener("keydown", e => {
   const k = keyOf(e.code);
   if (k >= 0) { e.preventDefault(); if (!e.repeat) setKey(k, true); return; }
   if (e.code === "Tab") { e.preventDefault(); if (!e.repeat) press(BTN.FX, true); return; }   /* held: punch-in */
+  if (e.code === "Backspace") { e.preventDefault(); if (!e.repeat) press(BTN.OCT_DOWN, true); return; }   /* held: CLEAR */
   const map = { ArrowLeft: () => encs.SELECT.turn(-1), ArrowRight: () => encs.SELECT.turn(1), ArrowUp: () => encs.ALGO.turn(1),
     ArrowDown: () => encs.ALGO.turn(-1), PageUp: () => encs.PRESETS.turn(-1), PageDown: () => encs.PRESETS.turn(1),
     Space: () => tapBtn(BTN.PLAY), Enter: () => tapBtn(BTN.REC), Escape: () => tapBtn(BTN.HOME) };
   const f = map[e.code];
   if (f && !(e.code === "Enter" && e.target.tagName === "BUTTON")) { e.preventDefault(); if (!e.repeat || e.code.startsWith("Arrow") || e.code.startsWith("Page")) f(); }
 });
-window.addEventListener("keyup", e => { const k = keyOf(e.code); if (k >= 0) setKey(k, false); if (e.code === "Tab") press(BTN.FX, false); });
+window.addEventListener("keyup", e => { const k = keyOf(e.code); if (k >= 0) setKey(k, false); if (e.code === "Tab") press(BTN.FX, false);
+  if (e.code === "Backspace") press(BTN.OCT_DOWN, false); });
 window.addEventListener("blur", () => { for (let k = 0; k < 27; k++) setKey(k, false); if (btnEls[BTN.FX].el.classList.contains("down")) press(BTN.FX, false); });
 
 /* ---- MIDI: in (a clock, a controller) to the firmware; the firmware's out (the MPC CCs) to the output chosen */

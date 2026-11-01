@@ -569,9 +569,10 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
     if (pg->scope == SC_GLOBAL && id == G_KINT)           /* K-GLITCH: the selected effect's INTENSITY */
         kd_int[kg_sel % DD_N] = (uint8_t)v;
     if (pg->scope == SC_GLOBAL && id == G_KSTEP)          /* K-GLITCH D-SEQ: the step's effect shows */
-        song.g[G_KSFX] = (int16_t)(kg.seq[(v - 1) & 15] + 1);
+        song.g[G_KSFX] = (int16_t)(kg.seq[(uint32_t)(v - 1) % KG_STEPS] + 1);
     if (pg->scope == SC_GLOBAL && id == G_KSFX) {
-        kg.seq[(song.g[G_KSTEP] - 1) & 15] = (int8_t)(v - 1);
+        kg.seq[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] = (int8_t)(v - 1);
+        kg.sint[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] = 0;
         return;
     }
     if (!v)
@@ -614,7 +615,7 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
     case G_KMUT:                                          /* K-GLITCH: a new effect sequence */
         *vp = 0;
         kg_mutate(ui.frame + fm1_ms);
-        song.g[G_KSFX] = (int16_t)(kg.seq[(song.g[G_KSTEP] - 1) & 15] + 1);
+        song.g[G_KSFX] = (int16_t)(kg.seq[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] + 1);
         ui_message("MUTATED");
         break;
     case G_KCLEAR:                                        /* K-GLITCH: back to the original sound */
@@ -626,6 +627,11 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         *vp = 0;
         kr_generate((uint32_t)song.g[G_KSTYLE]);
         ui_say(N_KSTYLE_P[song.g[G_KSTYLE] % KS_N], " GENERATED");
+        break;
+    case G_KDICE:                                         /* K-GLITCH CHOP: a random recipe */
+        *vp = 0;
+        kr_dice_ui();
+        ui_say("DICE: ", kr.recipe);
         break;
     case G_KMUTR:                                         /* K-GLITCH CHOP: the rhythm mutated */
         *vp = 0;
@@ -1269,6 +1275,25 @@ UI_SMALL static void ui_input(void)
         if (ev)
             ui.force = 1;
     }
+    {   /* K-GLITCH: on its pages (not DRUMS: the keys play there) OCT- is CLEAR. Held while PLAY runs: the effect lane's
+         * steps passing are erased (REC or not, as the PO-33); held a second stopped: the whole lane */
+        static uint32_t clr_t0;
+        uint32_t ob = 1u << panel.btn[B_OCTDN], held = !ui.home && cur_page()->graph == GR_KG && kg_pads &&
+                                                         (fm1_in.buttons & ob) != 0u;
+        kg_erase = (uint8_t)(held && song.playing);
+        if (held) {
+            pressed &= ~ob;
+            if (!clr_t0) clr_t0 = fm1_ms | 1u;
+            if (song.playing) ui_message("CLEAR: ERASING THE FX");
+            else if (fm1_ms - clr_t0 > 1000u && clr_t0 != 1u) {
+                kg_clear();
+                song.g[G_KSFX] = 0;
+                ui_message("FX AUTOMATION CLEARED");
+                clr_t0 = 1u;                          /* (once a hold) */
+            }
+        } else
+            clr_t0 = 0;
+    }
     for (id = 0; id < 14u; id++) {
         if (!((pressed >> id) & 1u))
             continue;
@@ -1313,7 +1338,12 @@ UI_SMALL static void ui_input(void)
             kg_sel = (uint8_t)(((int32_t)kg_sel + s % (int32_t)DD_N + (int32_t)DD_N) % (int32_t)DD_N);
             ui_message(DD_NAME[kg_sel]);
         }
-        if ((s = panel_enc(EN_PRESET)) != 0) {
+        if ((s = panel_enc(EN_PRESET)) != 0 && kg_pads == 2u) {   /* SEQ: the step's INTENSITY (0: the effect's own) */
+            uint32_t st = (uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS;
+            kg.sint[st] = (uint8_t)clamp((int32_t)kg.sint[st] + accel(EN_PRESET, s, 100), 0, 101);
+            ui.hot_col = 4;
+            ui.hot_t = 40;
+        } else if (s) {
             kd_int[kg_sel % DD_N] = (uint8_t)clamp(kd_int[kg_sel % DD_N] + accel(EN_PRESET, s, 100), 0, 100);
             ui.hot_col = 4;                               /* (the screen lights the intensity) */
             ui.hot_t = 40;

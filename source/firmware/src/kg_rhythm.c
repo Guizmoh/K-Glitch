@@ -14,6 +14,8 @@
  *   ghosts    ghost snares and hats added in the gaps (DENSITY)
  *   accents   some hits harder, some softer (CHAOS)
  *   lengths   (TARGET ALL) the synth tracks' notes made longer (a tie) or shorter (CHAOS)
+ * DICE rolls a recipe of its own instead of CHAOS and DENSITY: two to five of these, each at a random strength (the
+ * screen names them), then mutates the same way, from the ORIGINAL.
  * EVERY mutates again on its own each 1, 2, 4 or 8 bars, while PLAY runs (the audio interrupt, on the bar).
  * A pattern changed by hand since the last mutation becomes the new ORIGINAL at the next MUTATE.
  * The ORIGINAL is kept in RAM only (about 0.9 KB): not in the project. */
@@ -67,7 +69,20 @@ static struct {
     uint32_t rnd;
     uint32_t bar;                     /* EVERY: the bar last seen */
     uint16_t changed;                 /* hits the last mutation changed (the screen) */
+    char recipe[28];                  /* DICE: what it rolled, named (the screen) */
 } kr = {.rnd = 0x7F4A7C15u, .bar = 0xFFFFFFFFu};
+
+/* a mutation's recipe: each a chance in % (a step's hit), repeat a number of fragments */
+typedef struct { uint8_t del, shift, accent, repeat, roll, ghost, len; } kr_recipe_t;
+enum { KR_DEL, KR_SHIFT, KR_ACCENT, KR_REPEAT, KR_ROLL, KR_GHOST, KR_LEN, KR_NOPS };
+static const char *const KR_OPNAME[KR_NOPS] = {"CUT", "SHIFT", "ACCENT", "REPEAT", "ROLL", "GHOST", "LENGTH"};
+static kr_recipe_t kr_from_macros(void)            /* MUTATE: CHAOS and DENSITY */
+{
+    uint32_t C = kg_pct(G_KCHAOS), D = kg_pct(G_KDENS);
+    kr_recipe_t r = {(uint8_t)(C / 4u), (uint8_t)(C / 3u), (uint8_t)(C / 5u), (uint8_t)(D / 20u), (uint8_t)(D / 5u),
+                     (uint8_t)(D / 8u), (uint8_t)(C / 3u)};
+    return r;
+}
 
 static uint32_t kr_sig(void)                      /* the drum pattern and the synth steps' lengths, hashed */
 {
@@ -108,9 +123,9 @@ static void kr_restore(void)                      /* back to the ORIGINAL (CHOP 
 }
 
 /* a mutation of the ORIGINAL; all: the synth tracks' lengths too. Main loop (interrupts off) or the audio interrupt */
-static void kr_mutate(int all)
+static void kr_mutate_r(const kr_recipe_t *rc, int all)
 {
-    uint32_t C = kg_pct(G_KCHAOS), D = kg_pct(G_KDENS), len, s, l, n, changed = 0;
+    uint32_t C = kg_pct(G_KCHAOS), len, s, l, n, changed = 0;
     if (!kr.has || kr_sig() != kr.out_sig)        /* none yet, or changed by hand: this is the ORIGINAL now */
         kr_keep();
     len = kr.len ? kr.len : 16u;
@@ -125,25 +140,25 @@ static void kr_mutate(int all)
             uint32_t r = kg_rand(&kr.rnd), lv;
             if (!dstep_has(&kr.d[s], l)) continue;
             lv = dstep_lvl(&kr.d[s], l);
-            if (r % 100u < C / 4u && !(s % 16u == 0u && l == 0u && C <= 70u)) {   /* delete */
+            if (r % 100u < rc->del && !(s % 16u == 0u && l == 0u && C <= 70u)) {   /* delete */
                 dstep_clr(d, l);
                 changed++;
-            } else if ((r >> 8) % 100u < C / 3u) {     /* shift: to a neighbour, or nudged */
+            } else if ((r >> 8) % 100u < rc->shift) {   /* shift: to a neighbour, or nudged */
                 uint32_t to = (s + ((r >> 16) & 1u ? 1u : len - 1u)) % len;
                 if ((r >> 17) & 1u && !dstep_has(&TDRUM->dstep[to], l)) {
                     dstep_clr(d, l);
                     dstep_set(&TDRUM->dstep[to], l, lv, 0);
                 } else {
-                    TDRUM->micro[s] = (int8_t)clamp((int32_t)((r >> 20) % (C * 24u / 100u + 1u)) * ((r >> 19) & 1u ? 1 : -1),
+                    TDRUM->micro[s] = (int8_t)clamp((int32_t)((r >> 20) % (rc->shift * 72u / 100u + 1u)) * ((r >> 19) & 1u ? 1 : -1),
                                                      MICRO_MIN, MICRO_MAX);
                 }
                 changed++;
-            } else if ((r >> 12) % 100u < C / 5u) {    /* accent */
+            } else if ((r >> 12) % 100u < rc->accent) {   /* accent */
                 dstep_set(d, l, (r >> 24) & 1u ? LV_HARD : LV_SOFT, 0);
                 changed++;
             }
         }
-    for (n = D / 20u; n > 0u; n--) {               /* repeat fragments */
+    for (n = rc->repeat; n > 0u; n--) {            /* repeat fragments */
         uint32_t r = kg_rand(&kr.rnd), w = (r & 1u) ? 4u : 2u, from, to, i;
         if (len < 2u * w) continue;
         from = ((r >> 4) % (len / w)) * w, to = ((r >> 12) % (len / w)) * w;
@@ -156,11 +171,11 @@ static void kr_mutate(int all)
         static const uint8_t ROLL[4] = {2, 4, 8, 12};
         uint32_t r = kg_rand(&kr.rnd), i;
         for (i = 0; i < 4u; i++)
-            if (dstep_has(d, ROLL[i]) && (r >> (i * 7u)) % 100u < D / 5u) {
+            if (dstep_has(d, ROLL[i]) && (r >> (i * 7u)) % 100u < rc->roll) {
                 dstep_set(d, ROLL[i], dstep_lvl(d, ROLL[i]), 1u + (r >> 28) % 3u);
                 changed++;
             }
-        if (!d->on[0] && !d->on[1] && kg_rand(&kr.rnd) % 100u < D / 8u) {
+        if (!d->on[0] && !d->on[1] && kg_rand(&kr.rnd) % 100u < rc->ghost) {
             dstep_set(d, (kg_rand(&kr.rnd) & 1u) ? 8u : 4u, LV_GHOST, 0);
             changed++;
         }
@@ -173,7 +188,7 @@ static void kr_mutate(int all)
             for (s = 0; s < NSTEP; s++) trk[t].step[s].time = kr.time[t][s];
             for (s = 0; s + 1u < sl; s++) {
                 step_t *st = &trk[t].step[s], *nx = &trk[t].step[s + 1u];
-                if ((st->time != ST_NOTE && st->time != ST_TIE) || kg_rand(&kr.rnd) % 100u >= C / 3u) continue;
+                if ((st->time != ST_NOTE && st->time != ST_TIE) || kg_rand(&kr.rnd) % 100u >= rc->len) continue;
                 if (nx->time == ST_REST) nx->time = ST_TIE, changed++;
                 else if (nx->time == ST_TIE) nx->time = ST_REST, changed++;
             }
@@ -182,6 +197,39 @@ static void kr_mutate(int all)
     kr.mutated = 1;
     kr.changed = (uint16_t)changed;
     kr.out_sig = kr_sig();
+}
+static void kr_mutate(int all)                   /* MUTATE: the recipe of CHAOS and DENSITY */
+{
+    kr_recipe_t r = kr_from_macros();
+    kr.recipe[0] = 0;
+    kr_mutate_r(&r, all);
+}
+/* DICE: two to five transformations, each at a random strength (all: LENGTH among them) */
+static void kr_dice(int all)
+{
+    kr_recipe_t r = {0, 0, 0, 0, 0, 0, 0};
+    uint8_t *f = &r.del;
+    uint32_t n = 2u + kg_rand(&kr.rnd) % 4u, got = 0, i, nops = all ? KR_NOPS : KR_NOPS - 1u;
+    while (got < n) {
+        uint32_t op = kg_rand(&kr.rnd) % nops;
+        if ((&r.del)[op]) continue;
+        f[op] = (uint8_t)(op == KR_REPEAT ? 1u + kg_rand(&kr.rnd) % 5u : 15u + kg_rand(&kr.rnd) % 60u);
+        got++;
+    }
+    kr.recipe[0] = 0;
+    for (i = 0; i < KR_NOPS; i++)
+        if (f[i]) {
+            if (kr.recipe[0]) str_cpy(kr.recipe + str_len(kr.recipe), "+", sizeof kr.recipe - str_len(kr.recipe));
+            str_cpy(kr.recipe + str_len(kr.recipe), KR_OPNAME[i], sizeof kr.recipe - str_len(kr.recipe));
+        }
+    kr_mutate_r(&r, all);
+}
+static void kr_dice_ui(void)                      /* DICE from the main loop */
+{
+    kr.rnd ^= fm1_ms * 2654435761u;
+    fm1_irq_off();
+    kr_dice(song.g[G_KCTGT] != 0);
+    fm1_irq_on();
 }
 static void kr_mutate_ui(void)                    /* MUTATE from the main loop */
 {
@@ -237,8 +285,8 @@ static void kr_bar(void)
     if (!bar) return;                              /* (not on the very first downbeat) */
     if (every && bar % every == 0u)
         kr_mutate(song.g[G_KCTGT] != 0);
-    else if (song.g[G_KCMODE] && kg_rand(&kr.rnd) % 100u < kg_pct(G_KCHAOS)) {   /* CHAOS: on the bar, CHAOS % */
-        kr_mutate(song.g[G_KCTGT] != 0);
+    else if (song.g[G_KCMODE] && kg_rand(&kr.rnd) % 100u < kg_pct(G_KCHAOS)) {   /* CHAOS: on the bar, CHAOS %, a DICE */
+        kr_dice(song.g[G_KCTGT] != 0);
         if (kg_rand(&kr.rnd) % 100u < kg_pct(G_KCHAOS) / 2u)
             kg_mutate(kg_rand(&kr.rnd));           /* .. and sometimes a new effect sequence */
     }

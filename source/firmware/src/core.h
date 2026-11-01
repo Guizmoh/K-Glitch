@@ -110,9 +110,9 @@ enum {                          /* global parameters */
     G_KDENS,                    /* DENSITY 0..100 %: how often */
     G_KMOVE,                    /* MOVEMENT 0..100 %: how short (high) or long (low) a gesture */
     G_KTGT,                     /* OUT: FM-1, MPC (MIDI CC only), BOTH */
-    G_KSTEP,                    /* D-SEQ: the step edited, 1..16 */
+    G_KSTEP,                    /* D-SEQ: the step edited, 1..64 */
     G_KSFX,                     /* D-SEQ: its effect, 0 none, 1 + PX_* */
-    G_KSEQ,                     /* D-SEQ: the effect sequencer plays (OFF / ON) */
+    G_KSEQ,                     /* D-SEQ: the effect sequence / automation lane: OFF, 16, 32, 64 steps */
     G_KMUT,                     /* D-SEQ: MUTATE (GO) */
     G_KAUTO,                    /* D-SETUP: AUTO (OFF / ON) */
     G_KCLR,                     /* D-SETUP: clear the effect sequence (GO) */
@@ -130,6 +130,7 @@ enum {                          /* global parameters */
     G_KEVERY,                   /* CHOP: mutate on its own every OFF, 1, 2, 4, 8 bars */
     G_KCTGT,                    /* CHOP: what mutates: DRUMS, or ALL (the synth tracks' note lengths too) */
     G_KCMODE,                   /* CHAOS: CHAOS mode (OFF / ON) */
+    G_KDICE,                    /* CHOP: DICE, a random recipe of transformations (GO) */
     G_COUNT
 };
 

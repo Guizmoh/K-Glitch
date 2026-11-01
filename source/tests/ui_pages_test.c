@@ -234,11 +234,13 @@ int main(int argc, char **argv)
         check(!strcmp(cur_page()->title, "D-CHOP"), "K-GLITCH: SELECT: CHOP");
         sig0 = kr_sig();
         encs[panel.enc[EN_K1]] = 1; frame();
-        check(kr.mutated && kr_sig() != sig0, "K-GLITCH CHOP: MUTATE changes the rhythm");
+        check(kr.mutated && kr_sig() != sig0 && kr.recipe[0], "K-GLITCH CHOP: DICE rolls a recipe and mutates the rhythm");
+        encs[panel.enc[EN_K2]] = 1; frame();
+        check(kr.mutated && kr_sig() != sig0 && !kr.recipe[0], "K-GLITCH CHOP: MUTATE changes the rhythm (CHAOS, DENSITY)");
         tap(B_PLAY);
         for (j = 0; j < 30u; j++) frame();
         ui.force = 1; frame(); ppm("page-k-chop");
-        encs[panel.enc[EN_K2]] = 1; frame();
+        encs[panel.enc[EN_K3]] = 1; frame();
         check(!kr.mutated && kr_sig() == sig0, "K-GLITCH CHOP: RESTORE brings the ORIGINAL back");
         encs[panel.enc[EN_SELECT]] = 1; frame();
         check(!strcmp(cur_page()->title, "D-SEQ"), "K-GLITCH: SELECT: SEQ");
@@ -250,6 +252,36 @@ int main(int argc, char **argv)
               "K-GLITCH SEQ: a white key picks the step (no effect, no note)");
         encs[panel.enc[EN_K2]] = 1; frame();
         check(kg.seq[2] + 1 == song.g[G_KSFX], "K-GLITCH SEQ: KNOB 2 sets the step's effect");
+        {   /* automation: SEQ 32, REC, a pad held a beat: written on its 16ths with its INTENSITY; CLEAR (OCT-) held erases */
+            uint32_t n0 = 0, n1 = 0, n2 = 0;
+            kg_clear();
+            encs[panel.enc[EN_K3]] = 1; frame();
+            check(kg_seqlen() == 32u, "K-GLITCH SEQ: KNOB 3: the lane 32 steps");
+            kd_int[DD_GATE] = 77;
+            song.rec = 1;
+            fm1_in.notes = 1u << key_of_white(DD_GATE);
+            for (j = 0; j < 40u; j++) frame();
+            fm1_in.notes = 0; frame();
+            for (j = 0; j < 32u; j++) n0 += kg.seq[j] == (int8_t)(PUNCH_NFX + DD_GATE) && kg.sint[j] == 78u;
+            check(n0 >= 4u, "K-GLITCH REC: a pad held is recorded on its 16ths, with its INTENSITY");
+            ui.force = 1; frame(); ppm("page-k-seq-rec");
+            for (j = 0; j < 60u; j++) frame();       /* (it plays back: src 2) */
+            press(B_OCTDN);
+            for (j = 0; j < 140u; j++) frame();       /* (CLEAR held more than a bar of 32 at 142 BPM: 3.4 s) */
+            ui.force = 1; frame(); ppm("page-k-seq-clear");
+            for (j = 0; j < 32u; j++) n1 += kg.seq[j] >= 0;
+            release(B_OCTDN);
+            check(n1 < n0 && song.octave == 0, "K-GLITCH CLEAR: OCT- held while recording erases the effect automation");
+            song.rec = 0;
+            kg.seq[5] = PX_STUT;
+            tap(B_PLAY);
+            press(B_OCTDN); for (j = 0; j < 80u; j++) frame(); release(B_OCTDN);
+            for (j = 0; j < 64u; j++) n2 += kg.seq[j] >= 0;
+            check(n2 == 0u, "K-GLITCH CLEAR: held a second stopped: the whole lane");
+            tap(B_PLAY);
+            encs[panel.enc[EN_K3]] = -1; frame();
+            encs[panel.enc[EN_K4]] = 1; frame();
+        }
         for (j = 0; j < 40u && kg.now < 0; j++) frame();
         ui.force = 1; frame(); ppm("page-k-seq");
         encs[panel.enc[EN_SELECT]] = 1; frame();

@@ -329,6 +329,48 @@ int main(int argc, char **argv)
         kd.cur = -1; kd_int[DD_FUZZ] = 50;
     }
     printf("kglitch: LFO within MOVEMENT / 2 (off: 0); INTENSITY per effect                         ok\n");
+    /* 12. DICE: a recipe of 2..5 named transformations, from the ORIGINAL; RESTORE exact */
+    {
+        uint32_t sig_o, d, plus;
+        reset();
+        song.g[G_KVAR] = 0;
+        kr_generate(KS_BREAKCORE);
+        sig_o = kr_sig();
+        for (d = 0; d < 30u; d++) {
+            kr_dice(1);
+            for (i = plus = 0; kr.recipe[i]; i++) plus += kr.recipe[i] == '+';
+            assert(kr.recipe[0] && plus >= 1u && plus <= 4u && kr.mutated);
+        }
+        kr_restore();
+        assert(kr_sig() == sig_o);
+    }
+    printf("kglitch: CHOP DICE: 2 to 5 named transformations, from the ORIGINAL, RESTORE exact        ok\n");
+    /* 13. automation: REC + a pad writes its 16ths with its INTENSITY; the lane plays it back with that INTENSITY
+     * (not the effect's own, changed since); CLEAR held (kg_erase) erases the steps passing, and nothing plays meanwhile */
+    {
+        uint32_t n = 0;
+        reset();
+        song.g[G_KSEQ] = 2;                             /* 32 steps */
+        kd_int[DD_RING] = 30;
+        song.rec = 1;
+        run(NS / 2u, (int32_t)(PUNCH_NFX + DD_RING), S16 * 4u, S16 * 8u, ol, or_);
+        song.rec = 0;
+        for (i = 0; i < 32u; i++)
+            if (kg.seq[i] == (int8_t)(PUNCH_NFX + DD_RING)) { assert(kg.sint[i] == 31u); n++; }
+        assert(n >= 4u && n <= 5u && "a beat of 16ths recorded");
+        kd_int[DD_RING] = 90;                           /* (changed since: the lane keeps 30) */
+        clk_beat = 8, clk_pos = 0;                      /* (two bars on: step 4 again) */
+        kg.last16 = 0xFFFFFFFFu;
+        run(S16 * 6u, -1, 0, 0, ol, or_);
+        assert(now16[4] == (int8_t)(PUNCH_NFX + DD_RING) && kg.src == 2u && dd_int() == 30u);
+        kd_int[DD_RING] = 50;
+        clk_beat = 8, clk_pos = 0, kg.last16 = 0xFFFFFFFFu;
+        kg_erase = 1;
+        run(S16 * 10u, -1, 0, 0, ol, or_);
+        kg_erase = 0;
+        for (i = 0; i < 10u; i++) assert(kg.seq[i] < 0 && now16[i] < 0);
+    }
+    printf("kglitch: automation: REC writes the pad's 16ths and INTENSITY, plays them back, CLEAR erases ok\n");
     printf("kglitch_test: passed\n");
     return 0;
 }
