@@ -91,8 +91,9 @@ static void fx_block(uint32_t on)
 {
     uint32_t newb = on & ~lfx_prev & BF_MASK, t;
     uint8_t mel = 0, beat = 0;
-    if (lfx_target != lv_target) {              /* another bus: what it held is not this one's */
-        lv_target = lfx_target <= NTRK ? lfx_target : 0u;
+    uint8_t want = lfx_target <= NTRK ? lfx_target : 0u;   /* (MPC and HYBRID: the master) */
+    if (want != lv_target) {                    /* another bus: what it held is not this one's */
+        lv_target = want;
         bf.act = 0;
         bf.mix = bf.mix_to = 0;
         svf_lp[0] = svf_lp[1] = svf_bp[0] = svf_bp[1] = 0;

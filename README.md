@@ -8,6 +8,10 @@ The imported firmware has six tracks with pulse, wavetable, noise, FM, drum and 
 
 K-GLITCH now adds a first autonomous performance gesture on the FX page: turn KNOB 2 (the second encoder) to toggle AUTO GLITCH. While the sequencer plays, the firmware makes a 55% per-step chance to choose one internally buffered loop, stutter, scratch, reverse, roll, tape-stop, dive or freeze gesture. It is quantized to sequencer rows and uses the existing audio capture and effect engine; turning AUTO off or stopping playback releases it. The gesture state is live-only and is not stored in a project. Density/intensity controls, a dedicated performance page and hardware tuning remain planned.
 
+## One firmware: STANDALONE, MPC REMOTE, HYBRID
+
+On the FX (LIVE) page, KNOB 4 (TARGET) now goes past the tracks to two more choices. **MPC** sends the live effects only as USB-MIDI CCs (channel 16, 127 held / 0 released) to drive an MPC through MIDI Learn. **MAST+MPC** plays them on the FM-1 and sends them at the same time. Held keys, the sequencer's LIVE lane and AUTO GLITCH all go out. The table of numbers and the MPC setup are in [`docs/MPC_REMOTE.md`](docs/MPC_REMOTE.md). Tested in the simulator only.
+
 ## Build and development
 
 See [`source/BUILDING.md`](source/BUILDING.md) for the upstream host simulator, browser emulator and FM-1 package builds. The FM-1 package build requires the JieLi pi32v2 toolchain and the specified AC79 SDK files. This checkout was not built or validated on an FM-1 during the bootstrap.
@@ -26,4 +30,5 @@ This project is not affiliated with or endorsed by M-VAVE or Hügelton Instrumen
 - [Feature roadmap](docs/ROADMAP.md)
 - [Upstream KAWA licensing and credits](LICENSING.md)
 - FM-1 CPU, free RAM, interrupt headroom, package identity and physical controls still need confirmation.
-- AUTO GLITCH is implemented in source but has not been compiled for the FM-1 or validated on hardware.
+- AUTO GLITCH and MPC REMOTE/HYBRID are implemented in source and tested in the host simulator; they have not been compiled for the FM-1 or validated on hardware or with an MPC.
+- [MPC REMOTE / HYBRID: CC table and setup](docs/MPC_REMOTE.md)

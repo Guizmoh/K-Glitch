@@ -1360,7 +1360,7 @@ static uint32_t lfx_phase(uint32_t id)          /* how far the effect is in its 
 }
 static void draw_fx(void)
 {
-    uint32_t i, t, on = lfx_on;
+    uint32_t i, t, on = lfx_req;                /* (asked for: in MPC mode they play on the MPC) */
     uint16_t col = LBANK_COL[fx_bank];
     char s[16];
     if (g_vis(20, 20)) {
@@ -1375,7 +1375,10 @@ static void draw_fx(void)
         g_text_c(101, 22, "AUTO", auto_glitch ? C_WHITE : C_MID, T_CROP | T_BOLD);
         if (rec && sq_play) { g_rrect(116, 22, 28, 15, C_REC); g_text_c(130, 22, "REC", C_WHITE, T_CROP); }
         g_icon(150, 25, ICO_TARGET, KNOB_COL[3], 1);   /* where they play: KNOB 4 */
-        if (lfx_target) {
+        if (lfx_target > NTRK) {                /* K-GLITCH: the MPC, over USB-MIDI */
+            g_rrect(160, 22, 77, 15, C_GO);
+            g_text(164, 22, lfx_target == TGT_MPC ? "MPC" : "MAST+MPC", C_INK, T_CROP | T_BOLD);
+        } else if (lfx_target) {
             g_rrect(160, 22, 77, 15, TRK_COL[lfx_target - 1u]);
             trk_name(lfx_target - 1u, s);
             g_text(164, 22, s, C_INK, T_CROP | T_BOLD);
@@ -1411,7 +1414,8 @@ static void draw_fx(void)
     hint(0, TR("BANQUE", "BANK", "BANCO"), "", LBANK_NAME[fx_bank]);
     hint(1, TR("AUTO GLITCH", "AUTO GLITCH", "AUTO GLITCH"), "", auto_glitch ? TR("OUI", "ON", "SI") : TR("NON", "OFF", "NO"));
     hint(2, TR("ENREG. LIVE", "REC LIVE", "GRABAR LIVE"), "REC", rec ? TR("OUI", "YES", "SI") : TR("NON", "NO", "NO"));
-    if (lfx_target) { s[0] = 'T'; s[1] = (char)('0' + lfx_target); s[2] = 0; }
+    if (lfx_target > NTRK) { s[0] = 0; str_cat(s, lfx_target == TGT_MPC ? "MPC" : "M+MPC"); }
+    else if (lfx_target) { s[0] = 'T'; s[1] = (char)('0' + lfx_target); s[2] = 0; }
     else { s[0] = 0; str_cat(s, "MAST"); }
     hint(3, TR("CIBLE", "TARGET", "DESTINO"), "", s);
 }
@@ -2486,7 +2490,7 @@ static void knob(uint32_t i, int32_t d)
         if (i == 0u) { fx_bank = (uint8_t)clampi(fx_bank + d, 0, 1); lfx_keys = 0; }
         else if (i == 1u) auto_glitch = (uint8_t)!auto_glitch;
         else if (i == 2u) rec = (uint8_t)clampi(rec + d, 0, 1);
-        else if (i == 3u) { lfx_target = (uint8_t)clampi(lfx_target + d, 0, NTRK); lfx_keys = 0; }
+        else if (i == 3u) { lfx_target = (uint8_t)clampi(lfx_target + d, 0, TGT_HYBRID); lfx_keys = 0; }
         break;
     }
 }
@@ -3180,7 +3184,7 @@ static void ui_leds(void)
         break;
     }
     case PG_FX:
-        for (i = 0; i < 16u; i++) led(KEY_LED(KEY_OF_WHITE[i]), (lfx_on >> (fx_bank * 16u + i) & 1u) ? 2u : 1u);
+        for (i = 0; i < 16u; i++) led(KEY_LED(KEY_OF_WHITE[i]), (lfx_req >> (fx_bank * 16u + i) & 1u) ? 2u : 1u);
         for (i = 0; i < NTRK; i++) led(KEY_LED(KEY_OF_BLACK[i]), ((prj.mute | live_mute) >> i & 1u) ? 2u : 1u);
         break;
     case PG_MAGIC:
@@ -3289,10 +3293,32 @@ static void midi_in(void)                       /* USB-MIDI in: the clock; notes
 /* ---- the MIDI clock out (OPTIONS, KNOB 3: OUT): start, 24 ticks a beat, stop, over USB. Sent from platform_poll,
  * called often (between the screen's bands too), so the ticks keep close to the sound */
 static uint32_t clk_sent;
+
+/* ---- K-GLITCH MPC REMOTE: with the FX page's TARGET on MPC or MAST+MPC, each live effect asked for (a key held, the
+ * LIVE lane, AUTO GLITCH) is a MIDI CC on channel 16: 127 while it plays, 0 when it stops. On the MPC, MIDI Learn each
+ * CC to what it should do (a pad's pitch, a filter, an effect's on/off...). The numbers avoid bank select, modulation,
+ * volume, pan, sustain, the RPNs/NRPNs and the channel modes: 20..31, 102..119, then 85, 86 */
+#define MPC_CHAN 15u                            /* channel 16 */
+static const uint8_t MPC_CC[LF_N] = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+                                     102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
+                                     114, 115, 116, 117, 118, 119, 85, 86};
+static uint32_t mpc_sent;                       /* main: the CCs at 127 now */
+static void mpc_out(void)
+{
+    uint32_t want = lfx_target > NTRK ? lfx_req : 0u, ch = want ^ mpc_sent, id;
+    for (id = 0; ch && id < LF_N; id++)         /* (leaving MPC: everything still up goes back to 0) */
+        if (ch >> id & 1u) {
+            midi_send(0xB0u | MPC_CHAN, MPC_CC[id], want >> id & 1u ? 127u : 0u);
+            ch &= ~(1u << id);
+        }
+    mpc_sent = want;
+}
+
 static void app_poll(void)
 {
     uint32_t out = set.clock == 1u;
     midi_in();
+    mpc_out();
     if (clk_start) {
         clk_start = 0;
         clk_sent = clk_ticks;

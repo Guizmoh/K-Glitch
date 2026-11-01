@@ -134,7 +134,10 @@ static volatile uint16_t env_now[NTRK];         /* ISR: each track's envelope no
 static volatile uint8_t env_stage[NTRK];
 static volatile uint32_t lfx_keys;              /* main: live effects held (bit LF_... ) */
 static volatile uint32_t lfx_on;                /* ISR: live effects sounding now */
-static volatile uint8_t lfx_target;             /* main: 0 the master, 1..6 a track */
+static volatile uint8_t lfx_target;             /* main: 0 the master, 1..6 a track, TGT_MPC, TGT_HYBRID */
+#define TGT_MPC (NTRK + 1u)                     /* K-GLITCH: the live effects only go out as MIDI CC (MPC REMOTE) */
+#define TGT_HYBRID (NTRK + 2u)                  /* K-GLITCH: they play on the master and go out as MIDI CC */
+static volatile uint32_t lfx_req;               /* ISR: live effects asked for now (keys, LIVE lane, AUTO), sounding or not */
 static volatile uint8_t live_mute;              /* main: tracks muted from the FX page (bit per track) */
 static volatile uint8_t rec_live;               /* main: write live effects into the LIVE lane while playing */
 static volatile uint32_t audio_us;              /* ISR: the last render's time */

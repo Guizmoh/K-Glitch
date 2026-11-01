@@ -20,6 +20,10 @@ Other effects include bit crushing, sample-rate reduction, filters, ring modulat
 
 KAWA documents 44.1 kHz stereo output in 256-frame I2S halves (about 5.8 ms per half), an integer-only target without an FPU, and build-time image/RAM/pool checks. These are inherited source/build constraints; they do not demonstrate that additional DSP or buffer sizes fit K-GLITCH's eventual budget.
 
+## MPC REMOTE / HYBRID
+
+The audio interrupt publishes `lfx_req`, the live effects asked for (keys, LIVE lane, AUTO GLITCH), before it applies them. With TARGET `MPC` it then applies none, so the local sound and sequencer are left alone. With `MAST+MPC` they play on the master. The main loop (`mpc_out` in `app_poll`, next to the MIDI clock out) compares `lfx_req` with what it last sent and sends one CC per change. No MIDI is ever sent from the interrupt. The project format is unchanged: the target is not saved.
+
 ## Constraints and measurements still required
 
 - The current 128 KiB ring already consumes a substantial fixed memory allocation. Measure free RAM on the actual target before enlarging it or adding voices/state.

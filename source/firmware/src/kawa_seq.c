@@ -411,11 +411,6 @@ static void app_audio(int32_t *out, uint32_t n)
     if (sq_play && prj.pat[s_pat].live[s_row] && prj.pat[s_pat].live[s_row] <= LF_N &&
         !(s_lane_skip && prj.pat[s_pat].live[s_row] == LF_AGAIN + 1u))
         on |= 1u << (prj.pat[s_pat].live[s_row] - 1u);
-    if ((on >> LF_AGAIN & 1u) && !s_again && sq_play) {
-        s_again = 1;
-        s_again_row = (uint8_t)(s_row & ~3u);
-    } else if (!(on >> LF_AGAIN & 1u))
-        s_again = 0;
     if (auto_glitch && sq_play && g_rowlen) {
         static const uint8_t AUTO_FX[] = {LF_LOOP16, LF_LOOP32, LF_LOOP64, LF_STUT4, LF_STUT3,
                                           LF_SCR, LF_SCRF, LF_REV, LF_ROLLUP, LF_TAPE, LF_DIVE, LF_FREEZE};
@@ -433,6 +428,14 @@ static void app_audio(int32_t *out, uint32_t n)
         auto_glitch_grid = 0xFFFFFFFFu;
         auto_glitch_mask = 0;
     }
+    lfx_req = on;                               /* K-GLITCH: what the MIDI CC out mirrors (MPC, HYBRID) */
+    if (lfx_target == TGT_MPC)                  /* MPC REMOTE: the effects play on the MPC, not here */
+        on = 0;
+    if ((on >> LF_AGAIN & 1u) && !s_again && sq_play) {
+        s_again = 1;
+        s_again_row = (uint8_t)(s_row & ~3u);
+    } else if (!(on >> LF_AGAIN & 1u))
+        s_again = 0;
     fx_block(on);
     for (c = 0; c < n; c += CHUNK) {
         int32_t L[CHUNK], R[CHUNK], BL[CHUNK], BR[CHUNK], E[CHUNK], V[CHUNK], mono[CHUNK];

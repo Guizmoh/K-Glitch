@@ -73,10 +73,11 @@ static int midi_get(uint8_t *st, uint8_t *d1, uint8_t *d2) { (void)st; (void)d1;
 static uint32_t host_midi_out[3];               /* MIDI out: counts of clock ticks, starts, stops (tests) */
 static void midi_send(uint32_t st, uint32_t d1, uint32_t d2)
 {
-    (void)d1; (void)d2;
     if (st == 0xF8) host_midi_out[0]++;
     else if (st == 0xFA) { host_midi_out[1]++; printf("%6u ms  midi start\n", fm1_ms); }
     else if (st == 0xFC) { host_midi_out[2]++; printf("%6u ms  midi stop, %u clock ticks\n", fm1_ms, host_midi_out[0]); }
+    else if ((st & 0xF0u) == 0xB0u)              /* K-GLITCH MPC REMOTE: the live effects' CCs */
+        printf("%6u ms  midi cc ch%u %u = %u\n", fm1_ms, (st & 15u) + 1u, d1, d2);
 }
 
 static void app_audio(int32_t *out, uint32_t n);

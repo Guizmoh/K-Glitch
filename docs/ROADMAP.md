@@ -25,6 +25,14 @@ These are inherited KAWA capabilities; their presence does not mean K-GLITCH has
 - [ ] Add a repeatable random seed and musical constraints, with immediate hold/bypass/stop controls.
 - [ ] Verify the automated gestures do not starve synthesis, exceed buffer history or create unsafe audio peaks on host and target hardware.
 
+## Phase 2b — MPC REMOTE / HYBRID (one firmware, no reflash)
+
+- [x] FX page TARGET: `MPC` (effects go out as MIDI CC only) and `MAST+MPC` (FM-1 master + CC), live state only.
+- [x] Keys, LIVE lane and AUTO GLITCH mirrored as CC 127/0 on channel 16; nothing left stuck when leaving MPC (host test `source/tests/mpc.txt`).
+- [ ] Continuous CCs from the knobs (pitch, filter, stutter rate, amount) and slice notes to trigger MPC pads.
+- [ ] User-editable channel/CC map stored with the settings (several MPC profiles).
+- [ ] Test with an MPC Live III over USB host (enumeration, latency, MIDI Learn).
+
 ## Phase 3 — focused instrument interface
 
 - [ ] Design dedicated PLAY, BUFFER, GLITCH and FX pages using the FM-1's existing panel.
