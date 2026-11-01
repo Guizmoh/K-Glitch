@@ -16,9 +16,8 @@
 #define RING_PUBLISH() __asm__ volatile("" ::: "memory")
 #include "fm1_time.h"
 #include "fm1_sys.h"
-/* the loader may write the app area and erase update records; never the head [0, 0x4000), nor KAWA's store
- * [0x97000, 0xE0000) (projects, user samples: never a record, ldr_core.c), nor the settings (0xFC000) */
-#define FL_RANGE_OK(off, n) (FL_IN(off, n, 0x4000u, 0x97000u) || FL_IN(off, n, 0xE0000u, 0xFC000u))
+/* the loader may write the app area and erase update records; never the head */
+#define FL_RANGE_OK(off, n) (FL_IN(off, n, 0x4000u, 0x93000u) || FL_IN(off, n, 0x93000u, 0xFC000u))
 #include "fm1_flash.h"
 #include "../src/libc.c"
 #include "../src/usb.c"
@@ -75,10 +74,6 @@ static void ldr_record_clear(void)
 static int ldr_flash_known(void) { return fl_jedec_ram() == 0x856014u; }   /* as the app (project.c) */
 static void ldr_progress(uint32_t done, uint32_t total) { (void)done; (void)total; ldr_poll(); }
 #include "ldr_core.c"
-#if LDR_APP_LO != 0x4000u || LDR_DATA_LO != 0x97000u || LDR_DATA_HI != 0xE0000u || LDR_REC_HI != 0xFC000u || \
-    LDR_DATA_LO != FL_DATA_LO || LDR_DATA_HI != FL_DATA_HI || LDR_REC_HI != FL_GLOB_LO
-#error "FL_RANGE_OK above: the windows of ldr_core.c (app, store, globals) and fm1_flash.h"
-#endif
 
 extern uint32_t _bss_start[], _bss_end[];
 

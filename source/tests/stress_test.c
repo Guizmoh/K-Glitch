@@ -1,380 +1,411 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* KAWA's audio at its limits, on this computer, under UBSan (tests/run_stress_test.sh): every factory sound with
- * every track effect at the ends of its knobs, every master effect, every live effect held over a loud song, the
- * kits at DECAY +8 and DRIVE 15, PULSE with DETUNE and UNISON, FM loud and panned, all faders up; then 0.3's
- * features at theirs: two tricks in every cell, tables a tick a step with HITs and every trick, the groove at
- * 1 and 12 ticks at 40 and 300 BPM, sample edits (no width, x16, reversed, a full-scale sound of the user's),
- * the MIDI clock in at 40 and 300 BPM, in bursts and gaps. The interrupt's integers must never wrap (a wrap is a
- * full-scale click on the FM-1): the sanitiser stops the run at the first one and names the line. It also checks
- * the voices end. */
-#define main kawa_host_main
-#include "../firmware/src/kawa.c"
-#undef main
+/* SLOOP 2.4 stress test: the real UI and audio (the ui_pages_test harness) pushed hard on what 2.4 added.
+ *   font    FONT_L is FONT_S's bitmaps drawn at 2x (no copy in flash): every L glyph, drawn by the real
+ *           cv_text, is checked pixel for pixel against the same glyph enlarged from S here; then
+ *           random text (every byte 1..255) at random places, partly or wholly off random canvases
+ *   fuzz    FRAMES frames (16 ms each, the audio between them as on the device) of hard random use: FM6
+ *           on the parts, chord steps with ratchets at up to 240 BPM, CHORD+ (white keys with black
+ *           modifier keys held, changed while held), STRUM -60..60, VLEAD, the track filter swept, slicer,
+ *           punch FX, the visualiser (every style), the menu, SELECT spun, layers, engines switched, MIDI in.
+ *           Every block: the output bounded, the strum queue sane; every frame: every draw on the screen.
+ *           At the end, everything let go and stopped: no voice, drum hit or strummed note left after 30 s,
+ *           and the output back to silence
+ *   bench   (BENCH=1) host time per audio block of a worst case (3 FM6 parts, 4-note chords, ratchets,
+ *           240 BPM) with the 2.4 additions (strum 60 ms, voice leading, the track filter on all four
+ *           tracks) against the same without them; the visualiser's draw time per style against the
+ *           TRACKS screen; FONT_L text drawn from S against a stored 2x copy
+ * Run it under -fsanitize=address,undefined too: any read or write out of bounds stops it.
+ *   stress_test [FRAMES [SEED]]   (default 40000: about 11 minutes of use) */
+#define UI_PAGES_HARNESS_ONLY 1
+#include "ui_pages_test.c"
+#include <time.h>
 
-#define BLK 256u
-static int32_t out[2u * BLK];
-static uint32_t blocks;
-static int32_t peak_all;
+static uint32_t sd = 2024u;
+static uint32_t rn(uint32_t n) { sd = sd * 1664525u + 1013904223u; return (sd >> 8) % (n ? n : 1u); }
+static int sfails;
+static void scheck(int ok, const char *what) { if (!ok) { printf("FAIL %s\n", what); sfails++; } }
+static double st_ns(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec * 1e9 + t.tv_nsec; }
 
-static void render(uint32_t n)
+/* ---- font ---- */
+static uint8_t big_data[64 * 24 * 32 / 2 + 64];   /* the old FONT_L: S enlarged and stored (reference only) */
+static uint16_t big_off[64];
+static felucca_font_t FONT_L2X;
+
+static void font_ref_build(void)
 {
-    uint32_t b, i;
-    for (b = 0; b < n; b++) {
-        for (i = 0; i < 2u * BLK; i++)
-            out[i] = 0;
-        app_audio(out, BLK);
-        for (i = 0; i < 2u * BLK; i++) {
-            int32_t a = out[i] < 0 ? -out[i] : out[i];
-            if (a > peak_all) peak_all = a;
-        }
-        blocks++;
-    }
-}
-
-static void quiet_all(void)
-{
-    sq_req = 2;
-    lfx_keys = 0;
-    ev_push(EV_KILL, NTRK, 0, 0, 0, 0);
-    render(40);
-}
-
-static void loud_faders(void)
-{
-    uint32_t t;
-    for (t = 0; t < NTRK; t++) {
-        prj.snd[t].p[P_VOL] = 15;
-        prj.snd[t].p[P_ECHO] = 15;
-        prj.snd[t].p[P_VERB] = 15;
-    }
-}
-
-int main(void)
-{
-    uint32_t k, t, fx, a, b, id, kit, d, n = 0;
-    /* 1. every factory sound, on its engine's track, with every track effect at the ends of A and B */
-    for (k = 0; k < NPRESET; k++) {
-        prj_new();
-        t = PRESETS[k].engine == E_FM ? 1u : 0u;
-        if (PRESETS[k].engine == E_FM) {
-            sound_preset(1, k);
-        } else {
-            sound_preset(0, k);
-            if (prj.snd[1].engine == E_FM) sound_preset(1, preset_first(E_PULSE));
-        }
-        prj.snd[t].p[P_VOL] = 15;
-        for (fx = 1; fx < FXT_N; fx++)
-            for (a = 0; a <= 15u; a += 15u)
-                for (b = 0; b <= 15u; b += 15u) {
-                    prj.snd[t].p[P_FXT] = (int8_t)fx;
-                    prj.snd[t].p[P_FXA] = (int8_t)a;
-                    prj.snd[t].p[P_FXB] = (int8_t)b;
-                    prj.snd[t].p[P_FXM] = 15;
-                    for (d = 0; d < 3u; d++) {      /* three notes, overlapping, loud */
-                        ev_push(EV_ON, t, IS_TONAL(t) ? 36u + d * 19u : 1u + d * 5u, 15, 0, 0);
-                        render(12);
-                    }
-                    ev_push(EV_OFF, t, 74, 0, 0, 0);
-                    render(20);
-                    n++;
+    uint32_t gi, o = 0;
+    for (gi = 0; gi < 64u; gi++) {
+        uint32_t ws = FONT_S.bw[gi], wb = FONT_L.bw[gi], bs = (ws + 1u) / 2u, bb = (wb + 1u) / 2u, x, y;
+        const uint8_t *s = FONT_S.data + FONT_S.off[gi];
+        big_off[gi] = (uint16_t)o;
+        for (y = 0; y < 32u; y++)
+            for (x = 0; x < wb; x++) {
+                uint32_t sx = x / 2u, v;
+                if (FONT_S.bits == 1u) {                  /* (2.6: S at 1 bit a pixel) */
+                    uint32_t i = (y / 2u) * ws + sx;
+                    v = (s[i >> 3] >> (7u - (i & 7u))) & 1u ? 15u : 0u;
+                } else {
+                    v = s[(y / 2u) * bs + sx / 2u];
+                    v = (sx & 1u) ? (v & 15u) : (v >> 4);
                 }
-        quiet_all();
-    }
-    printf("1. %u factory sounds x track effects: ok (%u settings)\n", NPRESET, n);
-    /* 2. PULSE with DETUNE at its top, and the live UNISON (two oscillators summed) */
-    prj_new();
-    prj.snd[0].p[P_DETUNE] = 15;
-    prj.snd[0].p[P_TON] = 15;
-    prj.snd[0].p[P_VOL] = 15;
-    for (d = 0; d < 3u; d++) {
-        lfx_keys = d == 1u ? 1u << LF_UNI : d == 2u ? 1u << LF_UNILO : 0u;
-        ev_push(EV_ON, 0, 84, 15, 0, 0);
-        render(80);
-    }
-    quiet_all();
-    printf("2. PULSE DETUNE 15, UNISON: ok\n");
-    /* 3. the kits: every drum at DECAY +8, DRIVE 15, TONE 13 (the one-pole low-pass), two voices overlapping */
-    for (kit = 0; kit < NKIT; kit++) {
-        prj_new();
-        sound_preset(4, preset_named(E_KIT, (int32_t)kit));
-        prj.snd[4].p[P_DECAY] = 8;
-        prj.snd[4].p[P_DRIVE] = 15;
-        prj.snd[4].p[P_KTON] = 13;
-        prj.snd[4].p[P_VOL] = 15;
-        for (d = 1; d <= NDRUM; d++) {
-            ev_push(EV_ON, 4, d, 15, 0, 0);
-            render(6);
-            ev_push(EV_ON, 4, d, 15, 0, 0);
-            render(30);
-        }
-        quiet_all();
-    }
-    printf("3. %u kits at DECAY +8, DRIVE 15: ok\n", NKIT);
-    /* 4. FM loud: every FM sound, vol 15, panned hard each way, reverb and echo at 15, notes overlapping */
-    for (k = 0; k < NPRESET; k++) {
-        if (PRESETS[k].engine != E_FM) continue;
-        prj_new();
-        sound_preset(1, k);
-        for (d = 0; d < 2u; d++) {
-            prj.snd[1].p[P_PAN] = d ? 7 : -7;
-            prj.snd[1].p[P_VOL] = 15;
-            prj.snd[1].p[P_VERB] = 15;
-            prj.snd[1].p[P_ECHO] = 15;
-            for (a = 0; a < 8u; a++) {
-                ev_push(EV_ON, 1, 43u + a * 5u, 15, 0, 0);
-                render(10);
+                if (x & 1u) big_data[o + y * bb + x / 2u] |= (uint8_t)v;
+                else big_data[o + y * bb + x / 2u] = (uint8_t)(v << 4);
             }
-        }
-        quiet_all();
+        o += 32u * bb;
+        assert(o <= sizeof big_data);
     }
-    printf("4. FM loud, panned, reverb and echo 15: ok\n");
-    /* 5. the demo, every fader up, with each master effect at its ends */
-    for (fx = 0; fx < FXT_N; fx++)
-        for (a = 0; a <= 15u; a += 15u) {
-            prj_demo();
-            loud_faders();
-            prj.mfx[0] = (int8_t)fx;
-            prj.mfx[1] = (int8_t)a;
-            prj.mfx[2] = 15;
-            prj.mfx[3] = 15;
-            prj.mode = 1;
-            sq_req = 1;
-            render(400);
-            quiet_all();
+    FONT_L2X = FONT_L;
+    FONT_L2X.sh = 0;
+    FONT_L2X.bits = 0;                                /* (the reference: 4-bit, stored at 2x) */
+    FONT_L2X.off = big_off;
+    FONT_L2X.data = big_data;
+}
+
+static void t_font(void)
+{
+    static uint16_t a[CV_MAX];
+    uint32_t c, i, bad = 0, n = 0;
+    char s[48];
+    font_ref_build();
+    scheck(FONT_L.data == FONT_S.data && FONT_L.sh == 1u && FONT_L.h == 2u * FONT_S.h && FONT_L.first == FONT_S.first,
+           "font: FONT_L draws FONT_S's bitmaps at 2x");
+    for (c = 32; c < 128u; c++) {                     /* every character, lower case folding to capitals */
+        s[0] = (char)c; s[1] = 0;
+        cv_begin(40, 40, C_BLACK); cv_text(6, 3, &FONT_L2X, s, C_HI);
+        memcpy(a, cv_px, sizeof(uint16_t) * 40u * 40u);
+        cv_begin(40, 40, C_BLACK); cv_text(6, 3, &FONT_L, s, C_HI);
+        for (i = 0; i < 40u * 40u; i++) { n++; bad += a[i] != cv_px[i]; }
+        scheck(text_w(&FONT_L, s) == text_w(&FONT_L2X, s) && text_w(&FONT_L, s) == 2 * text_w(&FONT_S, c < 'a' || c > 'z' ? s : "A"),
+               "font: L advance = 2 x S");
+    }
+    printf("font: %u characters, %u pixels compared, %u different\n", 96u, n, bad);
+    scheck(bad == 0, "font: FONT_L from S at 2x = the stored 2x font, pixel for pixel");
+    for (i = 0; i < 20000u; i++) {                    /* random text anywhere, partly or wholly off the canvas */
+        uint32_t len = rn(40), k, w = 1u + rn(240), h = 1u + rn(124);
+        const felucca_font_t *f = rn(2) ? &FONT_L : &FONT_S;
+        for (k = 0; k < len; k++) s[k] = (char)(1u + rn(255));
+        s[len] = 0;
+        cv_begin(w, h, C_BLACK);
+        cv_oy = (int32_t)rn(3) - 1;
+        cv_text((int32_t)rn(600) - 300, (int32_t)rn(260) - 80, f, s, (uint16_t)rn(65536));
+        cv_oy = 0;
+    }
+    printf("font: 20000 random strings drawn on and off random canvases ok\n");
+}
+
+/* ---- fuzz ---- */
+static int32_t peak;
+static uint32_t loud_blocks, play_blocks, stq_max, vis_frames, menu_seen;
+static double blk_ns;
+static uint32_t blk_hist[2001];                       /* host time per block, 1 us buckets */
+static uint32_t blk_n;
+static void sframe(void)                              /* frame(), the output checked */
+{
+    uint32_t q, i;
+    static int32_t o[CTL * 2];
+    for (q = 0; q < 22u; q++) {
+        double t0 = st_ns(), d;
+        mix_block(o, CTL);
+        d = st_ns() - t0;
+        blk_ns += d; blk_n++;
+        blk_hist[d >= 2000000.0 ? 2000u : (uint32_t)(d / 1000.0)]++;
+        for (i = 0; i < CTL * 2u; i++) {
+            int32_t v = o[i] < 0 ? -o[i] : o[i];
+            if (v > peak) peak = v;
         }
-    printf("5. the demo, faders up, %u master effects: ok\n", FXT_N);
-    /* 6. every live effect held over the demo (faders up), on the master and on a track; then two at once */
-    for (id = 0; id < LF_N; id++)
-        for (t = 0; t < 2u; t++) {
-            prj_demo();
-            loud_faders();
-            prj.mode = 1;
-            lfx_target = (uint8_t)(t ? 5u : 0u);
-            sq_req = 1;
-            render(60);
-            lfx_keys = 1u << id;
-            render(250);
-            lfx_keys = (1u << id) | (1u << ((id + 7u) % LF_N));
-            render(120);
-            lfx_keys = 0;
-            render(60);
-            quiet_all();
+        for (i = 1; i < CTL; i += 2u) {
+            scope_bufr[scope_w & (SCOPE_N - 1u)] = vis_tap[2u * i + 1u];
+            scope_buf[scope_w++ & (SCOPE_N - 1u)] = vis_tap[2u * i];
         }
-    lfx_target = 0;
-    printf("6. %u live effects held over the demo (master and a track): ok\n", LF_N);
-    /* 7. a RETRIG in the LIVE lane must not lock the song on its beat */
-    prj_demo();
-    prj.mode = 1;
-    prj.pat[prj.song[0].pat].live[7] = (uint8_t)(LF_AGAIN + 1u);
-    sq_req = 1;
+        {
+            int32_t bp = 0;
+            uint32_t on = 0;
+            for (i = 0; i < CTL * 2u; i++) if ((o[i] < 0 ? -o[i] : o[i]) > bp) bp = o[i] < 0 ? -o[i] : o[i];
+            loud_blocks += bp > 256;
+            play_blocks += song.playing;
+            for (i = 0; i < STQ; i++) on += stq[i].on;
+            if (on > stq_max) stq_max = on;
+        }
+        for (i = 0; i < STQ; i++)                     /* a strummed note waits at most 3 x 60 ms */
+            if (stq[i].on && (stq[i].left > 3u * 60u * FS / 1000u || stq[i].trk >= NPART)) {
+                scheck(0, "fuzz: strum queue entry out of range");
+                stq[i].on = 0;
+            }
+    }
+    ui_input(); ui_leds(); ui_draw(); fm1_ms += 16;
+    vis_frames += vis_shown();
+    menu_seen += ui.menu != 0;
+}
+
+static uint32_t white[16], nwhite, black_keys[11], nblack;
+
+static void chord_steps(uint32_t t)
+{
+    uint32_t i, k;
+    for (i = 0; i < NSTEP; i++) {
+        step_t *s = &trk[t].step[i];
+        memset(s, 0, sizeof *s);
+        if (rn(3) == 0) continue;
+        s->n = (uint8_t)(1u + rn(4));
+        for (k = 0; k < s->n; k++) s->note[k] = (uint8_t)(36 + rn(48));
+        s->time = (uint8_t)(rn(8) ? ST_NOTE : ST_TIE);
+        s->vel = (uint8_t)(40 + rn(88));
+        s->rat = (uint8_t)rn(256);
+        s->lvl = (uint8_t)rn(256);
+        s->flags = (uint8_t)(rn(6) == 0 ? SF_SLIDE : 0u);
+    }
+}
+
+static void t_fuzz(uint32_t nframes)
+{
+    uint32_t home_hold = 0, f, nf, k, i, held_btn = 0, vis_seen = 0, menu_frames = 0, mods = 0, strums = 0;
+    for (k = 0; k < 27u; k++) {
+        if (chord_mod_of_key(k)) black_keys[nblack++] = k;
+        else if (nwhite < 16u) white[nwhite++] = k;
+    }
+    song.sel = 0; go_home(); ui.force = 1;
+    song.g[G_BPM] = 140;
+    for (k = 0; k < NPART; k++) {
+        host_preset_req(&trk[k], ENGI_FM6, rn(ENGINES[ENGI_FM6]->npresets));
+        chord_steps(k);
+        trk[k].p[P_CHORD] = 3;
+        trk[k].p[P_STRUM] = 30;
+    }
+    transport_req = 1;
+    for (f = 0; f < nframes; f++) {
+        uint32_t r = rn(100);
+        if (r < 14) {                                 /* a button */
+            uint32_t bt = rn(NB);
+            edges_btn |= 1u << panel.btn[bt];
+            if (bt != B_HOME && rn(3) == 0) held_btn ^= 1u << panel.btn[bt];
+        } else if (r < 30) {
+            encs[rn(NE)] += (int32_t)rn(9) - 4;      /* knobs, SELECT, ALGO, PRESETS */
+        } else if (r < 44) {                          /* the keys: a chord, with modifiers */
+            uint32_t m = 0;
+            if (rn(4)) m |= 1u << white[rn(nwhite)];
+            for (k = 0; k < nblack; k++) if (rn(5) == 0) m |= 1u << black_keys[k];
+            if (rn(3) == 0) m = fm1_in.notes ^ (1u << black_keys[rn(nblack)]);   /* a modifier while held */
+            fm1_in.notes = m;
+            mods += (m & ~0u) != 0;
+        } else if (r < 47) {
+            fm1_in.notes = 0;
+        } else if (r < 49) {
+            uint32_t t = rn(NPART);
+            trk[t].p[P_STRUM] = (int16_t)((int)rn(121) - 60); strums++;
+        } else if (r < 50) {
+            trk[rn(NPART)].p[P_VLEAD] = (int16_t)rn(2);
+        } else if (r < 53) {
+            trk[rn(NTRK)].p[P_TFLT] = (int16_t)((int)rn(128) - 64);
+        } else if (r < 54) {
+            trk[rn(NPART)].p[P_CHORD] = (int16_t)rn(6);
+        } else if (r < 55) {
+            uint32_t t = rn(NPART), e = rn(3) ? ENGI_FM6 : rn(NENGINES);
+            host_preset_req(&trk[t], e, rn(ENGINES[e]->npresets));
+        } else if (r < 56) {
+            trk[rn(NTRK)].p[P_SDIV] = (int16_t)rn(NDIV_STEP);
+        } else if (r < 57) {
+            song.g[G_BPM] = (int16_t)(60 + rn(181));
+        } else if (r < 58) {
+            chord_steps(rn(NPART));
+        } else if (r < 59) {
+            trk[rn(NTRK)].p[P_SLCR] = (int16_t)rn(3);
+        } else if (r < 60) {
+            punch.req = (int8_t)(rn(3) ? -1 : (int)rn(PUNCH_NFX));
+        } else if (r < 61) {
+            song.g[G_FILT] = (int16_t)((int)rn(128) - 64);
+        } else if (r < 62) {
+            uint32_t ch = rn(16), nt = 24 + rn(80);
+            if (mi_w - mi_r < MQ) { midi_in_q[mi_w % MQ] = ((rn(2) ? 0x9u : 0x8u)) | (((rn(2) ? 0x90u : 0x80u) | ch) << 8) | nt << 16 | (1u + rn(127)) << 24; mi_w++; }
+        } else if (r < 63) {
+            if (!song.rec) transport_req = song.playing ? 2 : 1;
+        } else if (r < 64) {
+            vis_style = (uint8_t)rn(VIS_N);
+            if (rn(8) == 0 && !ui.menu) { go_home(); vis_open(); }   /* (back to TRACKS, the visualiser open) */
+        } else if (r < 65) {
+            trk[rn(NTRK)].p[P_MUTE] = (int16_t)(rn(4) == 0);
+        }
+        if (rn(40) == 0) held_btn = 0;
+        if (rn(900) == 0) ly_lock = (uint8_t)rn(LY_COUNT);
+        if (rn(600) == 0) ly_lock = 0;
+        fm1_in.buttons = held_btn & ~(1u << panel.btn[B_HOME]);
+        if (rn(700) == 0) home_hold = 60u;          /* HOME held: the menu, then fuzzed like the rest */
+        if (home_hold) { home_hold--; fm1_in.buttons |= 1u << panel.btn[B_HOME]; }
+        sframe();
+        vis_seen |= vis_shown() ? 1u << vis_style : 0u;
+        if (ui.menu && ++menu_frames % 300u == 0u) { ui.menu = 0; ui.force = 1; }
+        scheck(ui.page < NPAGES && vis_style < VIS_N && song.sel < NTRK, "fuzz: UI state in range");
+        if (sfails > 20) break;
+    }
+    nf = f;
+    /* the end: everything let go, MIDI notes off, stop, 5 s */
+    fm1_in.notes = 0; fm1_in.buttons = 0; held_btn = 0; ly_lock = 0; ui.menu = 0;
+    punch.hold = 0; punch.req = -1;
+    sframe();
+    for (k = 0; k < 16u; k++)
+        for (i = 24; i < 104u; i++) {
+            midi_in_q[mi_w % MQ] = 0x8u | ((0x80u | k) << 8) | i << 16; mi_w++;
+            if (mi_w - mi_r >= MQ - 4u) sframe();
+        }
+    song.rec = 0; rec_wait = 0;
+    transport_req = 2;
+    for (k = 0; k < NTRK; k++) trk[k].p[P_AMODE] = 0;
+    for (f = 0; f < 30u * 1000u / 16u; f++) {           /* (a slow FM6 release, R4 35: several seconds) */
+        uint32_t a = 0;
+        sframe();
+        for (k = 0; k < NPART; k++) for (i = 0; i < NVOICE; i++) a += trk[k].v[i].active;
+        for (i = 0; i < NDRUM; i++) a += drums.v[i].active;
+        for (i = 0; i < STQ; i++) a += stq[i].on;
+        if (!a && f >= 2u * 1000u / 16u) break;
+    }
+    for (i = 0; i < 3u * 1000u / 16u; i++) sframe();      /* (the echo and reverb tails) */
+    printf("end: everything let go and stopped: all voices free after %.1f s (at most 30)\n", f * 0.016);
+    scheck(!song.playing, "end: stopped");
+    for (k = 0; k < NPART; k++)
+        for (i = 0; i < NVOICE; i++)
+            scheck(!trk[k].v[i].active, "end: no synth voice left sounding");
+    for (i = 0; i < NDRUM; i++)
+        scheck(!drums.v[i].active, "end: no drum hit left");
+    for (i = 0; i < STQ; i++)
+        scheck(!stq[i].on, "end: no strummed note left waiting");
     {
-        uint32_t seen = 0;
-        for (k = 0; k < 2000u && !seen; k++) {
-            render(1);
-            if (sq_songpos != 0u) seen = 1;
+        static int32_t o[CTL * 2];
+        int32_t q = 0;
+        uint32_t b;
+        for (b = 0; b < FS / CTL; b++) {             /* then a second of silence */
+            mix_block(o, CTL);
+            for (i = 0; i < CTL * 2u; i++) if ((o[i] < 0 ? -o[i] : o[i]) > q) q = o[i] < 0 ? -o[i] : o[i];
         }
-        if (!seen) { printf("FAIL  7. a RETRIG in the LIVE lane locks the song\n"); return 1; }
+        printf("fuzz: %u frames (%.1f min), peak %d, tail %d, visualiser styles seen %u/12, chords %u, strum changes %u\n",
+               nf, nf * 16.0 / 60000.0, peak, q, (unsigned)__builtin_popcount(vis_seen), mods, strums);
+        scheck(q < 64, "end: silence after stop");
     }
-    quiet_all();
-    printf("7. a RETRIG in the LIVE lane plays once, the song goes on: ok\n");
-    /* 9. two tricks in every cell of the demo, each at an end of its range */
-    prj_demo();
-    loud_faders();
-    for (k = 0; k < NPAT; k++)
-        for (a = 0; a < NROW; a++)
-            for (t = 0; t < NTRK; t++) {
-                cell_t *c = &prj.pat[k].c[a][t];
-                uint32_t f1 = (k * 7u + a * 3u + t) % FX_N, f2 = (k + a * 5u + t * 11u) % FX_N;
-                if (f1 == FX_HOP || f1 == FX_END) f1 = FX_ROLL;   /* (the song must go on: HOP / END in 9b) */
-                if (f2 == FX_HOP || f2 == FX_END) f2 = FX_CHANCE;
-                c->fx = (uint8_t)f1;
-                c->fxv = (uint8_t)(int8_t)((a & 1u) ? FXD[f1].hi : FXD[f1].lo);
-                c->fx2 = (uint8_t)f2;
-                c->fxv2 = (uint8_t)(int8_t)((a & 2u) ? FXD[f2].hi : FXD[f2].lo);
-            }
-    prj.mode = 1;
-    sq_req = 1;
-    render(1500);
-    quiet_all();
-    printf("9. two tricks in every cell, at their ends: ok\n");
-    /* 9b. HOP and END everywhere: rows jump, patterns end early, the song goes round */
-    prj_demo();
-    for (k = 0; k < 7u; k++)
-        for (a = 0; a < NROW; a++) {
-            prj.pat[k].c[a][(a + k) % NTRK].fx2 = (uint8_t)((a % 3u) ? FX_HOP : FX_END);
-            prj.pat[k].c[a][(a + k) % NTRK].fxv2 = (uint8_t)((a * 7u + 3u) % NROW);
-        }
-    prj.mode = 1;
-    sq_req = 1;
-    render(800);
-    quiet_all();
-    printf("9b. HOP and END on every row: ok\n");
-    /* 10. tables: a tick a step, 16 steps, +-24, every trick at its ends, HITs, on every track of the demo */
-    for (d = 0; d < 2u; d++) {
-        prj_demo();
-        loud_faders();
-        for (t = 0; t < NTRK; t++) {
-            table_t *tb = &prj.tbl[t];
-            tb->on = 1;
-            tb->speed = (uint8_t)(d ? 1u : 24u);
-            tb->len = 16;
-            tb->loop = (uint8_t)(t % 3u);
-            for (k = 0; k < NTSTEP; k++) {
-                uint32_t f = (k + t) % TB_N;
-                tb->s[k].tr = (int8_t)((k & 1u) ? 24 : -24);
-                tb->s[k].vol = (uint8_t)((k & 2u) ? 15u : 1u);
-                tb->s[k].fx = (uint8_t)f;
-                tb->s[k].fxv = (int8_t)((k & 4u) ? TBD[f].hi : TBD[f].lo);
+    scheck(peak < (1 << 24), "fuzz: output bounded");
+    if (nframes >= 30000u)                            /* (a short run may not reach them all) */
+        scheck(__builtin_popcount(vis_seen) == (int)VIS_N, "fuzz: every visualiser style drawn");
+}
+
+/* ---- bench ---- */
+static double bench_blocks(uint32_t on, uint32_t nb)
+{
+    static int32_t o[CTL * 2];
+    uint32_t k, b;
+    double t0, best = 1e30;
+    int rep;
+    for (rep = 0; rep < 5; rep++) {
+        sd = 99u;
+        for (k = 0; k < NPART; k++) {
+            uint32_t i;
+            trk[k].p[P_STRUM] = on ? 60 : 0;
+            trk[k].p[P_VLEAD] = (int16_t)on;
+            trk[k].p[P_CHORD] = 0;
+            trk[k].p[P_SDIV] = 3;                     /* 1/16 */
+            trk[k].p[P_MUTE] = 0;
+            for (i = 0; i < NSTEP; i++) {
+                step_t *s = &trk[k].step[i];
+                s->n = 4; s->time = ST_NOTE; s->flags = 0; s->vel = 100; s->lvl = 0; s->rat = 0x55;
+                s->note[0] = (uint8_t)(48 + i % 7); s->note[1] = (uint8_t)(52 + i % 5);
+                s->note[2] = (uint8_t)(55 + i % 3); s->note[3] = (uint8_t)(59 + i % 4);
             }
         }
-        prj.mode = 1;
-        sq_req = 1;
-        render(1200);
-        quiet_all();
+        for (k = 0; k < NTRK; k++) trk[k].p[P_TFLT] = on ? (int16_t)(k & 1u ? 40 : -40) : 0;
+        song.g[G_BPM] = 240;
+        if (!song.playing) { transport_req = 1; mix_block(o, CTL); }
+        for (b = 0; b < 2000u; b++) mix_block(o, CTL);   /* (the voices up) */
+        t0 = st_ns();
+        for (b = 0; b < nb; b++) mix_block(o, CTL);
+        t0 = (st_ns() - t0) / nb;
+        if (t0 < best) best = t0;
     }
-    printf("10. tables a tick a step (and 24), +-24, every trick, HITs, on every track: ok\n");
-    /* 11. the groove at 1 and 12 ticks, at 40 and 300 BPM, with the tables on */
-    for (d = 0; d < 2u; d++) {
-        prj.bpm = (uint16_t)(d ? 300u : 40u);
-        prj.grv.on = 1;
-        prj.grv.len = 3;
-        prj.grv.tick[0] = 1;
-        prj.grv.tick[1] = 12;
-        prj.grv.tick[2] = 1;
-        sq_req = 1;
-        render(d ? 800u : 1600u);
-        quiet_all();
-    }
-    prj.grv.on = 0;
-    printf("11. the groove at 1 and 12 ticks, 40 and 300 BPM: ok\n");
-    /* 12. sample edits: no width, x16, reversed, slices piled up; a full-scale sound of the user's, DRIVE 15 */
-    {
-        static uint8_t loud[USR_CAP];
-        uint32_t j;
-        for (j = 0; j < USR_CAP; j++) loud[j] = (uint8_t)((j / 3u) & 1u ? 0x00u : 0x80u);   /* full scale both ways */
-        usr_put(0, loud, USR_CAP, 22050, "LOUD");
-        for (d = 0; d < 6u; d++) {
-            sedit_t *se = &prj.sed[5];
-            prj_new();
-            sound_preset(5, preset_named(E_SAMPLE, d < 3u ? (int32_t)BRK_DEMO : (int32_t)BRK_N));
-            prj.snd[5].p[P_SDRIVE] = 15;
-            prj.snd[5].p[P_VOL] = 15;
-            prj.snd[5].p[P_SMODE] = (int8_t)(d & 1u);
-            prj.snd[5].p[P_FIT] = 1;
-            se->norm = 1;
-            se->gain = 4096;
-            se->rev = (uint8_t)(d % 3u != 0u);
-            se->manual = (uint8_t)(d >= 2u);
-            se->start = (uint16_t)(d == 1u ? 65535u - 512u : 0u);
-            se->end = (uint16_t)(d == 1u ? 65535u : d == 4u ? 600u : 65535u);
-            for (j = 0; j < 16u; j++) se->sl[j] = (uint16_t)(d == 2u ? 30000u : j * 4096u);
-            sed_fix(se);
-            se->gain = 4096;                    /* (x16: more than any sound needs) */
-            prj.tbl[5].on = 1;
-            prj.tbl[5].speed = 1;
-            prj.tbl[5].len = 2;
-            prj.tbl[5].s[0].tr = 24;
-            prj.tbl[5].s[1].tr = -24;
-            prj.tbl[5].s[1].fx = TB_HIT;
-            for (j = 1; j <= 16u; j++) {
-                ev_push(EV_ON, 5, d & 1u ? 36u + j * 4u : j, 15, j & 1u ? FX_PITCH : FX_OFS, j & 1u ? 12u : 15u);
-                render(6);
-            }
-            quiet_all();
+    return best;
+}
+
+static double bench_draw(int vis, uint32_t style, uint32_t n)
+{
+    uint32_t i;
+    double t = 0;
+    vis_style = (uint8_t)style;
+    if (vis && !vis_on) vis_open();
+    if (!vis) { vis_on = 0; go_home(); }
+    for (i = 0; i < 8u; i++) frame();
+    for (i = 0; i < n; i++) {
+        double t0;
+        uint32_t q;
+        static int32_t o[CTL * 2];
+        for (q = 0; q < 22u; q++) {
+            uint32_t j;
+            mix_block(o, CTL);
+            for (j = 1; j < CTL; j += 2u) { scope_bufr[scope_w & (SCOPE_N - 1u)] = vis_tap[2u * j + 1u]; scope_buf[scope_w++ & (SCOPE_N - 1u)] = vis_tap[2u * j]; }
         }
+        ui_input(); ui_leds();
+        t0 = st_ns(); ui_draw(); t += st_ns() - t0;
+        fm1_ms += 16;
     }
-    printf("12. sample edits: no width, x16, reversed, piled-up slices, a full-scale sound, DRIVE 15: ok\n");
-    /* 13. the MIDI clock in: 300 BPM, 40 BPM, 50 ticks at once, two seconds without, START in the middle */
-    prj_demo();
-    loud_faders();
-    prj.mode = 1;
-    set.clock = 2;
-    clk_in = 1;
-    clock_in_reset();
-    clock_in(0xFA);
-    {
-        uint32_t j, f = 0;
-        for (j = 0; j < 4000u; j++) {
-            uint32_t per = j < 1000u ? 367u : j < 1600u ? 2756u : 900u;   /* frames a tick */
-            render(1);
-            f += 256u;
-            fm1_ms = f / 44u;
-            if (j == 2000u) { uint32_t b; for (b = 0; b < 50u; b++) clock_in(0xF8); }
-            if (j > 2400u && j < 2750u) continue;   /* (no clock for two seconds) */
-            if (j == 3000u) clock_in(0xFA);
-            if (f % per < 256u) clock_in(0xF8);
+    return t / n;
+}
+
+static void t_bench(void)
+{
+    double off, on, home, v[VIS_N], a = 0, b = 0;
+    uint32_t s, i;
+    static const char *const TXT[] = {"120.0", "-64", "FILTER", "SLOOP", "C#m7", "2BAR"};
+    for (i = 0; i < NPART; i++) host_preset(&trk[i], ENGI_FM6, i);
+    off = bench_blocks(0, 6000);
+    on = bench_blocks(1, 6000);
+    printf("bench: worst case (3 FM6 parts, 4-note chords x2 ratchets, 1/16 at 240 BPM): %.2f us a block without "
+           "the 2.4 additions, %.2f us with strum 60 ms + VLEAD + the filter on 4 tracks (%+.1f %%)\n",
+           off / 1000, on / 1000, (on / off - 1) * 100);
+    home = bench_draw(0, 0, 300);
+    for (s = 0; s < VIS_N; s++) v[s] = bench_draw(1, s, 300);
+    printf("bench: draw a frame: TRACKS screen %.1f us;", home / 1000);
+    for (s = 0; s < VIS_N; s++) printf(" %s %.1f%s", VIS_NAME[s], v[s] / 1000, s + 1u < VIS_N ? "," : " us\n");
+    vis_on = 0; go_home(); frames(4);
+    for (i = 0; i < 3000u; i++) {                     /* FONT_L from S (shifts) against the stored 2x copy */
+        double t0 = st_ns();
+        cv_begin(240, 32, C_BLACK); cv_text(2, 0, &FONT_L, TXT[i % 6u], C_HI);
+        a += st_ns() - t0;
+        t0 = st_ns();
+        cv_begin(240, 32, C_BLACK); cv_text(2, 0, &FONT_L2X, TXT[i % 6u], C_HI);
+        b += st_ns() - t0;
+    }
+    printf("bench: a large value drawn: %.2f us from S at 2x, %.2f us from a stored 2x copy (%+.0f %%)\n",
+           a / 3000 / 1000, b / 3000 / 1000, (a / b - 1) * 100);
+    transport_req = 2; frames(4);
+}
+
+int main(int argc, char **argv)
+{
+    uint32_t nframes = argc > 1 ? (uint32_t)atoi(argv[1]) : 40000u;
+    if (argc > 2) sd = (uint32_t)atoi(argv[2]);       /* (another seed: another run) */
+    wdt_tick_ms = 1;                                  /* (the menu's PANEL setup waits for a press: as on the FM-1, its
+                                                       * clock runs while it waits, and it gives up after 30 s) */
+    uint32_t i;
+    bank_resolve();
+    panel = PANEL_DEFAULT;
+    layers_init();
+    settings.palette = 4;
+    palette_set(4);
+    host_tracks_init();
+    for (i = 0; i < NPART; i++) { set_engine_of(&trk[i], TRK_DEF[i][0]); apply_preset_to(&trk[i], TRK_DEF[i][1]); trk[i].engine = trk[i].eng_req; }
+    TDRUM->p[P_E0] = DRUM_SAMPLED;
+    song.g[G_BPM] = 120;
+    go_home(); ui.force = 1;
+    frames(4);
+    t_font();
+    t_fuzz(nframes);
+    printf("fuzz: audio playing in %.0f %% of blocks, sounding in %.0f %%; up to %u strummed notes waiting at once; "
+           "visualiser on %.0f %% of frames, menu %.0f %%\n", 100.0 * play_blocks / blk_n, 100.0 * loud_blocks / blk_n,
+           stq_max, 100.0 * vis_frames / nframes, 100.0 * menu_seen / nframes);
+    {   /* (a max on a shared host is its scheduler's, not ours: the 99.9 and 99.99 percentiles) */
+        uint32_t i, acc = 0, p3 = 0, p4 = 0;
+        for (i = 0; i <= 2000u; i++) {
+            acc += blk_hist[i];
+            if (!p3 && acc >= blk_n - blk_n / 1000u) p3 = i + 1u;
+            if (!p4 && acc >= blk_n - blk_n / 10000u) p4 = i + 1u;
         }
-        clock_in(0xFC);
-        render(2);
+        printf("fuzz: host time per audio block (%u blocks): mean %.2f us, 99.9 %% under %u us, 99.99 %% under %u us\n",
+               blk_n, blk_ns / blk_n / 1000, p3, p4);
     }
-    clk_in = 0;
-    set.clock = 0;
-    quiet_all();
-    printf("13. the MIDI clock in at 300 and 40 BPM, a burst, a gap, START again: ok\n");
-    /* 14. 0.5: the SAT send of every track (0, 7, 15) on every factory sound and with a track effect, the metronome at its loudest
-     * over a loud song at the tempo's ends, a 64-step pattern in the loop and in the song */
-    n = 0;
-    for (k = 0; k < NPRESET; k++)
-        for (a = 7; a <= 15u; a += 8u) {
-            prj_new();
-            t = PRESETS[k].engine == E_FM ? 1u : 0u;
-            if (PRESETS[k].engine == E_FM) sound_preset(1, k);
-            else {
-                sound_preset(0, k);
-                if (prj.snd[1].engine == E_FM) sound_preset(1, preset_first(E_PULSE));
-            }
-            prj.snd[t].p[P_VOL] = 15;
-            prj.snd[t].sat = (uint8_t)a;
-            prj.snd[t].p[P_FXT] = (int8_t)(a == 7u ? FXT_OFF : FXT_DIST);
-            prj.snd[t].p[P_FXA] = 15;
-            prj.snd[t].p[P_FXM] = 15;
-            for (d = 0; d < 3u; d++) {
-                ev_push(EV_ON, t, IS_TONAL(t) ? 36u + d * 19u : 1u + d * 5u, 15, 0, 0);
-                render(12);
-            }
-            ev_push(EV_OFF, t, 74, 0, 0, 0);
-            render(20);
-            n++;
-            quiet_all();
-        }
-    for (a = 0; a < 2u; a++) {
-        prj_demo();
-        loud_faders();
-        for (t = 0; t < NTRK; t++) prj.snd[t].sat = 15;
-        prj.bpm = (uint16_t)(a ? 300u : 40u);
-        prj.mode = 1;
-        met_mode = 1;
-        met_vol = 2;
-        sq_req = 1;
-        render(600);
-        met_mode = 0;
-        quiet_all();
-    }
-    prj_demo();                                 /* a 64-step pattern: P1 + P2, the demo's notes on both, in the loop and the song */
-    prj.pat[0].len = 32;
-    prj.pat[0].pad[0] = 1;
-    prj.pat[1] = prj.pat[2];
-    prj.pat[1].len = 32;
-    prj.pat[1].pad[0] = 0;
-    for (a = 0; a < 2u; a++) {
-        prj.mode = (uint8_t)a;
-        prj.bpm = 300;
-        sq_start_pat = 0;
-        sq_start_pos = 0;
-        sq_req = 1;
-        render(900);
-        quiet_all();
-    }
-    printf("14. the SAT send (%u sounds), the metronome at both ends of the tempo, a 64-step pattern: ok\n", n);
-    /* 8. everything ends: no voice left on once all is stopped */
-    render(400);
-    for (t = 0; t < NTRK; t++)
-        if (drum[t][0].on || drum[t][1].on || smp[t][0].on || smp[t][1].on || tk[t].tb_run) {
-            printf("FAIL  8. a voice of track %u never ends\n", t + 1u);
-            return 1;
-        }
-    printf("8. every voice ended: ok\n");
-    printf("stress_test: passed (%u blocks, %.1f s of sound, master peak %d)\n", blocks, blocks * 256.0 / 44100.0,
-           peak_all);
-    return 0;
+    if (getenv("BENCH")) t_bench();
+    printf("stress: %s\n", sfails ? "FAILED" : "font, fuzz with every 2.4 addition, clean stop PASS");
+    return sfails != 0;
 }

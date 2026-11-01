@@ -38,9 +38,17 @@ static void recovery_step(void)
     }
 }
 
+/* (2.7.2) the key matrix reads only while PA2, the backlight (active low), is driven low: the ROM and the bootloaders
+ * leave it undriven, and lcd_init (fm1_lcd_hw_init) comes after this scan, so OCT- was never seen and SLOOP USB RESCUE
+ * never opened (measured on an FM-1 and reported in a YouTube comment; the fix there was the same). The backlight comes
+ * on ~50 ms earlier */
+#ifndef RECOVERY_KEYS_ON
+#define RECOVERY_KEYS_ON() fm1_lcd_backlight_on()   /* (2.7.2) the PA register access lives in hal/ (fm1_lcd_hw.h) */
+#endif
 static int recovery_key(void)
 {
     uint32_t start = fm1_ticks();
+    RECOVERY_KEYS_ON();
     fm1_input_init();
     do {
         fm1_wdt_feed();
@@ -59,7 +67,7 @@ static void recovery_main(void)
     flash_ok = FL_FAR(fl_jedec_ram)() == 0x856014u;
     lcd_init();
     lcd_fill(0, 0, 240, 240, C_BLACK);
-    draw_text_box(0, 64, 240, &FONT_S, APP_NAME " USB RESCUE", C_WHITE, 1);
+    draw_text_box(0, 64, 240, &FONT_S, "SLOOP USB RESCUE", C_WHITE, 1);
     draw_text_box(0, 96, 240, &FONT_S, "CONNECT USB", C_WHITE, 1);
     draw_text_box(0, 124, 240, &FONT_S,
                   flash_ok ? "OPEN THE INSTALLER" : "UNKNOWN FLASH", C_WHITE, 1);

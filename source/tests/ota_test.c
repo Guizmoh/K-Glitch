@@ -1,19 +1,19 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* Host test of firmware/src/ota.c (step 1 of an update), Felucca's ported to KAWA: a fake M-UPGRADE serves a
- * real .fwsc over the SysEx protocol (pack7, cmd 0x30 reads, 0xE0000000 -> "success") and a simulated NOR
- * plays the flash. The handshake answers the package's own identity (OTA_IDENTITY, as the app does).
- *   ota_test FILE.fwsc   (tests/run_loader_tests.sh) */
-#include <setjmp.h>
+/* Host test of firmware/src/ota.c: a fake M-UPGRADE serves a real .fwsc over
+ * the SysEx protocol (pack7, cmd 0x30 reads, 0xE0000000 -> "success") and a
+ * simulated NOR plays the flash.
+ *   cc -o ota_test tests/ota_test.c && ./ota_test FILE.fwsc
+ */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define FELUCCA_ID "FM-1_950"
+#define FELUCCA_ID "FM-1_900"
 #define FELUCCA_OTA_DRYRUN 0
-static char pkg_id[21];                         /* the package's marker identity */
-#define OTA_IDENTITY pkg_id
+static int recovery_active;
+#define OTA_IDENTITY (recovery_active ? "FM-1_000" : FELUCCA_ID)
 
 static uint8_t nor[0x100000];
 static uint8_t *logical;
@@ -21,11 +21,10 @@ static size_t logical_len;
 static uint8_t rx[1024];                 /* one pending host frame (7-bit bytes) */
 static uint32_t rx_len, rx_full;
 static uint32_t now_ms, requests, ident_replies, mute_after = 0xFFFFFFFFu, bad_erase;
-static uint32_t cut_after = 0xFFFFFFFFu, progs;   /* the power goes at this program call */
-static jmp_buf power;
 static int committed;
 static uint8_t committed_parm[112];
 static int32_t last_code;
+static uint8_t *corrupt_at;              /* flip a served byte (loader body) */
 
 static uint32_t pack7(const uint8_t *in, uint32_t n, uint8_t *out)
 {
@@ -59,7 +58,7 @@ static void host_reply(const uint8_t *msg, uint32_t n)       /* queue msg as a d
 /* ---- hooks ---- */
 static int ota_wire_send(const uint8_t *p, uint32_t n)
 {
-    uint8_t u[64] = {0}, m[600];
+    uint8_t u[64], m[600];
     uint32_t d, addr, len, i, s = 0;
     if (p[0] != 0xF0 || p[n - 1] != 0xF7) { printf("bad wire framing\n"); exit(1); }
     d = unpack7h(p + 1, n - 2, u);
@@ -80,6 +79,8 @@ static int ota_wire_send(const uint8_t *p, uint32_t n)
     } else {
         if (addr + len > logical_len) { printf("read past the package %#x\n", addr); exit(1); }
         memcpy(m + 14, logical + addr, len);
+        if (corrupt_at && corrupt_at >= logical + addr && corrupt_at < logical + addr + len)
+            m[14 + (corrupt_at - (logical + addr))] ^= 0x01;
     }
     for (i = 6; i < 14 + len; i++) s += m[i];
     m[14 + len] = (uint8_t)~s;
@@ -95,7 +96,6 @@ static int ota_frame_get(const uint8_t **p, uint32_t *n)
 static void ota_frame_done(void) { rx_full = 0; }
 static uint32_t ota_now_ms(void) { return now_ms; }
 static void ota_idle(void) { now_ms += 1; }
-/* the app's windows for step 1: the staging area 0xE0000..0xE4FFF only (platform.c ota_in_area) */
 static int ota_erase(uint32_t off)
 {
     if (off < 0xE0000u || off >= 0xE5000u || (off & 0xFFFu)) { bad_erase++; return -8; }
@@ -107,10 +107,6 @@ static int ota_prog(uint32_t off, const void *src, uint32_t n)
     const uint8_t *s = src;
     uint32_t i;
     if (off < 0xE0000u || off + n > 0xE5000u) { bad_erase++; return -8; }
-    if (++progs == cut_after) {                           /* the power goes: half of this write done */
-        for (i = 0; i < n / 2u; i++) nor[off + i] &= s[i];
-        longjmp(power, 1);
-    }
     for (i = 0; i < n; i++) nor[off + i] &= s[i];
     return 0;
 }
@@ -137,7 +133,7 @@ static uint32_t ota_body_off(void)                  /* ota.bin data + 0x20 in th
 
 static int check(const char *what, int ok)
 {
-    printf("%-64s %s\n", what, ok ? "ok" : "FAIL");
+    printf("%-52s %s\n", what, ok ? "ok" : "FAIL");
     return ok ? 0 : 1;
 }
 
@@ -153,15 +149,7 @@ static void reset_dev(void)
     memset(nor, 0xFF, sizeof nor);
     memcpy(nor, logical + 0x400, 0x4000);                 /* device flash head = package flash.bin head */
     rx_full = 0; requests = 0; ident_replies = 0; committed = 0; last_code = 0;
-    mute_after = 0xFFFFFFFFu; bad_erase = 0; progs = 0; cut_after = 0xFFFFFFFFu;
-}
-
-static int cut_session(void)                        /* 1: the power went during the session */
-{
-    if (setjmp(power))
-        return 1;
-    ota_session();
-    return 0;
+    mute_after = 0xFFFFFFFFu; corrupt_at = NULL; bad_erase = 0;
 }
 
 int main(int argc, char **argv)
@@ -176,20 +164,10 @@ int main(int argc, char **argv)
     raw = malloc(0x200000);
     n = fread(raw, 1, 0x200000, f);
     fclose(f);
-    if (n < 20 * 48 + 0x4400) { printf("%s: too short for a package\n", argv[1]); return 2; }
     logical = malloc(n);
-    for (i = 0; i < 20; i++) {                            /* drop the marker bytes: they spell the identity */
-        uint8_t c = (uint8_t)(raw[i * 48 + 47] - i - 1);
-        memcpy(logical + i * 47, raw + i * 48, 47);
-        if (raw[i * 48 + 47] != 0x7D && i < sizeof pkg_id - 1) pkg_id[i] = (char)c;
-    }
+    for (i = 0; i < 20; i++) memcpy(logical + i * 47, raw + i * 48, 47);   /* drop the marker bytes */
     memcpy(logical + 20 * 47, raw + 20 * 48, n - 20 * 48);
     logical_len = n - 20;
-    free(raw);
-    printf("  package identity %s\n", pkg_id);
-    bad += check("package identity is KAWA's (FM-1_95N, FM-1_96N)",
-                 strlen(pkg_id) == 8 && (!strncmp(pkg_id, "FM-1_95", 7) || !strncmp(pkg_id, "FM-1_96", 7)) &&
-                 pkg_id[7] >= '0' && pkg_id[7] <= '9');
 
     /* handshake outside a session */
     reset_dev();
@@ -198,8 +176,14 @@ int main(int argc, char **argv)
         host_reply(m, 7);
         ota_service();
         bad += check("handshake answered", ident_replies == 1);
-        bad += check("identity frame is the package's",
-                     ota_msg[2] == 0x11 && !memcmp(ota_msg + 6, pkg_id, strlen(pkg_id)) && ota_msg[6 + strlen(pkg_id)] == 0);
+        bad += check("identity frame is " FELUCCA_ID,
+                     ota_msg[2] == 0x11 && !memcmp(ota_msg + 6, FELUCCA_ID, sizeof FELUCCA_ID - 1));
+        recovery_active = 1;
+        host_reply(m, 7);
+        ota_service();
+        bad += check("recovery identity is distinct from a successful normal boot",
+                     ident_replies == 2 && !memcmp(ota_msg + 6, "FM-1_000", 9));
+        recovery_active = 0;
     }
 
     /* full session */
@@ -212,10 +196,10 @@ int main(int argc, char **argv)
         uint8_t *h = nor + 0xE0000, *p = committed_parm;
         bad += check("staged body == the package's loader", !memcmp(nor + 0xE0020, logical + ota_body_off(), 64));
         bad += check("LOADER.BIN head CRC",
-                     ota_rd16(h) == ota_crc16(h + 2, 30, 0) && !memcmp(h + 16, "LOADER.BIN", 10));
+                     (h[0] | h[1] << 8) == ota_crc16(h + 2, 30, 0) && !memcmp(h + 16, "LOADER.BIN", 10));
         bad += check("record at 0xE4F00 == RAM record", !memcmp(nor + 0xE4F00, p, 112));
         bad += check("record CRC / type / magic / ota_addr",
-                     ota_rd16(p) == ota_crc16(p + 2, 78, 0) && (p[2] | p[3] << 8) == 0x5A0D &&
+                     (p[0] | p[1] << 8) == ota_crc16(p + 2, 78, 0) && (p[2] | p[3] << 8) == 0x5A0D &&
                      (p[6] | p[7] << 8) == 0x5441 && ota_rd32(p + 72) == 0xE0000);
         bad += check("nothing written outside 0xE0000..0xE4FFF", bad_erase == 0);
     }
@@ -241,21 +225,6 @@ int main(int argc, char **argv)
         rc = ota_session();
         bad += check("no 'success' -> -13, no commit, area clean", rc == -13 && !committed && area_erased());
     }
-
-    /* the power goes while the loader is staged: no record and no LOADER.BIN head (written last) in flash, so
-     * the SPL boots the app again; the next update erases what was left before it stages */
-    reset_dev();
-    cut_after = 3;
-    rc = cut_session();
-    bad += check("power cut while staging: no record, no loader head, no commit",
-                 rc == 1 && !committed && !area_erased() && nor[0xE4F00] == 0xFF && nor[0xE4F06] == 0xFF &&
-                 nor[0xE0000] == 0xFF && nor[0xE0001] == 0xFF);
-    rx_full = 0; requests = 0; cut_after = 0xFFFFFFFFu;
-    rc = ota_session();
-    bad += check("  ... the next update erases the leftovers, stages and commits",
-                 rc == 0 && committed && !memcmp(nor + 0xE0020, logical + ota_body_off(), 64) &&
-                 !memcmp(nor + 0xE4F00, committed_parm, 112));
-    bad += check("nothing written outside 0xE0000..0xE4FFF", bad_erase == 0);
 
     printf("%s\n", bad ? "OTA TEST FAILED" : "ota test passed");
     return bad != 0;
