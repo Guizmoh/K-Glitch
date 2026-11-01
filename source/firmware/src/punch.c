@@ -50,6 +50,8 @@ static struct {
 } punch = {.req = -1, .cur = -1, .fg = 8192};
 
 static int32_t kg_route(int32_t key);              /* K-GLITCH (kglitch.c): the effect the mix plays now */
+static int kd_owns(uint32_t w);                    /* K-GLITCH (kg_dd.c): a DRUM DESTROYER segment held */
+static volatile int8_t kd_want;                    /* K-GLITCH (kg_dd.c): the DRUM DESTROYER effect asked for, -1 none */
 static int px_loop(int32_t fx) { return fx <= PX_STUT || fx == PX_LOOP8T; }   /* on the grid */
 static int px_replay(int32_t fx) { return fx <= PX_HALF || fx == PX_LOOP8T; } /* replays a span of the ring */
 
@@ -234,6 +236,9 @@ static void punch_process(int32_t *l, int32_t *r, uint32_t n)
 {
     uint32_t i;
     int32_t want = kg_route(punch.req), pstep;   /* K-GLITCH: the keys, else the effect sequencer, else AUTO */
+    kd_want = (int8_t)(want >= (int32_t)PUNCH_NFX ? want - (int32_t)PUNCH_NFX : -1);   /* a DRUM DESTROYER one: kd_process */
+    if (want >= (int32_t)PUNCH_NFX)
+        want = -1;
     uint32_t beat, step, echo_d, binc, fdec;
     static int32_t kl[CTL], kr[CTL];                    /* (static: the ISR stack is small) */
     tsvf_t c1, c2;
@@ -258,8 +263,9 @@ static void punch_process(int32_t *l, int32_t *r, uint32_t n)
         punch.fg = clamp(punch.fg, 1024, 16384);
     }
     if (punch.cur < 0 && want < 0) {                   /* idle: only the ring */
-        for (i = 0; i < n; i++)
-            punch_ring[punch.w++ & (PUNCH_N - 1u)] = (int16_t)clamp((l[i] + r[i]) >> 4, -32768, 32767);
+        for (i = 0; i < n; i++, punch.w++)
+            if (!kd_owns(punch.w))                      /* (K-GLITCH: a held DRUM DESTROYER segment) */
+                punch_ring[punch.w & (PUNCH_N - 1u)] = (int16_t)clamp((l[i] + r[i]) >> 4, -32768, 32767);
         return;
     }
     if (punch.cur < 0 && want >= 0)
@@ -304,7 +310,7 @@ static void punch_process(int32_t *l, int32_t *r, uint32_t n)
         int32_t x = l[i], y = r[i], wl = x, wr = y, m = (x + y) >> 1;
         int32_t fx = punch.cur;
         uint32_t target = want == fx ? 32767u : 0u;
-        if (!punch_owns(fx, punch.w))                   /* (a held loop keeps its material) */
+        if (!punch_owns(fx, punch.w) && !kd_owns(punch.w))   /* (a held loop keeps its material) */
             punch_ring[punch.w & (PUNCH_N - 1u)] = (int16_t)clamp(m >> 3, -32768, 32767);
         switch (fx) {
         case PX_LPF:
@@ -469,6 +475,8 @@ static int32_t punch_fx_of_key(uint32_t k)
 static uint32_t punch_key_of_fx(uint32_t fx)          /* an effect -> its key (the lit key) */
 {
     static const uint8_t K[7] = {0, 2, 4, 6, 7, 9, 11};   /* the white keys of an octave, from F */
+    if (fx >= PUNCH_NFX && fx < PUNCH_NFX + 16u)         /* (K-GLITCH: DRUM DESTROYER n on white key n) */
+        fx -= PUNCH_NFX;
     fx %= PUNCH_NFX;
     return fx < 16u ? fx / 7u * 12u + K[fx % 7u] : PUNCH_BLACK[fx - 16u];
 }

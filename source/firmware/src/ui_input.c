@@ -484,7 +484,7 @@ UI_SMALL static void project_new(void)
     for (i = 0; i < G_COUNT; i++)
         if (i != G_SLOT && i != G_DRCH && i != G_SYNC && i != G_MIDI && i != G_ROUTE && (i < G_CH1 || i > G_CHOTH) &&
             i != G_BEND && i != G_FXCH && i != G_DRMAP && i != G_RMCH && i != G_CLKOUT && i != G_FXFADE &&
-            i != G_KTGT && i != G_KCCCH && i != G_KSEQ && i != G_KAUTO)   /* (K-GLITCH: where they play, kept) */                                                                     /* (the
+            i != G_KTGT && i != G_KCCCH && i != G_KSEQ && i != G_KAUTO && i != G_KBANK && i != G_KINT)   /* (K-GLITCH: where they play, kept) */                                                                     /* (the
                                                                  * FM-1's settings: GLO > MIDI 2.6) */
             song.g[i] = GP[i].def;
     song.solo = 0;
@@ -564,6 +564,8 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         ui.lock_par = (uint8_t)id;                        /* the SEQ layer's lock parameter: the last one touched */
     if (pg->scope != SC_GLOBAL)
         ml_knob(TSEL, id);                                /* MIDI LEARN: this parameter (2.6) */
+    if (pg->scope == SC_GLOBAL && id == G_KHOLD && !v && !punch.keybit)   /* K-GLITCH: HOLD off lets a held effect go */
+        punch.req = -1;
     if (pg->scope == SC_GLOBAL && id == G_KSTEP)          /* K-GLITCH D-SEQ: the step's effect shows */
         song.g[G_KSFX] = (int16_t)(kg.seq[(v - 1) & 15] + 1);
     if (pg->scope == SC_GLOBAL && id == G_KSFX) {

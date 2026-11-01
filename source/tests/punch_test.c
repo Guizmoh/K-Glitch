@@ -18,6 +18,7 @@ static void beat_setup(void)
                                      {36, 42}, {42}, {36}, {42}, {38, 42}, {42}, {42}, {46}};
     uint32_t j, q;
     host_tracks_init();
+    song.g[G_KBANK] = 0;                              /* (K-GLITCH: SLOOP's effects on the keys, as these tests expect) */
     memset(&drums, 0, sizeof drums);
     drums.set = -2;
     TDRUM->p[P_E0] = 0;                               /* the sampled kit: no random noise */

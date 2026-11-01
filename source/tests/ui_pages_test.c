@@ -181,6 +181,7 @@ int main(int argc, char **argv)
     settings.palette = 4;
     palette_set(4);
     host_tracks_init();
+    song.g[G_KBANK] = 0;                               /* (K-GLITCH: SLOOP's punch tests run on SLOOP's bank) */
     for (i = 0; i < NPART; i++) { set_engine_of(&trk[i], TRK_DEF[i][0]); apply_preset_to(&trk[i], TRK_DEF[i][1]); trk[i].engine = trk[i].eng_req; }
     TDRUM->p[P_E0] = DRUM_DEFAULT_KIT;
     sloop_splash(); ppm("page-splash");
@@ -228,6 +229,9 @@ int main(int argc, char **argv)
         encs[panel.enc[EN_K4]] = -1; frame();
         tap(B_PLAY); frames(2);
         encs[panel.enc[EN_SELECT]] = 2; frame();
+        check(!strcmp(cur_page()->title, "D-BANK"), "K-GLITCH: D-BANK (BANK, INTENSITY, HOLD)");
+        ui.force = 1; frame(); ppm("page-destroy-bank");
+        encs[panel.enc[EN_SELECT]] = 1; frame();
         check(!strcmp(cur_page()->title, "D-SETUP"), "K-GLITCH: D-SETUP (AUTO, CLEAR, MPC CH)");
         ui.force = 1; frame(); ppm("page-destroy-setup");
         kg_clear(); song.g[G_KTGT] = 0; song.g[G_KSFX] = 0;
@@ -323,6 +327,15 @@ int main(int argc, char **argv)
           "FX held: keys 1, 5, 9, 13 lit dim (the rows of the grid)");
     ppm("layer-punch");
     fm1_in.notes = 1u << 4; frame(); check(punch.req == 2, "FX + the 3rd white key: punch effect 3");
+    fm1_in.notes = 0; frame();                          /* K-GLITCH: BANK DESTROY, the same key: DRUM DESTROYER 3 (GLITCH) */
+    song.g[G_KBANK] = 1; fm1_in.notes = 1u << 4; frame();
+    check(punch.req == (int8_t)(PUNCH_NFX + DD_GLITCH), "K-GLITCH: BANK DESTROY: FX + the 3rd white key: GLITCH");
+    ui.force = 1; frame(); ppm("layer-punch-destroy");
+    fm1_in.notes = 0; frame(); check(punch.req == -1, "K-GLITCH: its key up: the mix comes back");
+    song.g[G_KHOLD] = 1; fm1_in.notes = 1u << 4; frame(); fm1_in.notes = 0; frame();
+    check(punch.req == (int8_t)(PUNCH_NFX + DD_GLITCH), "K-GLITCH: HOLD: the effect stays after the key");
+    song.g[G_KHOLD] = 0; punch.req = -1; song.g[G_KBANK] = 0;
+    fm1_in.notes = 1u << 4; frame();
     ppm("layer-punch-on");
     fm1_in.notes = 0; frame(); check(punch.req == -1, "key up: the mix comes back");
     fm1_in.notes = 1u << 17; frame(); check(punch.req == PX_FREEZE, "FX + the black key A#4: FREEZE (2.6: 11 black-key effects)");
@@ -1749,7 +1762,7 @@ int main(int argc, char **argv)
         check(mlu.on == 1u && !mlu.pick, "GLO + F#3: MIDI LEARN on");
         open_family(FAM_FX); frame();
         for (j = 0; j < 12u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }
-        for (j = 0; j < 3u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 3): KNOB 1 = DIST */
+        for (j = 0; j < 4u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 4): KNOB 1 = DIST */
         frames(16);
         ui.force = 1; frame(); ppm("header-learn");
         K(EN_K1, 1);

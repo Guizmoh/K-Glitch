@@ -39,6 +39,11 @@ UI_SMALL static uint16_t kg_mix(uint16_t a, uint16_t b, uint32_t t)   /* a .. b,
 }
 UI_SMALL static uint16_t kg_fam(int32_t fx)
 {
+    if (fx >= (int32_t)PUNCH_NFX) {                   /* the DRUM DESTROYER bank */
+        static const uint8_t F[DD_N] = {0, 0, 3, 2, 2, 2, 1, 1, 0, 1, 0, 2, 3, 3, 3, 3};
+        static const uint16_t C[4] = {KG_CYAN, KG_VIO, KG_AMB, KG_RED};
+        return C[F[(fx - (int32_t)PUNCH_NFX) % DD_N]];
+    }
     if (fx <= PX_STUT || fx == PX_LOOP8T) return KG_CYAN;
     if ((fx >= PX_LPF && fx <= PX_TEL) || (fx >= PX_KLOW && fx <= PX_KHIGH)) return KG_VIO;
     if (fx == PX_REV || fx == PX_STOP || fx == PX_HALF || fx == PX_RWD || fx == PX_OCT || fx == PX_FREEZE) return KG_AMB;
@@ -82,7 +87,11 @@ static void kg_u2a(char *b, uint32_t v)            /* an unsigned number, writte
 }
 
 /* the page in its family: 1 DESTROY, 2 D-SEQ, 3 D-SETUP */
-UI_SMALL static uint32_t kg_pageno(void) { return cur_page()->id[0] == G_KCHAOS ? 0u : cur_page()->id[0] == G_KSTEP ? 1u : 2u; }
+UI_SMALL static uint32_t kg_pageno(void)          /* 0 DESTROY, 1 FX SEQ, 2 BANK, 3 SETUP */
+{
+    uint32_t id = cur_page()->id[0];
+    return id == G_KCHAOS ? 0u : id == G_KSTEP ? 1u : id == G_KBANK ? 2u : 3u;
+}
 
 UI_SMALL static void kg_rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t fill, uint16_t edge)   /* rounded */
 {
@@ -94,11 +103,11 @@ UI_SMALL static void kg_rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_
 }
 UI_SMALL static void kg_paint(void)
 {
-    static const char *const TAB[3] = {"DESTROY", "FX SEQ", "SETUP"};
-    static const char *const TITLE[3] = {"DRUM DESTROYER", "EFFECT SEQUENCE", "SETUP / MPC"};
+    static const char *const TAB[4] = {"DESTROY", "SEQ", "BANK", "SETUP"};
+    static const char *const TITLE[4] = {"DRUM DESTROYER", "EFFECT SEQUENCE", "THE 16 KEYS", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
-    static const char *const HINT[3] = {"SELECT: PAGE | FX HELD: PUNCH-IN", "SELECT: PAGE | K4: ROLL THE DICE",
-                                        "SELECT: PAGE | K4: LOAD A BREAK"};
+    static const char *const HINT[4] = {"SELECT: PAGE | FX HELD: PUNCH-IN", "SELECT: PAGE | K4: ROLL THE DICE",
+                                        "FX HELD + A WHITE KEY: ITS EFFECT", "SELECT: PAGE | K4: LOAD A BREAK"};
     static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
     const page_t *pg = cur_page();
     uint32_t pn = kg_pageno(), i, out = (uint32_t)song.g[G_KTGT] % 3u;
@@ -106,7 +115,7 @@ UI_SMALL static void kg_paint(void)
     char s[48], k[64];
     cv_rect(0, 0, 240, 240, KG_BG);
     /* the ribbon: the three pages as tabs, the one shown an orange pill; the tempo and PLAY at the right */
-    for (i = 0, x = 6; i < 3u; i++) {
+    for (i = 0, x = 6; i < 4u; i++) {
         int32_t w = kg_t5w(TAB[i]) + 14;
         if (i == pn) kg_rbox(x, 2, w, 13, KG_ACC, KG_ACC);
         kg_t5(x + 7, 5, TAB[i], i == pn ? KG_BG : KG_MUTE);
@@ -133,6 +142,10 @@ UI_SMALL static void kg_paint(void)
         str_cpy(s, song.g[G_KSEQ] ? "SEQ ON | " : "SEQ OFF | ", sizeof s);
         kg_u2a(s + str_len(s), n);
         str_cpy(s + str_len(s), " OF 16 STEPS", sizeof s - str_len(s));
+    } else if (pn == 2u) {
+        str_cpy(s, song.g[G_KBANK] ? "DRUM DESTROYER | INTENS " : "SLOOP FX | INTENS ", sizeof s);
+        kg_u2a(s + str_len(s), (uint32_t)song.g[G_KINT]);
+        str_cpy(s + str_len(s), song.g[G_KHOLD] ? "% | HOLD" : "%", sizeof s - str_len(s));
     } else {
         str_cpy(s, song.g[G_KAUTO] ? "AUTO ON | MPC CH " : "AUTO OFF | MPC CH ", sizeof s);
         if (song.g[G_KCCCH]) kg_u2a(s + str_len(s), (uint32_t)song.g[G_KCCCH]);
@@ -144,21 +157,25 @@ UI_SMALL static void kg_paint(void)
     /* the graph panel: the 16 steps, the effect playing, the mix */
     kg_rbox(9, 49, 222, 76, KG_PANEL, KG_PANEL);
     for (i = 0; i < KG_STEPS; i++) {
-        int32_t cx = 13 + (int32_t)(i & 7u) * 27, cy = 53 + (int32_t)(i >> 3) * 22, fx = kg.seq[i];
-        if (fx >= 0 && fx < (int32_t)PUNCH_NFX) {
+        int32_t cx = 13 + (int32_t)(i & 7u) * 27, cy = 53 + (int32_t)(i >> 3) * 22, fx = kg.seq[i], lit = (int32_t)i == play;
+        if (pn == 2u) {                               /* BANK: the white keys' effects, the one playing lit */
+            fx = song.g[G_KBANK] ? (int32_t)(PUNCH_NFX + i) : (int32_t)i;
+            lit = fx == now;
+        }
+        if (fx >= 0 && fx < (int32_t)KG_NFX) {
             uint16_t c = kg_fam(fx);
-            cv_rect(cx, cy, 25, 18, kg_mix(KG_PANEL, c, (int32_t)i == play ? 256u : 180u));
+            cv_rect(cx, cy, 25, 18, kg_mix(KG_PANEL, c, lit ? 256u : 180u));
             kg_t5(cx + (25 - kg_t5w(KG_SHORT[fx])) / 2, cy + 6, KG_SHORT[fx], KG_BG);
         } else {
             kg_box(cx, cy, 25, 18, kg_mix(KG_PANEL, KG_RULE, 170));
             cv_rect(cx + 11, cy + 8, 2, 2, (i & 3u) == 0u ? KG_MUTE : KG_RULE);
         }
-        if ((int32_t)i == play) kg_box(cx - 1, cy - 1, 27, 20, KG_INK);
+        if (lit) kg_box(cx - 1, cy - 1, 27, 20, KG_INK);
         if ((int32_t)i == cur) cv_rect(cx + 3, cy + 19, 19, 2, KG_ACC);
     }
     {
-        int32_t ok = now >= 0 && now < (int32_t)PUNCH_NFX;
-        const char *n = ok ? PUNCH_NAME[now] : song.playing ? "READY" : "STOPPED";
+        int32_t ok = now >= 0 && now < (int32_t)KG_NFX;
+        const char *n = ok ? kg_name(now) : song.playing ? "READY" : "STOPPED";
         x = kg_t5(14, 99, n, ok ? kg_fam(now) : KG_MUTE);
         if (ok) kg_t5(x + 6, 99, SRC[kg.src & 3u], KG_MUTE);
     }
@@ -202,7 +219,7 @@ UI_SMALL static void kg_scope(void)
 {
     uint32_t x, w = scope_w;
     int32_t py = 10;
-    uint16_t c = kg.now >= 0 && kg.now < (int8_t)PUNCH_NFX ? kg_fam(kg.now) : KG_ACC;
+    uint16_t c = kg.now >= 0 && kg.now < (int8_t)KG_NFX ? kg_fam(kg.now) : KG_ACC;
     cv_begin(116, 21, KG_PANEL);
     cv_oy = 0;
     cv_rect(0, 10, 116, 1, kg_mix(KG_PANEL, KG_RULE, 160));
@@ -224,7 +241,7 @@ UI_SMALL static uint32_t kg_signature(void)
     uint32_t h = 2166136261u, i;
     for (i = 0; i < KG_STEPS; i++) h = (h ^ (uint32_t)(kg.seq[i] + 2)) * 16777619u;
     h ^= (song.playing ? kg.step + 1u : 0u) * 977u + (uint32_t)(kg.now + 2) * 65537u + kg.src * 31u + ui.page * 7919u;
-    for (i = G_KCHAOS; i <= G_KBRK; i++) h = (h ^ (uint32_t)song.g[i]) * 16777619u;
+    for (i = G_KCHAOS; i <= G_KHOLD; i++) h = (h ^ (uint32_t)song.g[i]) * 16777619u;
     h ^= (uint32_t)song.g[G_BPM] * 104729u + (ui.hot_t ? ui.hot_col + 1u : 0u) * 13u;
     if (ui.msg_t) h = str_hash(h ^ 0x9E37u, ui.msg);
     return h;

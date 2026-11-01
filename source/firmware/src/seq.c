@@ -2179,8 +2179,8 @@ static void midi_fx(uint32_t note, int on)
     if (note < 53u || note > 79u)
         return;
     k = note - 53u;
-    fx = punch_fx_of_key(k);
-    if (fx < 0 || fx >= (int32_t)PUNCH_NFX)
+    fx = kg_fx_of_key(k);                        /* (K-GLITCH: BANK DESTROY, the white keys' DRUM DESTROYER effects) */
+    if (fx < 0 || fx >= (int32_t)KG_NFX)
         return;
     if (on) {
         punch.req = (int8_t)fx;
@@ -2202,9 +2202,9 @@ static void key_down(uint32_t k)
     kb_n[k] = 0;
     switch (layer) {
     case LY_FX: {                                     /* FX held: the keys pick a punch-in effect (white and black) */
-        int32_t fx = punch_fx_of_key(k);
+        int32_t fx = kg_fx_of_key(k);              /* (K-GLITCH: BANK DESTROY, the white keys' DRUM DESTROYER effects) */
         kb_kind[k] = KS_FX;
-        if (fx >= 0 && fx < (int32_t)PUNCH_NFX) {
+        if (fx >= 0 && fx < (int32_t)KG_NFX) {
             punch.req = (int8_t)fx;
             punch.keybit = 1u << k;
         }
@@ -2328,7 +2328,8 @@ static void key_up(uint32_t k)
     case KS_FX:
         if (punch.keybit == 1u << k) {                /* its key is up: the mix comes back */
             punch.keybit = 0;
-            punch.req = -1;
+            if (!song.g[G_KHOLD])                     /* (K-GLITCH: HOLD keeps it, until another key or HOLD off) */
+                punch.req = -1;
         }
         return;
     case KS_UI:

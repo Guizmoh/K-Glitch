@@ -11,8 +11,9 @@
 
 ## Prochaines étapes
 
-- [ ] La banque DRUM DESTROYER de 16 effets (LOOP DESTROYER, STUTTER 2/3/4/8x, GLITCH, SCRATCH, PITCH, GATE, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUTTER, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS) en plus des 27 de SLOOP.
-- [ ] Intensité par effet (encodeur B), HOLD (verrouiller un effet), LFO sur les effets.
+- [x] La banque DRUM DESTROYER de 16 effets, INTENSITÉ, HOLD (0.2, testés sur l'hôte et dans l'émulateur).
+- [ ] LFO / MOVEMENT qui module l'intensité des effets ; une intensité par effet.
+- [ ] Comb filter dans FILTER CHAOS ; scratch avant/arrière plus « vinyle » ; stutter 3x / 8x en triolets.
 - [ ] MUTATE sur le rythme lui-même (décaler, supprimer, répéter des pas de batterie), pas seulement sur les effets.
 - [ ] Plus de breaks préchargés ; découpe (CHOP) dédiée aux breaks.
 - [ ] Sauvegarder la séquence d'effets et les macros avec le projet.

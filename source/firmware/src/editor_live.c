@@ -163,7 +163,8 @@ UI_SMALL static void ed_live(const uint8_t *a, uint32_t na)
     ed_b(song.solo & 15u);
     ed_b(song.rec & 15u);
     ed_b(song.sel);
-    ed_b((uint32_t)(punch.req + 1));
+    ed_b((uint32_t)(punch.req < (int8_t)PUNCH_NFX ? punch.req + 1 : punch.req - (int8_t)PUNCH_NFX + 1));   /* (K-GLITCH: a DRUM
+                                                                                   * DESTROYER effect: as its white key's) */
     ed_b(clamp((int32_t)((song.cpu_q8 * 100u) >> 8), 0, 127));
     ed_b(arrangement_clock.index);
     ed_b(arrangement.count);

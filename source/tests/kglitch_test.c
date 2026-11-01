@@ -12,6 +12,7 @@
 #include "hostsim.c"
 #undef main
 #include <assert.h>
+#include <stdlib.h>
 #define BEAT (FS / 2u)                                /* 120 BPM */
 #define S16 (BEAT / 4u)
 #define NS (FS * 4u)
@@ -45,6 +46,8 @@ static void reset(void)
     kg.sent_mac[0] = kg.sent_mac[1] = kg.sent_mac[2] = -1;
     song.g[G_KCHAOS] = 40, song.g[G_KDENS] = 50, song.g[G_KMOVE] = 50;
     song.g[G_KTGT] = KG_OUT_FM1, song.g[G_KSEQ] = 1, song.g[G_KAUTO] = 0, song.g[G_KCCCH] = 16;
+    song.g[G_KBANK] = 0, song.g[G_KINT] = 50, song.g[G_KHOLD] = 0;
+    kd.cur = -1, kd.g = 0, kd_want = -1;
     clk_beat = 0, clk_pos = 0;
     song.playing = 1;
     usb.config = 1;
@@ -62,6 +65,7 @@ static void run(uint32_t ns, int32_t key, uint32_t on, uint32_t off, int32_t *L,
         for (i = 0; i < CTL; i++) l[i] = gen(t0 + i, 0), r[i] = gen(t0 + i, 1);
         punch.req = (int8_t)(key >= 0 && t0 >= on && t0 < off ? key : -1);
         punch_process(l, r, CTL);
+        kd_process(l, r, CTL);                        /* (as fx.c mix_block: the DRUM DESTROYER bank after) */
         if (song.playing && (t0 % S16) >= S16 / 2u && (t0 % S16) < S16 / 2u + CTL && t0 / S16 < 64u)   /* (mid-16th) */
             now16[t0 / S16] = kg.now;
         clk_pos += CTL * (uint32_t)song.g[G_BPM];
@@ -139,9 +143,9 @@ int main(int argc, char **argv)
         uint32_t st = cc_log[i] >> 16, cc = cc_log[i] >> 8 & 127u, v = cc_log[i] & 127u;
         assert(st == 0xBFu);
         if (cc == KG_CC[PX_STUT]) assert(v == (k++ & 1u ? 0u : 127u));
-        else assert(cc >= KG_CC_CHAOS && cc <= KG_CC_MOVE && n++ < 3u);
+        else assert(((cc >= KG_CC_CHAOS && cc <= KG_CC_MOVE) || cc == KG_CC_INT) && n++ < 4u);
     }
-    assert(k == 4u && n == 3u);                       /* (two bars: two STUTTERs, on and off) */
+    assert(k == 4u && n == 4u);                       /* (two bars: two STUTTERs, on and off; 3 macros, INTENSITY) */
     printf("kglitch: OUT MPC: the FM-1 stays dry, CC %u 127/0 on ch 16, macros CC 85-87          ok\n", KG_CC[PX_STUT]);
 
     /* 4. leaving MPC while the effect is up lets it go; a new channel too */
@@ -197,6 +201,43 @@ int main(int argc, char **argv)
     }
     assert(n > 100u && "CHAOS 100: mostly past the gentle four");
     printf("kglitch: MUTATE: DENSITY, CHAOS (beats dry up to 70 %%), the pool                     ok\n");
+    /* 7. the DRUM DESTROYER bank: each effect at INTENSITY 0, 50, 100, playing and stopped, held from 0.5 s to 2.5 s
+     * (longer than the ring): it changes the mix, stays bounded (run), and 0.1 s after its release the mix is the dry
+     * one again to the sample */
+    for (k = 0; k < DD_N; k++) {
+        uint32_t in, pl;
+        for (pl = 0; pl < 2u; pl++)
+            for (in = 0; in <= 100u; in += 50u) {
+                reset();
+                song.playing = (uint8_t)pl;
+                song.g[G_KINT] = (int16_t)in;
+                run(NS, (int32_t)(PUNCH_NFX + k), FS / 2u, FS * 5u / 2u, ol, or_);
+                if (!(k == DD_GATE && in == 0u) && !(k == DD_BSKIP && in == 0u))
+                    assert(!same(ol, dl, FS / 2u, FS * 5u / 2u) && "the effect changes the mix");
+                assert(same(ol, dl, FS * 5u / 2u + FS / 10u, NS / CTL * CTL) && "dry again after its release");
+                assert(kd.cur < 0);
+            }
+        printf("kglitch: DRUM DESTROYER %-13s INTENSITY 0 50 100, playing and stopped: wet, bounded, dry after   ok\n", DD_NAME[k]);
+    }
+    /* a held LOOP DESTROY outlives the ring (0.74 s): 2 s later it still repeats its fragment, period L */
+    reset();
+    song.g[G_KINT] = 40;                                /* (no random direction: a plain loop) */
+    run(NS, (int32_t)(PUNCH_NFX + DD_LOOP), FS / 4u, NS, ol, or_);
+    {
+        uint32_t L = kd.L, d = 0;
+        for (i = FS * 3u; i < FS * 3u + 2000u; i++)
+            d += (uint32_t)abs(ol[i] - ol[i - L]);
+        assert(kd.cur == DD_LOOP && L > 1000u && d < 2000u * 64u && "the fragment is kept");
+    }
+    printf("kglitch: LOOP DESTROY held 3.75 s: the fragment kept from the ring's writer                ok\n");
+    /* BANK DESTROY: AUTO and MUTATE pick the DRUM DESTROYER effects */
+    reset();
+    song.g[G_KBANK] = 1, song.g[G_KSEQ] = 0, song.g[G_KAUTO] = 1, song.g[G_KDENS] = 100, song.g[G_KCHAOS] = 100;
+    run(NS, -1, 0, 0, ol, or_);
+    for (i = 0; i < 32u; i++) assert(now16[i] >= (int8_t)PUNCH_NFX && now16[i] < (int8_t)KG_NFX);
+    kg_mutate(7);
+    for (i = 0; i < 16u; i++) assert(kg.seq[i] < 0 || kg.seq[i] >= (int8_t)PUNCH_NFX);
+    printf("kglitch: BANK DESTROY: AUTO and MUTATE pick the DRUM DESTROYER bank                       ok\n");
     printf("kglitch_test: passed\n");
     return 0;
 }

@@ -118,6 +118,9 @@ enum {                          /* global parameters */
     G_KCLR,                     /* D-SETUP: clear the effect sequence (GO) */
     G_KCCCH,                    /* D-SETUP: the MPC's MIDI channel (OFF, 1..16) */
     G_KBRK,                     /* D-SETUP: load the demo jungle break on the drum track (GO) */
+    G_KBANK,                    /* D-BANK: the white keys, AUTO and MUTATE: SLOOP's effects or the DRUM DESTROYER bank */
+    G_KINT,                     /* D-BANK: INTENSITY 0..100 % of the DRUM DESTROYER effects */
+    G_KHOLD,                    /* D-BANK: HOLD, a key's effect stays after its release */
     G_COUNT
 };
 

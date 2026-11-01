@@ -61,9 +61,13 @@ static const char *const N_DASH[] = {"--"};
 static const char *const N_SYNC[] = {"INT", "USB", "TRS"};   /* G_SYNC: the tempo and PLAY / STOP from (seq.c mclk) */
 static const char *const N_GO[] = {"--", "GO"};
 static const char *const N_KOUT[] = {"FM-1", "MPC", "BOTH"};   /* K-GLITCH: where the effects play */
+static const char *const N_KBANK[] = {"SLOOP", "DESTR"};          /* K-GLITCH: the white keys' effects */
 static const char *const N_KFX[] = {"--", "LOOP4", "LOOP8", "LOOP16", "LOOP32", "STUTT", "REV", "STOP", "HALF", "LOW",
                                     "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBL", "K LOW", "K MID", "K HI",
-                                    "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE"};   /* 1 + PX_* */
+                                    "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE",
+                                    "D-LOP", "D-STU", "D-GLI", "D-SCR", "D-REV", "D-PIT", "D-GAT", "D-FIL", "D-BRP",
+                                    "D-SKP", "D-MIC", "D-STR", "D-RNG", "D-FUZ", "D-RND", "D-TOT"};   /* 1 + PX_*, then the
+                                                                       * DRUM DESTROYER bank (kg_dd.c) */
 static const char *const N_SLCR[] = {"OFF", "GATE", "STUT"};             /* SL_OFF .. SL_STUT (slicer.c) */
 static const char *const N_SLDIV[] = {"1/8", "1/16", "1/32", "8T", "16T", "32T"};   /* SL_DEN */
 static const char *const N_CHORD[] = {"OFF", "TRIAD", "7TH", "9TH", "SUS4", "POWER"};   /* seq.c CHORD_DEG */
@@ -220,6 +224,9 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KCLR] = PE("CLEAR", N_GO, 0),
     [G_KCCCH] = PE("CH", N_MCH, 16),
     [G_KBRK] = PE("BREAK", N_GO, 0),
+    [G_KBANK] = PE("BANK", N_KBANK, 1),
+    [G_KINT] = {"INTENS", F_INT, 0, 100, 50, 0, "%"},
+    [G_KHOLD] = PE("HOLD", N_ONOFF, 0),
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -418,6 +425,7 @@ static const page_t PAGES[] = {
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
     {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KTGT}},   /* K-GLITCH: the macros, OUT */
     {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KSEQ, G_KMUT}},         /* the effect sequencer */
+    {"D-BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, 0xFF}},        /* the keys' bank, INTENSITY, HOLD */
     {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KAUTO, G_KCLR, G_KCCCH, G_KBRK}},      /* AUTO, clear, the MPC channel, a break */
     {"FX", FAM_FX, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},
     {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */

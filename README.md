@@ -2,7 +2,7 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.1**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.2**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
 ## Essayer : l'émulateur
 
@@ -18,9 +18,12 @@ Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 e
 | --- | --- | --- | --- | --- |
 | **DESTROY** | CHAOS | DENSITY | MOVEMENT | OUT (FM-1 / MPC / BOTH) |
 | **FX SEQ** | le pas (1–16) | son effet | SEQ on/off | DICE : mutation aléatoire |
+| **BANK** | la banque des touches : DESTROY / SLOOP | INTENSITÉ | HOLD | — |
 | **SETUP** | AUTO on/off | CLEAR la séquence | canal MIDI de la MPC | BREAK : charge un break jungle 170 BPM |
 
-- **Live punch-in** : FX maintenu + une touche (les 27 effets de SLOOP).
+- **Banque DRUM DESTROYER** (par défaut sur les 16 touches blanches, FX maintenu) : LOOP DESTROY, STUTTER X, GLITCH, SCRATCH, REVERSE X, PITCH MAD, GATE X, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUTTER, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS. **INTENSITÉ** règle chacun (ex. LOOP : de 1/2 à 1/32 de mesure ; STUTTER : 2x, 3x, 4x, 8x ; PITCH : escalier, sauts, plongée). Les touches noires gardent les effets de SLOOP ; BANK sur SLOOP rend les 27 effets d'origine.
+- **HOLD** : l'effet reste après avoir lâché la touche (jusqu'à une autre touche ou HOLD off).
+- **Live punch-in** : FX maintenu + une touche.
 - **Séquenceur d'effets** : un effet (ou rien) sur chacun des 16 pas, calé sur le tempo.
 - **AUTO** : à chaque double-croche, DENSITY % de chances de lancer un geste ; CHAOS élargit le choix (des boucles douces jusqu'au tape stop, freeze, wobble…), MOVEMENT règle leur longueur.
 - **DICE / MUTATE** : écrit une nouvelle séquence d'effets selon CHAOS et DENSITY.
@@ -31,6 +34,7 @@ Priorité : touche > séquenceur > AUTO. Ces réglages sont « live » : ils ne 
 ## Code
 
 - `source/firmware/src/kglitch.c` : le moteur (séquenceur d'effets, AUTO, MUTATE, sortie MPC, break de démo).
+- `source/firmware/src/kg_dd.c` : la banque DRUM DESTROYER (16 effets).
 - `source/firmware/src/kg_ui.c` + `kg_font5.h` : les écrans K-GLITCH.
 - `source/firmware/host/emulator.c`, `source/web/emulator.html`, `source/tools/build_emulator.py` : l'émulateur.
 - Tests : `source/tests/kglitch_test.c`, et `source/tests/ui_pages_test.c` (captures des écrans).

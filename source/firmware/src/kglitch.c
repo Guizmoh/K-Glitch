@@ -9,13 +9,16 @@
  *      widens (the gentle loops and stutters first, then reverse / crush / half speed..., then tape stop, freeze,
  *      wobble...); MOVEMENT makes the gestures short (high) or long, up to a beat (low).
  * MUTATE (FX > D-SEQ) writes a new effect sequence from the same three macros.
+ * The effects: SLOOP's 27 punch-in ones (PX_*) and K-GLITCH's DRUM DESTROYER bank (kg_dd.c, PUNCH_NFX + DD_*), which
+ * FX > BANK puts on the white keys and in AUTO / MUTATE; INTENSITY shapes them; HOLD keeps a key's effect after its
+ * release (until another key or HOLD off).
  *
  * Where it plays (FX > DESTROY, OUT): FM-1 (the FM-1's mix, as SLOOP), MPC (only a MIDI CC goes out: the FM-1's mix
  * stays dry) or BOTH. With MPC or BOTH, each effect is a CC on the D-SETUP channel (16 by default): 127 when it
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.1"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.2"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 16u
@@ -27,19 +30,28 @@ static const uint8_t KG_CC[PUNCH_NFX] = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
 #define KG_CC_CHAOS 85u
 #define KG_CC_DENS 86u
 #define KG_CC_MOVE 87u
-/* the effects AUTO and MUTATE pick, gentle to wild: CHAOS 0 uses the first 4, 100 all of them */
+#define KG_CC_INT 89u                             /* INTENSITY (FX > BANK) */
+/* the effects AUTO and MUTATE pick, gentle to wild: CHAOS 0 uses the first 4, 100 all of them (BANK SLOOP; BANK
+ * DESTROY: KG_DPOOL, the DRUM DESTROYER ones) */
+#define DDX(e) ((uint8_t)(27u + (e)))
+static const uint8_t KG_DPOOL[] = {DDX(1), DDX(0), DDX(8), DDX(6), DDX(10), DDX(4), DDX(9), DDX(7), DDX(5), DDX(3),
+                                   DDX(11), DDX(2), DDX(12), DDX(13), DDX(14), DDX(15)};   /* (DD_*: kg_dd.c) */
+#define KG_NDPOOL (sizeof KG_DPOOL / sizeof KG_DPOOL[0])
 static const uint8_t KG_POOL[] = {PX_LOOP16, PX_LOOP8, PX_STUT, PX_GATE,
                                   PX_LOOP32, PX_REV, PX_CRUSH, PX_LOOP4, PX_HALF, PX_LOOP8T, PX_DOWN, PX_ECHO, PX_RWD,
                                   PX_OCT, PX_STOP, PX_WOBBLE, PX_FREEZE, PX_FLANGE, PX_TEL, PX_KLOW, PX_KHIGH, PX_HPF,
                                   PX_LPF};
 #define KG_NPOOL (sizeof KG_POOL / sizeof KG_POOL[0])
 /* three-letter names for the sequencer's cells (ui_draw.c graph_kg) */
-static const char *const KG_SHORT[PUNCH_NFX] = {
+static const char *const KG_SHORT[PUNCH_NFX + 16u] = {
     "L4", "L8", "L16", "L32", "STU", "REV", "STP", "HLF", "LPF", "HPF", "TEL", "CRU", "ALI", "GAT", "ECH", "WOB",
-    "KLO", "KMI", "KHI", "RWD", "OCT", "FLA", "PAN", "FRZ", "L8T", "MON", "FAD"};
+    "KLO", "KMI", "KHI", "RWD", "OCT", "FLA", "PAN", "FRZ", "L8T", "MON", "FAD",
+    /* the DRUM DESTROYER bank: four letters */
+    "LOOP", "STUT", "GLIT", "SCRA", "REVS", "PTCH", "GATE", "FILT", "BREP", "SKIP", "MICR", "STRE", "RING", "FUZZ", "RAND",
+    "TOTL"};
 
 static struct {
-    volatile int8_t seq[KG_STEPS];    /* main writes (D-SEQ, MUTATE), ISR reads: PX_* or -1 */
+    volatile int8_t seq[KG_STEPS];    /* main writes (D-SEQ, MUTATE), ISR reads: PX_*, PUNCH_NFX + DD_*, or -1 */
     volatile uint8_t step;            /* ISR: the 16th playing (0..15), for the screen */
     volatile int8_t now;              /* ISR: the effect asked for now (key, sequencer or AUTO), -1 none */
     volatile uint8_t src;             /* ISR: who asked: 0 none, 1 a key / MIDI, 2 the sequencer, 3 AUTO */
@@ -48,10 +60,10 @@ static struct {
     uint8_t auto_left;                /* its 16ths still to go */
     int8_t sent_fx;                   /* the effect whose CC is at 127, -1 none */
     uint8_t sent_ch;                  /* the channel it went out on (0..15) */
-    int16_t sent_mac[3];              /* the macros as last sent (-1: not yet) */
+    int16_t sent_mac[4];              /* the macros (and INTENSITY) as last sent (-1: not yet) */
     uint32_t rnd;
 } kg = {.seq = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-        .now = -1, .last16 = 0xFFFFFFFFu, .auto_fx = -1, .sent_fx = -1, .sent_mac = {-1, -1, -1}, .rnd = 0x9E3779B9u};
+        .now = -1, .last16 = 0xFFFFFFFFu, .auto_fx = -1, .sent_fx = -1, .sent_mac = {-1, -1, -1, -1}, .rnd = 0x9E3779B9u};
 
 static uint32_t kg_rand(uint32_t *s)              /* xorshift32 */
 {
@@ -62,11 +74,27 @@ static uint32_t kg_rand(uint32_t *s)              /* xorshift32 */
     return *s = x ? x : 0x2545F491u;
 }
 static uint32_t kg_pct(int32_t g) { return (uint32_t)(song.g[g] < 0 ? 0 : song.g[g] > 100 ? 100 : song.g[g]); }
+#include "kg_dd.c"                              /* the DRUM DESTROYER bank: ids PUNCH_NFX .. KG_NFX - 1 */
+/* an effect's CC: its key's (DRUM DESTROYER n is on SLOOP's white key n: the same CC, the MPC maps keys) */
+static uint32_t kg_cc_of(int32_t fx) { return KG_CC[fx < (int32_t)PUNCH_NFX ? fx : fx - (int32_t)PUNCH_NFX]; }
+static const char *kg_name(int32_t fx) { return fx < (int32_t)PUNCH_NFX ? PUNCH_NAME[fx] : DD_NAME[fx - (int32_t)PUNCH_NFX]; }
+/* FX held + a key: SLOOP's effect, or with BANK on DESTROY a white key's DRUM DESTROYER effect (seq.c key_down, midi_fx) */
+static int32_t kg_fx_of_key(uint32_t k)
+{
+    int32_t fx = punch_fx_of_key(k);
+    return song.g[G_KBANK] && fx >= 0 && fx < 16 ? (int32_t)PUNCH_NFX + fx : fx;
+}
 /* an effect from the CHAOS pool */
 static int8_t kg_pick(uint32_t *s)
 {
-    uint32_t n = 4u + kg_pct(G_KCHAOS) * (KG_NPOOL - 4u) / 100u;
-    return (int8_t)KG_POOL[kg_rand(s) % n];
+    if (song.g[G_KBANK]) {
+        uint32_t n = 3u + kg_pct(G_KCHAOS) * (KG_NDPOOL - 3u) / 100u;
+        return (int8_t)KG_DPOOL[kg_rand(s) % n];
+    }
+    {
+        uint32_t n = 4u + kg_pct(G_KCHAOS) * (KG_NPOOL - 4u) / 100u;
+        return (int8_t)KG_POOL[kg_rand(s) % n];
+    }
 }
 /* MOVEMENT: a gesture's length in 16ths, 1 (MOVEMENT 100) up to 4 (MOVEMENT 0) */
 static uint32_t kg_len(uint32_t *s)
@@ -106,7 +134,7 @@ static int32_t kg_route(int32_t key)
         kg.auto_left = 0;
     }
     kg.src = fx >= 0 ? 1u : 0u;
-    if (fx < 0 && song.playing && song.g[G_KSEQ] && kg.seq[kg.step] >= 0 && kg.seq[kg.step] < (int8_t)PUNCH_NFX) {
+    if (fx < 0 && song.playing && song.g[G_KSEQ] && kg.seq[kg.step] >= 0 && kg.seq[kg.step] < (int8_t)KG_NFX) {
         fx = kg.seq[kg.step];
         kg.src = 2;
     }
@@ -119,24 +147,24 @@ static int32_t kg_route(int32_t key)
     if (out == KG_OUT_FM1 || ch <= 0)
         fx = -1, ch = 0;
     if (kg.sent_fx >= 0 && (kg.now != kg.sent_fx || fx < 0 || (uint32_t)(ch - 1) != kg.sent_ch)) {
-        kg_cc(kg.sent_ch, KG_CC[kg.sent_fx], 0);
+        kg_cc(kg.sent_ch, kg_cc_of(kg.sent_fx), 0);
         kg.sent_fx = -1;
     }
     if (fx >= 0 && kg.sent_fx < 0) {
         kg.sent_ch = (uint8_t)(ch - 1);
         kg.sent_fx = (int8_t)fx;
-        kg_cc(kg.sent_ch, KG_CC[fx], 127);
+        kg_cc(kg.sent_ch, kg_cc_of(fx), 127);
     }
     if (ch > 0)                                       /* the macros, when they change */
-        for (i = 0; i < 3u; i++) {
-            int16_t v = (int16_t)(kg_pct((int32_t)(G_KCHAOS + i)) * 127u / 100u);
+        for (i = 0; i < 4u; i++) {
+            int16_t v = (int16_t)(kg_pct(i < 3u ? (int32_t)(G_KCHAOS + i) : (int32_t)G_KINT) * 127u / 100u);
             if (v != kg.sent_mac[i]) {
                 kg.sent_mac[i] = v;
-                kg_cc((uint32_t)ch - 1u, KG_CC_CHAOS + i, (uint32_t)v);
+                kg_cc((uint32_t)ch - 1u, i < 3u ? KG_CC_CHAOS + i : KG_CC_INT, (uint32_t)v);
             }
         }
     else
-        kg.sent_mac[0] = kg.sent_mac[1] = kg.sent_mac[2] = -1;
+        kg.sent_mac[0] = kg.sent_mac[1] = kg.sent_mac[2] = kg.sent_mac[3] = -1;
     return out == KG_OUT_MPC ? -1 : kg.now;           /* MPC: the FM-1's mix stays dry */
 }
 
