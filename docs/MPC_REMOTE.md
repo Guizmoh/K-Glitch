@@ -1,53 +1,54 @@
-# K-GLITCH — MPC REMOTE / HYBRID
+# K-GLITCH — MPC REMOTE / BOTH
 
-K-GLITCH is a single firmware with three ways to use the live effects. You switch between them on the **EFFECTS (LIVE)** page with **KNOB 4 (TARGET/CIBLE)**. You never reflash.
+Un seul firmware : la page **FX > DESTROY**, **KNOB 4 (OUT)**, choisit où jouent les effets, sans reflasher.
 
-| TARGET | What happens |
+| OUT | Ce qui se passe |
 | --- | --- |
-| `MASTER`, `T1`…`T6` | **STANDALONE**: the effects play on the FM-1 (the master or one track). No MIDI CC is sent. |
-| `MPC` | **MPC REMOTE**: the FM-1 plays no effect itself. Each effect is sent as a MIDI CC to the MPC. |
-| `MAST+MPC` | **HYBRID**: the effects play on the FM-1 master **and** are sent as a CC to the MPC. |
+| `FM-1` | Autonome : les effets jouent sur le mix du FM-1 (comme SLOOP). Aucun CC n'est envoyé. |
+| `MPC` | Le FM-1 reste sec ; chaque effet part en MIDI CC vers la MPC. |
+| `BOTH` | Les deux : l'effet joue sur le FM-1 **et** part en CC. |
 
-Effects sent to the MPC include more than the held keys. The **LIVE** lane of the sequencer (live-effect recording, the effect sequencer) and **AUTO GLITCH** (KNOB 2) send them too. So the FM-1's sequencer can program or randomise effects on the MPC.
+Les effets envoyés viennent des touches (FX maintenu + touche), du **séquenceur d'effets** (FX SEQ) et d'**AUTO** (SETUP).
 
-## Message format
+## Messages
 
-- USB-MIDI, **channel 16**, Control Change.
-- Value **127** while the effect is active, **0** when it stops (a "momentary" button in MIDI Learn).
-- Moving TARGET away from MPC/MAST+MPC sends 0 to every CC that is still at 127. Nothing stays stuck.
-- With AUTO GLITCH or the LIVE lane, the FM-1 sequencer has to be playing. To sync it to the MPC, set **OPTIONS → MIDI CLOCK: IN** (the MPC must send its clock).
+- USB-MIDI, canal réglable dans **SETUP > CH** (16 par défaut, OFF : rien n'est envoyé).
+- **127** quand l'effet commence, **0** quand il s'arrête ; un seul effet à la fois. Quitter MPC/BOTH, changer de canal ou STOP remet à 0 ce qui était levé.
+- **CHAOS, DENSITY, MOVEMENT** : CC **85, 86, 87** (0..127) quand ils bougent.
+- Sur la MPC : MIDI Learn de chaque CC vers ce qu'il doit piloter (filtre, pitch, effet, mute…).
 
-## CC table
+## Table des CC
 
-The numbers avoid bank select, modulation, volume, pan, sustain, the RPN/NRPN and the channel-mode messages.
+| Touche (FX maintenu) | Couleur | Effet SLOOP | CC |
+| --- | --- | --- | --- |
+| 1 | blanche | LOOP 4 | 20 |
+| 2 | blanche | LOOP 8 | 21 |
+| 3 | blanche | LOOP 16 | 22 |
+| 4 | blanche | LOOP 32 | 23 |
+| 5 | blanche | STUTTER | 24 |
+| 6 | blanche | REVERSE | 25 |
+| 7 | blanche | STOP | 26 |
+| 8 | blanche | HALF | 27 |
+| 9 | blanche | LOW | 28 |
+| 10 | blanche | HIGH | 29 |
+| 11 | blanche | PHONE | 30 |
+| 12 | blanche | CRUSH | 31 |
+| 13 | blanche | ALIAS | 102 |
+| 14 | blanche | GATE | 103 |
+| 15 | blanche | ECHO | 104 |
+| 16 | blanche | WOBBLE | 105 |
+| 17 | noire | KILL LOW | 106 |
+| 18 | noire | KILL MID | 107 |
+| 19 | noire | KILL HIGH | 108 |
+| 20 | noire | REWIND | 109 |
+| 21 | noire | OCT UP | 110 |
+| 22 | noire | FLANGER | 111 |
+| 23 | noire | AUTO-PAN | 112 |
+| 24 | noire | FREEZE | 113 |
+| 25 | noire | LOOP 8T | 114 |
+| 26 | noire | MONO | 115 |
+| 27 | noire | FADE OUT | 116 |
 
-| Key | POCKET bank | CC | WRECK bank | CC |
-| --- | --- | --- | --- | --- |
-| 1 | LOOP 1/16 | 20 | CRUSH 4 bits | 106 |
-| 2 | LOOP 1/12 | 21 | LO-FI rate | 107 |
-| 3 | LOOP 1/32 | 22 | LOWPASS sweep | 108 |
-| 4 | LOOP 1/64 | 23 | HIPASS sweep | 109 |
-| 5 | UNISON | 24 | TAPE STOP | 110 |
-| 6 | UNISON LOW | 25 | DIVE | 111 |
-| 7 | OCTAVE +1 | 26 | GATE 1/16 | 112 |
-| 8 | OCTAVE −1 | 27 | GATE 1/32 | 113 |
-| 9 | STUTTER x4 | 28 | FREEZE | 114 |
-| 10 | STUTTER x3 | 29 | RING | 115 |
-| 11 | SCRATCH | 30 | ECHO | 116 |
-| 12 | SCRATCH FAST | 31 | DISTORT | 117 |
-| 13 | 6/8 TRIPLET | 102 | WOBBLE | 118 |
-| 14 | RETRIG 1 beat | 103 | VINYL | 119 |
-| 15 | REVERSE | 104 | NO MELODY | 85 |
-| 16 | BUILDUP ROLL | 105 | NO BEAT | 86 |
+## État
 
-## MPC Live III setup (example)
-
-1. Connect the FM-1 over USB to a USB-A host port on the MPC. In the MPC's MIDI preferences, enable the FM-1 as a MIDI input.
-2. On a MIDI-learnable parameter (pad pitch, filter cutoff, an insert effect's bypass, a mute...), start **MIDI Learn**, then hold the matching FM-1 key.
-3. Repeat for each effect you want to use. Save the MPC project. The mappings live on the MPC side.
-
-On the MPC, the CC drives whatever you assign to it. The FM-1 sends 127/0 only; no CC sweeps or slice notes yet (see the roadmap).
-
-## Status
-
-Checked on the host simulator (`source/tests/mpc.txt`: keys, HYBRID, AUTO GLITCH, return to MASTER). **Not yet tested on a real FM-1 or with an MPC.**
+Testé sur le simulateur (`source/tests/kglitch_test.c`) et dans l'émulateur web (journal MIDI OUT, Web MIDI vers une vraie sortie). **Pas encore testé sur un FM-1 ni avec une MPC.**

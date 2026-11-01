@@ -219,6 +219,7 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KAUTO] = PE("AUTO", N_ONOFF, 0),
     [G_KCLR] = PE("CLEAR", N_GO, 0),
     [G_KCCCH] = PE("CH", N_MCH, 16),
+    [G_KBRK] = PE("BREAK", N_GO, 0),
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -417,7 +418,7 @@ static const page_t PAGES[] = {
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
     {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KTGT}},   /* K-GLITCH: the macros, OUT */
     {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KSEQ, G_KMUT}},         /* the effect sequencer */
-    {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KAUTO, G_KCLR, G_KCCCH, 0xFF}},        /* AUTO, clear, the MPC channel */
+    {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KAUTO, G_KCLR, G_KCCCH, G_KBRK}},      /* AUTO, clear, the MPC channel, a break */
     {"FX", FAM_FX, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},
     {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},   /* drum track too */

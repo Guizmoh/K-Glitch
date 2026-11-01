@@ -117,6 +117,7 @@ enum {                          /* global parameters */
     G_KAUTO,                    /* D-SETUP: AUTO (OFF / ON) */
     G_KCLR,                     /* D-SETUP: clear the effect sequence (GO) */
     G_KCCCH,                    /* D-SETUP: the MPC's MIDI channel (OFF, 1..16) */
+    G_KBRK,                     /* D-SETUP: load the demo jungle break on the drum track (GO) */
     G_COUNT
 };
 

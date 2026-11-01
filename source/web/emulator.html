@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>K-GLITCH Emulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* K-GLITCH in a browser (after the K-WASUB emulator's page): the FM-1 drawn, the firmware's screen and sound running
+   as WebAssembly. Colours: K-WASUB's RIBBON CLASSIC, slate and orange */
+html:not([lang="en"]) [lang="en"], html[lang="en"] [lang="fr"] { display: none; }
+:root {
+  color-scheme: dark;
+  --room: #10161c;
+  --body: #1c252e;
+  --body-hi: #26313c;
+  --edge: #384655;
+  --ink: #ecf0f4;
+  --mute: #8a96a4;
+  --acc: #ff8838;           /* the firmware's accent */
+  --val: #54c8f0;
+  --key-w: #e2e6ea;
+  --key-b: #1c242c;
+  --f-disp: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--room); color: var(--ink); margin: 0; }
+body { font: 14px/1.5 var(--f-mono); padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 20px; }
+h1 { font: 700 28px/1 var(--f-disp); letter-spacing: .04em; margin: 0; }
+h1 span { color: var(--acc); }
+.tag { color: var(--mute); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button, select { font: 600 12px/1 var(--f-mono); letter-spacing: .06em; color: var(--ink); background: var(--body-hi);
+  border: 1px solid var(--edge); border-radius: 6px; padding: 9px 12px; cursor: pointer; }
+select { padding: 8px 10px; max-width: 220px; }
+button:focus-visible, .knob:focus-visible, .key:focus-visible, select:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+button.primary { background: var(--acc); color: #1a0e04; border-color: var(--acc); }
+#status { color: var(--mute); font-size: 12px; min-height: 1.5em; }
+.device { background: linear-gradient(180deg, var(--body-hi), var(--body)); border: 1px solid var(--edge); border-radius: 18px;
+  padding: 22px; display: grid; gap: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+.top { display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 460px) minmax(260px, 1fr); gap: 16px 22px; align-items: start; }
+.lcol, .rcol { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.lrow { display: flex; gap: 14px; }
+.screen { background: #000; border: 6px solid #0b1015; border-radius: 10px; width: 100%; aspect-ratio: 1; max-width: 480px; }
+.screen canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; border-radius: 4px; }
+.knobs { display: flex; flex-wrap: wrap; gap: 10px; }
+.enc { display: grid; justify-items: center; gap: 6px; width: 64px; }
+.knob { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4c5a68, #1a222a 70%);
+  border: 1px solid #0b0f13; position: relative; touch-action: none; cursor: ns-resize; }
+.knob::after { content: ""; position: absolute; left: 50%; top: 6px; width: 3px; height: 13px; margin-left: -1.5px; border-radius: 2px;
+  background: var(--ink); transform-origin: 50% 21px; transform: rotate(var(--a, 0deg)); }
+.enc.k .knob::after, .enc.m .knob::after { background: var(--acc); }
+.enc b { font: 700 11px/1.2 var(--f-disp); letter-spacing: .08em; text-align: center; }
+.enc i { font: 400 10px/1.2 var(--f-mono); color: var(--val); font-style: normal; min-height: 1.2em; text-align: center; }
+.btns { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
+.btn { display: grid; place-items: center; aspect-ratio: 1; border-radius: 8px; min-width: 0; background: var(--body-hi); padding: 2px; }
+.btn strong { font: 700 9.5px/1.15 var(--f-disp); text-align: center; overflow-wrap: anywhere; }
+.btn.down { background: #4a3a2e; }
+.btn.on { background: #6a3816; box-shadow: 0 0 10px rgba(255,136,56,.45); }
+.btn.on strong { color: var(--acc); }
+.octs { display: flex; gap: 10px; }
+.oct { flex: 1; border-radius: 8px; padding: 10px 4px; font: 700 11px/1 var(--f-disp); letter-spacing: .04em; background: var(--body-hi); }
+.oct.down { background: #4a3a2e; }
+.keys-scroll { overflow-x: auto; padding-bottom: 4px; }
+.keys { position: relative; height: 130px; min-width: 760px; user-select: none; touch-action: none; }
+.key { position: absolute; top: 0; border-radius: 0 0 6px 6px; cursor: pointer; }
+.key.w { height: 128px; background: var(--key-w); border: 1px solid #98a2ac; }
+.key.b { height: 80px; background: var(--key-b); border: 1px solid #000; z-index: 2; }
+.key.on.w { background: var(--acc); } .key.on.b { background: #a8541c; }
+.key span { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 10px; color: #56606a; }
+.key em { position: absolute; top: 86px; left: 1px; right: 1px; text-align: center; font: 600 9px/1.1 var(--f-mono); color: #6a7480; font-style: normal; overflow-wrap: anywhere; }
+.key.b em { color: #8a96a4; top: 4px; font-size: 8px; }
+.key span { bottom: 4px; }
+.side { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 18px; }
+.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.help section, .log { background: var(--body); border: 1px solid var(--edge); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.help h2, .log h2 { font: 700 14px/1.2 var(--f-disp); letter-spacing: .08em; margin: 0 0 8px; color: var(--acc); }
+.help ul { margin: 0; padding-left: 18px; color: var(--mute); }
+.help li { margin: 3px 0; }
+kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi); border: 1px solid var(--edge); border-radius: 4px; padding: 0 4px; }
+#log { font: 12px/1.45 var(--f-mono); color: var(--mute); margin: 0; min-height: 13em; max-height: 20em; overflow: auto; white-space: pre-wrap; }
+#log b { color: var(--acc); font-weight: 600; } #log i { color: var(--val); font-style: normal; }
+@media (max-width: 860px) {
+  .top { grid-template-columns: 1fr; } .screen { margin: 0 auto; }
+  .lrow, .knobs { justify-content: center; } .btns { max-width: 420px; margin: 0 auto; width: 100%; }
+  .side { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>K-<span>GLITCH</span></h1>
+      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.1</div>
+    </div>
+    <div class="bar">
+      <button id="lang" type="button">EN / FR</button>
+      <button id="midi" type="button">MIDI</button>
+      <select id="mout" aria-label="MIDI out" hidden></select>
+    </div>
+  </header>
+  <div id="status" role="status"></div>
+
+  <div class="device">
+    <div class="top">
+      <div class="lcol">
+        <div class="lrow" id="encs-top"></div>
+        <div class="lrow" id="encs-bot"></div>
+        <div class="octs" id="octs"></div>
+      </div>
+      <div class="screen"><canvas id="lcd" width="240" height="240" aria-label="FM-1 screen"></canvas></div>
+      <div class="rcol">
+        <div class="knobs" id="knobs"></div>
+        <div class="btns" id="btns"></div>
+      </div>
+    </div>
+    <div class="keys-scroll"><div class="keys" id="keys" aria-label="27-key keyboard"></div></div>
+  </div>
+
+  <div class="side">
+    <div class="help">
+      <section>
+        <h2>DESTROY</h2>
+        <ul>
+          <li><span lang="fr">Un break jungle (170 BPM) est chargé : <b>PLAY</b> le lance.</span><span lang="en">A jungle break (170 BPM) is loaded: <b>PLAY</b> starts it.</span></li>
+          <li><span lang="fr"><b>FX</b> tapé : DESTROY &rarr; FX SEQ &rarr; SETUP (<b>SELECT</b> change de page).</span><span lang="en"><b>FX</b> tapped: DESTROY &rarr; FX SEQ &rarr; SETUP (<b>SELECT</b> turns the page).</span></li>
+          <li><span lang="fr"><b>FX maintenu</b> + une touche : effet punch-in (27 effets, noms sur les touches).</span><span lang="en"><b>FX held</b> + a key: punch-in effect (27 effects, named on the keys).</span></li>
+          <li><span lang="fr">DESTROY : K1 CHAOS, K2 DENSITÉ, K3 MOUVEMENT, K4 SORTIE (FM-1 / MPC / BOTH).</span><span lang="en">DESTROY: K1 CHAOS, K2 DENSITY, K3 MOVEMENT, K4 OUT (FM-1 / MPC / BOTH).</span></li>
+          <li><span lang="fr">FX SEQ : K1 le pas, K2 son effet, K3 SEQ, K4 DÉ (mutation). SETUP : K1 AUTO, K4 BREAK.</span><span lang="en">FX SEQ: K1 the step, K2 its effect, K3 SEQ, K4 DICE (mutate). SETUP: K1 AUTO, K4 BREAK.</span></li>
+        </ul>
+      </section>
+      <section>
+        <h2><span lang="fr">CLAVIER</span><span lang="en">KEYBOARD</span></h2>
+        <ul>
+          <li><span lang="fr">Notes</span><span lang="en">Notes</span>: <kbd>Z</kbd><kbd>S</kbd><kbd>X</kbd>… <kbd>Q</kbd><kbd>2</kbd><kbd>W</kbd>…</li>
+          <li><kbd>Tab</kbd> <span lang="fr">= FX (maintenu : punch-in)</span><span lang="en">= FX (held: punch-in)</span> &middot; <kbd>Espace</kbd> PLAY &middot; <kbd>Entrée</kbd> REC</li>
+          <li><kbd>←</kbd><kbd>→</kbd> SELECT &middot; <kbd>↑</kbd><kbd>↓</kbd> ALGO &middot; <kbd>PgUp</kbd><kbd>PgDn</kbd> PRESETS &middot; <kbd>Échap</kbd> HOME</li>
+          <li><span lang="fr">Potards : molette, ou glisser vers le haut / le bas</span><span lang="en">Knobs: mouse wheel, or drag up / down</span></li>
+        </ul>
+      </section>
+      <section>
+        <h2>MPC</h2>
+        <ul>
+          <li><span lang="fr"><b>MIDI</b> : choisir la sortie (la MPC). Les CC partent sur le canal 16.</span><span lang="en"><b>MIDI</b>: pick the output (the MPC). The CCs go out on channel 16.</span></li>
+          <li><span lang="fr">Effets : CC 20–31 puis 102–116, 127 au début, 0 à la fin. CHAOS / DENS / MOVE : CC 85, 86, 87.</span><span lang="en">Effects: CC 20–31 then 102–116, 127 on, 0 off. CHAOS / DENS / MOVE: CC 85, 86, 87.</span></li>
+          <li><span lang="fr">L'horloge MIDI de la MPC entre aussi (GLO &gt; MIDI : SYNC).</span><span lang="en">The MPC's MIDI clock comes in too (GLO &gt; MIDI: SYNC).</span></li>
+        </ul>
+      </section>
+    </div>
+    <div class="log"><h2>MIDI OUT</h2><pre id="log"></pre></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const EN = /[?&]lang=en/.test(location.search), T = (fr, en) => (EN ? en : fr);
+if (EN) document.documentElement.lang = "en";
+const WASM_B64 = "__KG_WASM__";
+/* SLOOP's buttons and encoders (firmware/src/panel.c) */
+const BTN = { FX: 0, SEL: 1, ENV: 2, LFO: 3, EDIT: 4, GLO: 5, HOME: 6, SAVE: 7, ARP: 8, SEQ: 9, PLAY: 10, REC: 11, OCT_DOWN: 12, OCT_UP: 13 };
+const BTN_GRID = [["FX", "FX"], ["SEL", "SEL"], ["ENV", "ENV"], ["LFO", "LFO"], ["EDIT", "EDIT"], ["GLO", "GLO"],
+                  ["HOME", "HOME"], ["SAVE", "SAVE"], ["ARP", "ARP"], ["SEQ", "SEQ"], ["PLAY", "PLAY<br>STOP"], ["REC", "REC"]];
+const ENC = { SELECT: 0, ALGO: 1, PRESETS: 2, K1: 3, K2: 4, K3: 5, K4: 6 };
+/* the punch-in effects (punch.c, keys F3..G5 with FX held) and their CCs (kglitch.c KG_CC) */
+const FX = ["LOOP 4", "LOOP 8", "LOOP 16", "LOOP 32", "STUTTER", "REVERSE", "STOP", "HALF", "LOW", "HIGH", "PHONE", "CRUSH",
+  "ALIAS", "GATE", "ECHO", "WOBBLE", "KILL LOW", "KILL MID", "KILL HIGH", "REWIND", "OCT UP", "FLANGER", "AUTO-PAN", "FREEZE",
+  "LOOP 8T", "MONO", "FADE OUT"];
+const FX_CC = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116];
+const PUNCH_BLACK = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];   /* punch.c: the black keys' effects 16..26 */
+const $ = id => document.getElementById(id);
+const wasmBytes = Uint8Array.from(atob(WASM_B64), c => c.charCodeAt(0));
+
+/* ---- the engine: the firmware as WebAssembly; the same code in the audio worklet or on the page */
+const ENGINE_SRC = `
+class Engine {
+  constructor(bytes, mem) {
+    this.x = new WebAssembly.Instance(new WebAssembly.Module(bytes), {}).exports;
+    const x = this.x;
+    if (mem) { const g = mem.length - x.memory.buffer.byteLength; if (g > 0) x.memory.grow(Math.ceil(g / 65536)); new Uint8Array(x.memory.buffer).set(mem); }
+    else { x.emu_init(); x.emu_home(); }
+    this.pos = 256; this.acc = 0; this.buf = null; this.sg = -1; this.emit = () => {};
+  }
+  input(d) {
+    const x = this.x;
+    if (d.t === "keys") x.emu_keys(d.mask >>> 0);
+    else if (d.t === "btn") x.emu_button(d.id, d.down ? 1 : 0);
+    else if (d.t === "turn") x.emu_enc(d.enc, d.steps | 0);
+    else if (d.t === "master") x.emu_master(d.v | 0);
+    else if (d.t === "midi") x.emu_midi_in(d.st, d.d1, d.d2);
+  }
+  publish() {
+    const x = this.x, g = x.emu_screen_gen(), out = { t: "ui", playing: x.emu_playing() };
+    if (g !== this.sg) { this.sg = g; out.fb = new Uint16Array(x.memory.buffer, x.emu_screen(), 57600).slice(); }
+    const n = x.emu_midi_take();
+    if (n) out.midi = new Uint32Array(x.memory.buffer, x.emu_midi_buf(), n).slice();
+    this.emit(out, out.fb ? [out.fb.buffer] : []);
+  }
+  render(L, R) {
+    const x = this.x;
+    for (let i = 0; i < L.length; i++) {
+      if (this.pos >= 256) {
+        x.emu_render(8); this.buf = new Float32Array(x.memory.buffer, x.emu_audio(), 512); this.pos = 0;
+        if ((this.acc += 256) >= 706) { this.acc -= 706; x.emu_frame(16); this.publish(); }   /* a UI pass every 16 ms of sound */
+      }
+      L[i] = this.buf[2 * this.pos]; R[i] = this.buf[2 * this.pos + 1]; this.pos++;
+    }
+  }
+}`;
+const WORKLET_SRC = ENGINE_SRC + `
+class KgProc extends AudioWorkletProcessor {
+  constructor(o) { super(); this.e = new Engine(o.processorOptions.bytes, o.processorOptions.mem);
+    this.e.emit = (m, tr) => this.port.postMessage(m, tr); this.port.onmessage = ev => this.e.input(ev.data); }
+  process(_, outs) { const o = outs[0]; this.e.render(o[0], o[1] || o[0]); return true; }
+}
+registerProcessor("kglitch", KgProc);`;
+const Engine = new Function(ENGINE_SRC + "; return Engine;")();
+
+/* ---- the screen (RGB565, bytes swapped as the LCD takes them), PLAY's light, the MIDI log and out */
+const lcd = $("lcd").getContext("2d"), img = lcd.createImageData(240, 240);
+function drawScreen(fb) {
+  const d = img.data;
+  for (let i = 0; i < 57600; i++) {
+    const r = fb[i], v = ((r >> 8) | (r << 8)) & 0xFFFF, j = i * 4;
+    d[j] = (v >> 11) * 255 / 31; d[j + 1] = ((v >> 5) & 63) * 255 / 63; d[j + 2] = (v & 31) * 255 / 31; d[j + 3] = 255;
+  }
+  lcd.putImageData(img, 0, 0);
+}
+let midiOut = null;
+const logLines = [];
+function logMidi(st, d1, d2) {
+  const ch = (st & 15) + 1, kind = st & 0xF0;
+  let what;
+  if (kind === 0xB0) {
+    const fx = FX_CC.indexOf(d1);
+    what = `CC <i>${d1}</i> = ${d2} ch${ch}` + (fx >= 0 ? `  <b>${FX[fx]} ${d2 ? "ON" : "OFF"}</b>` :
+      d1 >= 85 && d1 <= 87 ? `  <b>${["CHAOS", "DENS", "MOVE"][d1 - 85]}</b>` : "");
+  } else if (kind === 0x90 || kind === 0x80) what = `NOTE ${d1} ${kind === 0x90 && d2 ? "ON" : "OFF"} ch${ch}`;
+  else return;                                        /* (the clock: not logged) */
+  logLines.unshift(what);
+  logLines.length = Math.min(logLines.length, 40);
+  $("log").innerHTML = logLines.join("\n");
+}
+function onUi(m) {
+  if (m.fb) drawScreen(m.fb);
+  btnEls[BTN.PLAY].el.classList.toggle("on", !!m.playing);
+  if (m.midi) for (const p of m.midi) {
+    const st = (p >>> 8) & 255, d1 = (p >>> 16) & 127, d2 = (p >>> 24) & 127;
+    if (st < 0x80) continue;
+    const len = st >= 0xF8 ? 1 : (st & 0xF0) === 0xC0 || (st & 0xF0) === 0xD0 ? 2 : 3;
+    if (midiOut) try { midiOut.send([st, d1, d2].slice(0, len)); } catch (e) {}
+    logMidi(st, d1, d2);
+  }
+}
+
+/* ---- one engine from the start (the screen); the first touch adds the sound */
+let send = () => {}, idle = null, eng = null, ac = null;
+function startIdle() {
+  $("status").textContent = T("Le son démarre au premier appui (touche, bouton ou clavier).", "Sound starts at the first press (a key, a button or the keyboard).");
+  try {
+    const L = new Float32Array(256), R = new Float32Array(256);
+    eng = new Engine(wasmBytes, null);
+    eng.emit = onUi;
+    send = d => eng.input(d);
+    idle = setInterval(() => { for (let k = 0; k < 4; k++) eng.render(L, R); }, 23);
+  } catch (err) {
+    $("status").textContent = T("Ce navigateur refuse WebAssembly ici.", "This browser refuses WebAssembly here.");
+  }
+}
+function onPage(why) {
+  const sp = ac.createScriptProcessor(1024, 0, 2);
+  clearInterval(idle);
+  sp.onaudioprocess = ev => eng.render(ev.outputBuffer.getChannelData(0), ev.outputBuffer.getChannelData(1));
+  sp.connect(ac.destination);
+  send = d => eng.input(d);
+  $("status").textContent = T("Son actif (moteur sur la page, ", "Sound on (engine on the page, ") + ac.sampleRate + " Hz).";
+  if (why) console.info("audio worklet unavailable:", why);
+}
+function startAudio() {
+  if (ac) { if (ac.state !== "running") ac.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC || !eng) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+  try { ac = new AC({ sampleRate: 44100, latencyHint: "interactive" }); } catch (e) { ac = new AC(); }
+  ac.resume();
+  const one = ac.createBufferSource(); one.buffer = ac.createBuffer(1, 1, ac.sampleRate); one.connect(ac.destination); one.start();
+  (async () => {
+    try {
+      if (!ac.audioWorklet || ac.sampleRate !== 44100) throw new Error("no audioWorklet at 44.1 kHz");
+      await ac.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" })));
+      const mem = new Uint8Array(eng.x.memory.buffer).slice();
+      const node = new AudioWorkletNode(ac, "kglitch", { numberOfInputs: 0, outputChannelCount: [2], processorOptions: { bytes: wasmBytes, mem } });
+      clearInterval(idle);
+      node.port.onmessage = ev => onUi(ev.data);
+      node.onprocessorerror = () => { node.disconnect(); onPage("processor error"); };
+      node.connect(ac.destination);
+      send = d => node.port.postMessage(d);
+      $("status").textContent = T("Son actif (audio worklet, ", "Sound on (audio worklet, ") + ac.sampleRate + " Hz).";
+    } catch (err) { onPage(err && err.message); }
+    setMaster();
+  })();
+}
+["pointerdown", "keydown", "touchstart"].forEach(t => window.addEventListener(t, startAudio, { capture: true, passive: true }));
+document.addEventListener("visibilitychange", () => { if (!document.hidden && ac && ac.state !== "running") ac.resume(); });
+
+/* ---- the panel */
+let masterV = 0.75;
+function setMaster() { send({ t: "master", v: Math.round(masterV * masterV * 4096) }); }
+const btnEls = [];
+function press(id, down) { send({ t: "btn", id, down }); const b = btnEls[id]; if (b) b.el.classList.toggle("down", down); }
+function holdable(el, id) {
+  el.addEventListener("pointerdown", e => { e.preventDefault(); press(id, true); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(t => el.addEventListener(t, () => { if (el.classList.contains("down")) press(id, false); }));
+  el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); press(id, true); setTimeout(() => press(id, false), 80); } });
+}
+for (const [name, label] of BTN_GRID) {
+  const id = BTN[name], el = document.createElement("button");
+  el.type = "button"; el.className = "btn"; el.title = name; el.innerHTML = `<strong>${label}</strong>`;
+  holdable(el, id); $("btns").appendChild(el); btnEls[id] = { el };
+}
+for (const name of ["OCT_DOWN", "OCT_UP"]) {
+  const id = BTN[name], el = document.createElement("button");
+  el.type = "button"; el.className = "oct"; el.textContent = name === "OCT_DOWN" ? "OCT-" : "OCT+";
+  holdable(el, id); $("octs").appendChild(el); btnEls[id] = { el };
+}
+function makeEnc(parent, name, enc, cls, sub) {
+  const w = document.createElement("div"), k = document.createElement("div"), b = document.createElement("b"), i = document.createElement("i");
+  w.className = "enc" + (cls ? " " + cls : ""); k.className = "knob"; k.tabIndex = 0; k.setAttribute("role", "slider"); k.setAttribute("aria-label", name);
+  b.textContent = name; i.textContent = sub || " ";
+  w.append(k, b, i); parent.appendChild(w);
+  let ang = 0, y0 = null, acc = 0;
+  const turn = s => { if (!s) return; ang += s * 12; k.style.setProperty("--a", ang + "deg"); send({ t: "turn", enc, steps: s }); };
+  k.addEventListener("pointerdown", e => { y0 = e.clientY; acc = 0; k.setPointerCapture(e.pointerId); });
+  k.addEventListener("pointermove", e => { if (y0 === null) return; acc += (y0 - e.clientY); y0 = e.clientY; const s = Math.trunc(acc / 6); if (s) { acc -= s * 6; turn(s); } });
+  k.addEventListener("pointerup", () => { y0 = null; });
+  k.addEventListener("wheel", e => { e.preventDefault(); turn(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  k.addEventListener("keydown", e => { if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); turn(1); } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); turn(-1); } });
+  return { turn };
+}
+(function makeMaster(parent) {
+  const w = document.createElement("div"), k = document.createElement("div"), b = document.createElement("b"), i = document.createElement("i");
+  w.className = "enc m"; k.className = "knob"; k.tabIndex = 0; k.setAttribute("role", "slider"); k.setAttribute("aria-label", "MASTER");
+  b.textContent = "MASTER"; i.textContent = " "; w.append(k, b, i); parent.appendChild(w);
+  let ang = (masterV - 0.5) * 240, y0 = null, acc = 0;
+  const apply = () => { k.style.setProperty("--a", ang + "deg"); masterV = Math.max(0, Math.min(1, ang / 240 + 0.5)); setMaster(); };
+  const turn = s => { if (!s) return; ang = Math.max(-120, Math.min(120, ang + s * 6)); apply(); };
+  k.addEventListener("pointerdown", e => { y0 = e.clientY; acc = 0; k.setPointerCapture(e.pointerId); });
+  k.addEventListener("pointermove", e => { if (y0 === null) return; acc += (y0 - e.clientY); y0 = e.clientY; const s = Math.trunc(acc / 3); if (s) { acc -= s * 3; turn(s); } });
+  k.addEventListener("pointerup", () => { y0 = null; });
+  k.addEventListener("wheel", e => { e.preventDefault(); turn(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  apply();
+})($("encs-top"));
+const encs = {};
+encs.SELECT = makeEnc($("encs-top"), "SELECT", ENC.SELECT, "", T("page / tempo", "page / tempo"));
+encs.PRESETS = makeEnc($("encs-bot"), "PRESETS", ENC.PRESETS, "", T("son", "sound"));
+encs.ALGO = makeEnc($("encs-bot"), "ALGO", ENC.ALGO, "", T("piste", "track"));
+["K1", "K2", "K3", "K4"].forEach(n => { encs[n] = makeEnc($("knobs"), n, ENC[n], "k"); });
+
+/* ---- the 27 keys, F3 .. G5, each named with its punch-in effect (FX held) */
+const NAMES = ["F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#", "E"];
+const keyEls = [];
+let mask = 0;
+(function layoutKeys() {
+  const host = $("keys"), whites = [];
+  for (let k = 0; k < 27; k++) if (!NAMES[k % 12].includes("#")) whites.push(k);
+  const ww = 100 / whites.length;
+  for (let k = 0; k < 27; k++) {
+    const el = document.createElement("div"), black = NAMES[k % 12].includes("#");
+    const fx = black ? 16 + PUNCH_BLACK.indexOf(k) : whites.indexOf(k);
+    el.className = "key " + (black ? "b" : "w");
+    el.innerHTML = (fx >= 0 && fx < 27 ? `<em>${FX[fx]}</em>` : "") + (NAMES[k % 12] === "C" ? "<span>C</span>" : "");
+    if (black) { const wi = whites.indexOf(k - 1); el.style.left = `calc(${(wi + 1) * ww}% - ${ww * 0.3}%)`; el.style.width = ww * 0.6 + "%"; }
+    else { const wi = whites.indexOf(k); el.style.left = wi * ww + "%"; el.style.width = `calc(${ww}% - 2px)`; }
+    el.addEventListener("pointerdown", e => { e.preventDefault(); el.setPointerCapture(e.pointerId); setKey(k, true); });
+    ["pointerup", "pointercancel"].forEach(t => el.addEventListener(t, () => setKey(k, false)));
+    host.appendChild(el); keyEls[k] = el;
+  }
+})();
+function setKey(k, on) {
+  const m = mask;
+  mask = on ? mask | (1 << k) : mask & ~(1 << k);
+  if (m !== mask) { send({ t: "keys", mask }); keyEls[k].classList.toggle("on", on); }
+}
+
+/* ---- the computer's keyboard */
+const LOW = ["KeyZ", "KeyS", "KeyX", "KeyD", "KeyC", "KeyF", "KeyV", "KeyB", "KeyH", "KeyN", "KeyJ", "KeyM", "Comma", "KeyL", "Period", "Semicolon", "Slash"];
+const HIGH = ["KeyQ", "Digit2", "KeyW", "Digit3", "KeyE", "Digit4", "KeyR", "KeyT", "Digit6", "KeyY", "Digit7", "KeyU", "KeyI", "Digit9", "KeyO"];
+function keyOf(code) { let i = LOW.indexOf(code); if (i >= 0) return i; i = HIGH.indexOf(code); return i >= 0 ? 12 + i : -1; }
+function tapBtn(id) { press(id, true); setTimeout(() => press(id, false), 70); }
+window.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.target.tagName === "SELECT") return;
+  const k = keyOf(e.code);
+  if (k >= 0) { e.preventDefault(); if (!e.repeat) setKey(k, true); return; }
+  if (e.code === "Tab") { e.preventDefault(); if (!e.repeat) press(BTN.FX, true); return; }   /* held: punch-in */
+  const map = { ArrowLeft: () => encs.SELECT.turn(-1), ArrowRight: () => encs.SELECT.turn(1), ArrowUp: () => encs.ALGO.turn(1),
+    ArrowDown: () => encs.ALGO.turn(-1), PageUp: () => encs.PRESETS.turn(-1), PageDown: () => encs.PRESETS.turn(1),
+    Space: () => tapBtn(BTN.PLAY), Enter: () => tapBtn(BTN.REC), Escape: () => tapBtn(BTN.HOME) };
+  const f = map[e.code];
+  if (f && !(e.code === "Enter" && e.target.tagName === "BUTTON")) { e.preventDefault(); if (!e.repeat || e.code.startsWith("Arrow") || e.code.startsWith("Page")) f(); }
+});
+window.addEventListener("keyup", e => { const k = keyOf(e.code); if (k >= 0) setKey(k, false); if (e.code === "Tab") press(BTN.FX, false); });
+window.addEventListener("blur", () => { for (let k = 0; k < 27; k++) setKey(k, false); if (btnEls[BTN.FX].el.classList.contains("down")) press(BTN.FX, false); });
+
+/* ---- MIDI: in (a clock, a controller) to the firmware; the firmware's out (the MPC CCs) to the output chosen */
+$("midi").addEventListener("click", async () => {
+  if (!navigator.requestMIDIAccess) { $("status").textContent = T("Web MIDI n'est pas disponible dans ce navigateur.", "Web MIDI is not available in this browser."); return; }
+  try {
+    const acc = await navigator.requestMIDIAccess();
+    const sel = $("mout");
+    const hook = () => {
+      let n = 0;
+      acc.inputs.forEach(i => { n++; i.onmidimessage = m => { const d = m.data; if (d.length && d[0] !== 0xFE) send({ t: "midi", st: d[0], d1: d[1] || 0, d2: d[2] || 0 }); }; });
+      const keep = sel.value;
+      sel.innerHTML = `<option value="">${T("Sortie MIDI : aucune", "MIDI out: none")}</option>`;
+      acc.outputs.forEach(o => { const op = document.createElement("option"); op.value = o.id; op.textContent = o.name; sel.appendChild(op); });
+      sel.value = keep; sel.hidden = false;
+      midiOut = sel.value ? acc.outputs.get(sel.value) : null;
+      $("status").textContent = n + T(" entrée(s) MIDI, ", " MIDI input(s), ") + acc.outputs.size + T(" sortie(s).", " output(s).");
+    };
+    sel.onchange = () => { midiOut = sel.value ? acc.outputs.get(sel.value) : null; };
+    acc.onstatechange = hook; hook();
+  } catch (err) { $("status").textContent = T("Accès MIDI refusé.", "MIDI access refused."); }
+});
+$("lang").addEventListener("click", () => { const u = new URL(location.href); if (EN) u.searchParams.delete("lang"); else u.searchParams.set("lang", "en"); location.href = u.href; });
+
+startIdle();
+</script>
+</body>
+</html>

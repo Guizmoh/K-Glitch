@@ -398,76 +398,6 @@ UI_SMALL static void graph_slicer(const track_t *t, uint16_t c)
             cv_rect(x, 85, 11, 3, C_WHITE);
     }
 }
-/* K-GLITCH (FX > DESTROY, D-SEQ, D-SETUP), the whole graph strip (240 x 124):
- *   a status line: OUT (FM-1 / MPC / BOTH), SEQ, AUTO, and the effect playing now, large, in its family's colour;
- *   the 16 steps of the effect sequence, two rows of 8: each filled in its family's colour with its name, the step
- *   playing framed in white, the step edited (D-SEQ) underlined;
- *   the effect playing now, large, and who plays it (KEY, SEQ, AUTO); CHAOS as a thin bar.
- * Families: loops and stutters (track 1's colour), filters and kills (2), time and pitch (3), destruction (4) */
-UI_SMALL static uint16_t kg_col(int32_t fx)
-{
-    if (fx <= PX_STUT || fx == PX_LOOP8T)
-        return TE_COL[0];
-    if ((fx >= PX_LPF && fx <= PX_TEL) || (fx >= PX_KLOW && fx <= PX_KHIGH))
-        return TE_COL[1];
-    if (fx == PX_REV || fx == PX_STOP || fx == PX_HALF || fx == PX_RWD || fx == PX_OCT || fx == PX_FREEZE)
-        return TE_COL[2];
-    return TE_COL[3];
-}
-UI_SMALL static int32_t kg_pill(int32_t x, const char *s, int on, uint16_t c)   /* a rounded tag; its right edge */
-{
-    int32_t w = text_w(&FONT_S, s) + 10;
-    cv_rect(x + 1, 0, w - 2, 18, on ? c : C_LINE);
-    cv_rect(x, 1, w, 16, on ? c : C_LINE);
-    cv_text(x + 5, 1, &FONT_S, s, on ? C_BLACK : C_GRAY);
-    return x + w + 4;
-}
-UI_SMALL static void graph_kg(void)
-{
-    static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
-    const page_t *pg = cur_page();
-    int32_t now = kg.now, x, i, play = song.playing ? (int32_t)kg.step : -1;
-    int32_t cur = pg->id[0] == G_KSTEP ? (int32_t)song.g[G_KSTEP] - 1 : -1;
-    uint32_t out = (uint32_t)song.g[G_KTGT] % 3u;
-    x = kg_pill(0, OUT[out], 1, out == KG_OUT_FM1 ? C_HI : TE_COL[3]);
-    x = kg_pill(x, "SEQ", song.g[G_KSEQ] != 0, C_HI);
-    x = kg_pill(x, "AUTO", song.g[G_KAUTO] != 0, C_HI);
-    for (i = 0; i < (int32_t)KG_STEPS; i++) {           /* the effect sequence */
-        int32_t cx = 1 + (i & 7) * 30, cy = 22 + (i >> 3) * 34, fx = kg.seq[i];
-        uint16_t c = fx >= 0 && fx < (int32_t)PUNCH_NFX ? kg_col(fx) : 0;
-        if (c) {
-            const char *n = KG_SHORT[fx];
-            cv_rect(cx, cy, 28, 30, c);
-            cv_text(cx + (28 - text_w(&FONT_S, n)) / 2, cy + 7, &FONT_S, n, C_BLACK);
-        } else {
-            cv_rect(cx, cy, 28, 30, C_LINE);
-            cv_rect(cx + 1, cy + 1, 26, 28, C_BLACK);
-            cv_rect(cx + 12, cy + 13, 4, 4, (i & 3) == 0 ? C_GRAY : C_DIM);   /* (the beats a little brighter) */
-        }
-        if (i == play) {                                /* the step playing: a white frame */
-            cv_rect(cx - 1, cy - 1, 30, 2, C_WHITE);
-            cv_rect(cx - 1, cy + 29, 30, 2, C_WHITE);
-            cv_rect(cx - 1, cy - 1, 2, 32, C_WHITE);
-            cv_rect(cx + 27, cy - 1, 2, 32, C_WHITE);
-        }
-        if (i == cur)                                   /* D-SEQ: the step edited */
-            cv_rect(cx + 2, cy + 31, 24, 2, C_WHITE);
-    }
-    {   /* the effect playing now, large, in its family's colour, with who plays it; CHAOS as a thin bar under it */
-        static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
-        int32_t ok = now >= 0 && now < (int32_t)PUNCH_NFX, w;
-        const char *n = ok ? PUNCH_NAME[now] : song.playing ? "READY" : "STOPPED";
-        uint16_t c = ok ? kg_col(now) : C_DIM;
-        w = text_w(&FONT_L, n);
-        cv_text(2, 90, &FONT_L, n, c);
-        if (ok && w + 10 + text_w(&FONT_S, SRC[kg.src & 3u]) < 174)
-            cv_text(w + 10, 106, &FONT_S, SRC[kg.src & 3u], C_GRAY);
-        cv_text(238 - text_w(&FONT_S, "CHAOS"), 90, &FONT_S, "CHAOS", C_DIM);
-        cv_rect(178, 110, 60, 3, C_LINE);
-        cv_rect(178, 109, (int32_t)song.g[G_KCHAOS] * 60 / 100, 5, TE_COL[0]);
-    }
-}
-
 UI_SMALL static uint32_t steps_hash(const track_t *t)
 {
     uint32_t h = 2166136261u, i;
@@ -513,13 +443,6 @@ UI_SMALL static uint32_t graph_signature(void)
     }
     if (pg->graph == GR_SLCR && t->p[P_SLCR])        /* the SLICER's step playing */
         h ^= (sl[song.sel].idx + 1u) * 2654435761u;
-    if (pg->graph == GR_KG) {                         /* K-GLITCH: the sequence, the step, the effect, the macros */
-        for (i = 0; i < KG_STEPS; i++)
-            h = (h ^ (uint32_t)(kg.seq[i] + 2)) * 16777619u;
-        h ^= (song.playing ? kg.step + 1u : 0u) * 977u + (uint32_t)(kg.now + 2) * 65537u + kg.src * 31u;
-        for (i = G_KCHAOS; i <= G_KCCCH; i++)
-            h = (h ^ (uint32_t)song.g[i]) * 16777619u;
-    }
     if (pg->graph == GR_SLOTS)                       /* (a checksum over each slot) */
         for (i = 0; i < 4u; i++)
             h ^= (uint32_t)project_used(i) << (20u + i);
@@ -871,10 +794,6 @@ UI_SMALL static void draw_graph(void)
             cv_oy = 0;
             graph_user();
             break;
-        case GR_KG:
-            cv_oy = 0;
-            graph_kg();
-            break;
         default:
             if (big_page(pg)) {
                 cv_oy = 0;
@@ -884,7 +803,7 @@ UI_SMALL static void draw_graph(void)
         }
     }
     top = !ui.home && !drum_note && (pg->graph == GR_BROWSE || pg->graph == GR_SLOTS || pg->graph == GR_USER ||
-                                     pg->graph == GR_ROLL || pg->graph == GR_KG || big_page(pg));   /* these draw from the top */
+                                     pg->graph == GR_ROLL || big_page(pg));   /* these draw from the top */
     cv_oy = 0;
     if (ui.hot_t && settings.zoom && !(top && (big_page(pg) || pg->graph == GR_ROLL) && !drum_note)) {   /* (the big values show it already) */                 /* focus (menu ZOOM): the touched value, large and white */
         int32_t x;
@@ -1127,6 +1046,7 @@ UI_SMALL static void ui_timers(void)
         ui.hot_t--;
 }
 
+#include "kg_ui.c"                               /* K-GLITCH: DESTROY, D-SEQ, D-SETUP drawn whole */
 static void vis_draw(void);                     /* ui_vis.c */
 static int vis_shown(void);
 static uint8_t vis_on, vis_shown_last, vis_name_t;   /* the visualiser (ui_vis.c): on, drawn last frame, its name's time */
@@ -1218,6 +1138,17 @@ UI_SMALL static void ui_draw(void)
         ui_timers();
         ui.force = 0;
         return;
+    }
+    if (!ui.home && cur_page()->graph == GR_KG) {      /* K-GLITCH: its own screen (kg_ui.c) */
+        kg_screen_draw();
+        ui_timers();
+        ui.force = 0;
+        return;
+    }
+    if (kg_shown) {                                     /* back from it */
+        kg_shown = 0;
+        lcd_fill(0, 0, 240, 240, C_BLACK);
+        ui.force = 1;
     }
     cursor_fix();
     if (ui.force)

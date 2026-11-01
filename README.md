@@ -1,34 +1,40 @@
 # K-GLITCH
 
-K-GLITCH is an FM-1 glitch instrument project based on the KAWA tracker firmware. The project is now a **working source-code fork**, not yet a separately validated firmware release.
+**DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-## What the KAWA base already gives us
+> État : version de développement **0.1**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
-The imported firmware has six tracks with pulse, wavetable, noise, FM, drum and sample sound engines; a step/song sequencer; a live FX page; and a 32,768-frame stereo capture ring. At KAWA's 44.1 kHz target rate that ring holds about 0.74 seconds of the internally generated mix. Its buffer effects include synced loops and stutters, scratch, reverse, freeze and tape-stop. Other live effects include bit crushing, sample-rate reduction, ring modulation and distortion. These functions operate on the FM-1's own output mix; an external line input is not required.
+## Essayer : l'émulateur
 
-K-GLITCH now adds a first autonomous performance gesture on the FX page: turn KNOB 2 (the second encoder) to toggle AUTO GLITCH. While the sequencer plays, the firmware makes a 55% per-step chance to choose one internally buffered loop, stutter, scratch, reverse, roll, tape-stop, dive or freeze gesture. It is quantized to sequencer rows and uses the existing audio capture and effect engine; turning AUTO off or stopping playback releases it. The gesture state is live-only and is not stored in a project. Density/intensity controls, a dedicated performance page and hardware tuning remain planned.
+Ouvrir [`emulator/index.html`](emulator/index.html) dans un navigateur (une seule page, fonctionne hors ligne). Le firmware y tourne réellement (son, écran, séquenceur, effets) en WebAssembly. Un break jungle à 170 BPM est chargé : **PLAY** (ou Espace), puis **FX**.
 
-## One firmware: STANDALONE, MPC REMOTE, HYBRID
+Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cible wasm32 et wasm-ld, Python 3 + Pillow).
 
-On the FX (LIVE) page, KNOB 4 (TARGET) now goes past the tracks to two more choices. **MPC** sends the live effects only as USB-MIDI CCs (channel 16, 127 held / 0 released) to drive an MPC through MIDI Learn. **MAST+MPC** plays them on the FM-1 and sends them at the same time. Held keys, the sequencer's LIVE lane and AUTO GLITCH all go out. The table of numbers and the MPC setup are in [`docs/MPC_REMOTE.md`](docs/MPC_REMOTE.md). Tested in the simulator only.
+## Ce que K-GLITCH ajoute à SLOOP
 
-## Build and development
+Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre trois nouvelles pages, dessinées en plein écran dans le style « Ribbon classique » de K-WASUB :
 
-See [`source/BUILDING.md`](source/BUILDING.md) for the upstream host simulator, browser emulator and FM-1 package builds. The FM-1 package build requires the JieLi pi32v2 toolchain and the specified AC79 SDK files. This checkout was not built or validated on an FM-1 during the bootstrap.
+| Page | K1 | K2 | K3 | K4 |
+| --- | --- | --- | --- | --- |
+| **DESTROY** | CHAOS | DENSITY | MOVEMENT | OUT (FM-1 / MPC / BOTH) |
+| **FX SEQ** | le pas (1–16) | son effet | SEQ on/off | DICE : mutation aléatoire |
+| **SETUP** | AUTO on/off | CLEAR la séquence | canal MIDI de la MPC | BREAK : charge un break jungle 170 BPM |
 
-`source/` is imported from KAWA commit [`958901e`](https://github.com/Guizmoh/Kawa-Tracker-Fm1/commit/958901e) with its existing source layout and build tooling. K-GLITCH changes the displayed product name, output package name and development package identity; firmware modules retain their KAWA file names to keep the inherited build working. The provisional package identity must be confirmed before any hardware installation.
+- **Live punch-in** : FX maintenu + une touche (les 27 effets de SLOOP).
+- **Séquenceur d'effets** : un effet (ou rien) sur chacun des 16 pas, calé sur le tempo.
+- **AUTO** : à chaque double-croche, DENSITY % de chances de lancer un geste ; CHAOS élargit le choix (des boucles douces jusqu'au tape stop, freeze, wobble…), MOVEMENT règle leur longueur.
+- **DICE / MUTATE** : écrit une nouvelle séquence d'effets selon CHAOS et DENSITY.
+- **MPC** : les effets partent en MIDI CC — voir [docs/MPC_REMOTE.md](docs/MPC_REMOTE.md).
 
-## Licensing and credits
+Priorité : touche > séquenceur > AUTO. Ces réglages sont « live » : ils ne sont pas encore sauvegardés dans les projets.
 
-K-GLITCH retains KAWA's GPL-3.0-only license and the upstream [`LICENSING.md`](LICENSING.md), which identifies KAWA contributions by Omnipotard and the separate platform contributions by Leo Kuroshita / Hügelton Instruments, SLOOP and Dinghy. Third-party notices and font licenses remain under `source/`. Do not remove or replace those notices when adapting the firmware. The KAWA and K-WASUB repositories are reference projects; only KAWA source is included here.
+## Code
 
-This project is not affiliated with or endorsed by M-VAVE or Hügelton Instruments.
+- `source/firmware/src/kglitch.c` : le moteur (séquenceur d'effets, AUTO, MUTATE, sortie MPC, break de démo).
+- `source/firmware/src/kg_ui.c` + `kg_font5.h` : les écrans K-GLITCH.
+- `source/firmware/host/emulator.c`, `source/web/emulator.html`, `source/tools/build_emulator.py` : l'émulateur.
+- Tests : `source/tests/kglitch_test.c`, et `source/tests/ui_pages_test.c` (captures des écrans).
 
-## Status
+Voir aussi [docs/ROADMAP.md](docs/ROADMAP.md). Les crédits et licences de SLOOP / Felucca sont dans `source/LICENSING.md` et `source/LICENSES/` ; les icônes et l'image du panneau de Felucca restent sous leurs propres conditions (voir `source/LICENSING.md`).
 
-- [Architecture and hardware constraints](docs/ARCHITECTURE.md)
-- [Feature roadmap](docs/ROADMAP.md)
-- [Upstream KAWA licensing and credits](LICENSING.md)
-- FM-1 CPU, free RAM, interrupt headroom, package identity and physical controls still need confirmation.
-- AUTO GLITCH and MPC REMOTE/HYBRID are implemented in source and tested in the host simulator; they have not been compiled for the FM-1 or validated on hardware or with an MPC.
-- [MPC REMOTE / HYBRID: CC table and setup](docs/MPC_REMOTE.md)
+Projet non affilié à M-VAVE, Hügelton Instruments ni isod89.

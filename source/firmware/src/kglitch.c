@@ -163,3 +163,33 @@ static void kg_clear(void)
     for (i = 0; i < KG_STEPS; i++)
         kg.seq[i] = -1;
 }
+
+/* BREAK (FX > D-SETUP, KNOB 4; the emulator at power-on): a two-bar jungle break on the drum track, after the classic
+ * amen phrasing (kicks 1 and 3, the snare's push and its ghosts, a ride in 8ths), at 170 BPM: something to destroy at
+ * once. Main loop; the drum track's pattern only (its sounds, the kit, stay) */
+static void kg_break(void)
+{
+    /* per 16th of the two bars: K kick, S snare, g ghost snare, h hat, o open hat, r ride, c crash */
+    static const char *const BAR[2] = {"K.K.S..gKgK.S..g", "K.K.S..gKg..Sg.g"};
+    static const char *const TOP = "r.h.r.h.r.h.r.o.";
+    track_t *t = TDRUM;
+    uint32_t b, i;
+    fm1_irq_off();
+    for (i = 0; i < NSTEP; i++)
+        memset(&t->dstep[i], 0, sizeof t->dstep[i]);
+    for (b = 0; b < 2u; b++)
+        for (i = 0; i < 16u; i++) {
+            dstep_t *s = &t->dstep[b * 16u + i];
+            char c = BAR[b][i], h = TOP[i];
+            if (c == 'K') dstep_set(s, 0, i ? LV_NORM : LV_HARD, 0);
+            if (c == 'S') dstep_set(s, 2, LV_HARD, 0);
+            if (c == 'g') dstep_set(s, 8, LV_GHOST, 0);
+            if (h == 'r') dstep_set(s, 12, LV_NORM, 0);
+            if (h == 'h') dstep_set(s, 4, LV_SOFT, 0);
+            if (h == 'o') dstep_set(s, 5, LV_NORM, 0);
+        }
+    dstep_set(&t->dstep[31], 4, LV_NORM, 1);          /* (a hat ratchet into the turn) */
+    t->p[P_SLEN] = 32;
+    song.g[G_BPM] = 170;
+    fm1_irq_on();
+}

@@ -573,7 +573,7 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
     if (!v)
         return;
     if (pg->scope == SC_GLOBAL && (id == G_LOAD || id == G_SAVE || id == G_CLRSEQ || id == G_INITSND || id == G_NEWPRJ ||
-                                   id == G_KCLR) &&
+                                   id == G_KCLR || id == G_KBRK) &&
         ui.arm != id) {                                   /* one detent arms, a second one within ~1.5 s acts */
         *vp = 0;
         ui.arm = (uint8_t)id;
@@ -612,6 +612,11 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         kg_mutate(ui.frame + fm1_ms);
         song.g[G_KSFX] = (int16_t)(kg.seq[(song.g[G_KSTEP] - 1) & 15] + 1);
         ui_message("MUTATED");
+        break;
+    case G_KBRK:                                          /* K-GLITCH: the demo break, 170 BPM */
+        *vp = 0;
+        kg_break();
+        ui_message("JUNGLE BREAK 170");
         break;
     case G_KCLR:
         *vp = 0;
