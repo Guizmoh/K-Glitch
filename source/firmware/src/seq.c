@@ -2200,6 +2200,15 @@ static void key_down(uint32_t k)
     kb_kind[k] = KS_NONE;
     kb_trk[k] = (uint8_t)sel;
     kb_n[k] = 0;
+    if (layer == LY_PLAY && kg_pads == 2u) {          /* K-GLITCH SEQ: a white key picks the step */
+        int32_t w = punch_key(k);
+        if (w >= 0 && w < 16) {
+            kg_keystep = (uint8_t)(w + 1);
+            return;
+        }
+    }
+    if (layer == LY_PLAY && kg_pads == 1u)            /* K-GLITCH's pages: the keys are the punch-in pads */
+        layer = LY_FX;
     switch (layer) {
     case LY_FX: {                                     /* FX held: the keys pick a punch-in effect (white and black) */
         int32_t fx = kg_fx_of_key(k);              /* (K-GLITCH: BANK DESTROY, the white keys' DRUM DESTROYER effects) */
@@ -2207,6 +2216,8 @@ static void key_down(uint32_t k)
         if (fx >= 0 && fx < (int32_t)KG_NFX) {
             punch.req = (int8_t)fx;
             punch.keybit = 1u << k;
+            if (fx >= (int32_t)PUNCH_NFX)               /* (K-GLITCH: a DRUM DESTROYER pad selects its effect) */
+                kg_sel = (uint8_t)(fx - (int32_t)PUNCH_NFX);
         }
         return;
     }

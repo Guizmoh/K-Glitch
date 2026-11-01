@@ -62,6 +62,9 @@ static const char *const N_SYNC[] = {"INT", "USB", "TRS"};   /* G_SYNC: the temp
 static const char *const N_GO[] = {"--", "GO"};
 static const char *const N_KOUT[] = {"FM-1", "MPC", "BOTH"};   /* K-GLITCH: where the effects play */
 static const char *const N_KBANK[] = {"SLOOP", "DESTR"};          /* K-GLITCH: the white keys' effects */
+static const char *const N_KSTYLE_P[] = {"JUNGLE", "BRKCORE", "DNB", "DRILL", "IDM", "GLITCH", "HALFTM", "FTWORK"};   /* (kg_rhythm.c) */
+static const char *const N_KEVERY[] = {"OFF", "1 BAR", "2 BAR", "4 BAR", "8 BAR"};
+static const char *const N_KCTGT[] = {"DRUMS", "ALL"};
 static const char *const N_KFX[] = {"--", "LOOP4", "LOOP8", "LOOP16", "LOOP32", "STUTT", "REV", "STOP", "HALF", "LOW",
                                     "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBL", "K LOW", "K MID", "K HI",
                                     "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE",
@@ -221,12 +224,21 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KSEQ] = PE("SEQ", N_ONOFF, 1),
     [G_KMUT] = PE("DICE", N_GO, 0),
     [G_KAUTO] = PE("AUTO", N_ONOFF, 0),
-    [G_KCLR] = PE("CLEAR", N_GO, 0),
+    [G_KCLR] = PE("CLR SQ", N_GO, 0),
     [G_KCCCH] = PE("CH", N_MCH, 16),
-    [G_KBRK] = PE("BREAK", N_GO, 0),
     [G_KBANK] = PE("BANK", N_KBANK, 1),
     [G_KINT] = {"INTENS", F_INT, 0, 100, 50, 0, "%"},
     [G_KHOLD] = PE("HOLD", N_ONOFF, 0),
+    [G_KLFO] = PE("LFO", N_ONOFF, 0),
+    [G_KCLEAR] = PE("CLEAR", N_GO, 0),
+    [G_KSTYLE] = PE("STYLE", N_KSTYLE_P, 0),
+    [G_KVAR] = {"VARIA", F_INT, 0, 100, 20, 0, "%"},
+    [G_KGEN] = PE("GO", N_GO, 0),
+    [G_KMUTR] = PE("MUTATE", N_GO, 0),
+    [G_KREST] = PE("RESTOR", N_GO, 0),
+    [G_KEVERY] = PE("EVERY", N_KEVERY, 0),
+    [G_KCTGT] = PE("TARGET", N_KCTGT, 0),
+    [G_KCMODE] = PE("MODE", N_ONOFF, 0),
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -423,10 +435,15 @@ static const page_t PAGES[] = {
     {"LFO", FAM_LFO, SC_TRACK, GR_LFO, {P_LRATE, P_LWAVE, P_LPHASE, P_LFADE}},
     {"LFO 2", FAM_LFO, SC_TRACK, GR_LFO, {P_LSYNC, P_LTRIG, P_LPOL, 0xFF}},   /* 2.6 (Felucca 1.4): SYNC TRIG POL */
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
-    {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KTGT}},   /* K-GLITCH: the macros, OUT */
-    {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KSEQ, G_KMUT}},         /* the effect sequencer */
-    {"D-BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, 0xFF}},        /* the keys' bank, INTENSITY, HOLD */
-    {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KAUTO, G_KCLR, G_KCCCH, G_KBRK}},      /* AUTO, clear, the MPC channel, a break */
+    /* K-GLITCH (kg_ui.c draws them whole): DESTROY the main screen (ALGORITHM: the effect, PRESETS: its INTENSITY, the
+     * white keys: the pads), then its three modes DRUMS, CHOP, CHAOS, and the effect sequencer, the bank, the setup */
+    {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
+    {"D-DRUMS", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
+    {"D-CHOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KMUTR, G_KREST, G_KEVERY, G_KCTGT}},
+    {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KSEQ, G_KMUT}},
+    {"D-BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KLFO}},
+    {"D-CHAOS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
+    {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KTGT, G_KCCCH, G_KCLR, 0xFF}},
     {"FX", FAM_FX, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},
     {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},   /* drum track too */

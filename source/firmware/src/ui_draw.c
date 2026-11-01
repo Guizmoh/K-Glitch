@@ -1053,6 +1053,8 @@ static uint8_t vis_on, vis_shown_last, vis_name_t;   /* the visualiser (ui_vis.c
 UI_SMALL static void ui_draw(void)
 {
     ui.frame++;
+    if (ui.home || ui.menu || cur_page()->graph != GR_KG)
+        kg_pads = 0;                                    /* (K-GLITCH: the keys are pads only on its pages: kg_screen_draw) */
     pads_tick();
     if (rec_go) {                                       /* the take started: say so */
         rec_go = 0;

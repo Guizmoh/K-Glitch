@@ -1,6 +1,6 @@
 # K-GLITCH — MPC REMOTE / BOTH
 
-Un seul firmware : la page **FX > DESTROY**, **KNOB 4 (OUT)**, choisit où jouent les effets, sans reflasher.
+Un seul firmware : la page **FX > SETUP**, **KNOB 1 (OUT)**, choisit où jouent les effets, sans reflasher.
 
 | OUT | Ce qui se passe |
 | --- | --- |
@@ -8,7 +8,9 @@ Un seul firmware : la page **FX > DESTROY**, **KNOB 4 (OUT)**, choisit où jouen
 | `MPC` | Le FM-1 reste sec ; chaque effet part en MIDI CC vers la MPC. |
 | `BOTH` | Les deux : l'effet joue sur le FM-1 **et** part en CC. |
 
-Les effets envoyés viennent des touches (FX maintenu + touche), du **séquenceur d'effets** (FX SEQ) et d'**AUTO** (SETUP).
+Les effets envoyés viennent des pads (touches blanches sur les pages K-GLITCH, ou FX maintenu + touche), du **séquenceur d'effets** (SEQ), d'**AUTO** et du mode **CHAOS**. Le réglage OUT est sur la page **SETUP**.
+
+Pour que la MPC reçoive aussi le **rythme** (généré par DRUMS, muté par CHOP / CHAOS) : GLO > SYSTEM > MIDI OUT sur **SEQ** ; la batterie sort sur le canal de GLO > DRUMS > CH (10 par défaut).
 
 ## Messages
 

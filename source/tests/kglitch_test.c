@@ -46,7 +46,7 @@ static void reset(void)
     kg.sent_mac[0] = kg.sent_mac[1] = kg.sent_mac[2] = -1;
     song.g[G_KCHAOS] = 40, song.g[G_KDENS] = 50, song.g[G_KMOVE] = 50;
     song.g[G_KTGT] = KG_OUT_FM1, song.g[G_KSEQ] = 1, song.g[G_KAUTO] = 0, song.g[G_KCCCH] = 16;
-    song.g[G_KBANK] = 0, song.g[G_KINT] = 50, song.g[G_KHOLD] = 0;
+    song.g[G_KBANK] = 0, song.g[G_KINT] = 50, song.g[G_KHOLD] = 0, song.g[G_KLFO] = 0, song.g[G_KCMODE] = 0, song.g[G_KEVERY] = 0;
     kd.cur = -1, kd.g = 0, kd_want = -1;
     clk_beat = 0, clk_pos = 0;
     song.playing = 1;
@@ -238,6 +238,97 @@ int main(int argc, char **argv)
     kg_mutate(7);
     for (i = 0; i < 16u; i++) assert(kg.seq[i] < 0 || kg.seq[i] >= (int8_t)PUNCH_NFX);
     printf("kglitch: BANK DESTROY: AUTO and MUTATE pick the DRUM DESTROYER bank                       ok\n");
+    /* 8. DRUMS: every style writes two bars (hits on kicks and snares), its tempo, a kit; it is the ORIGINAL */
+    for (k = 0; k < KS_N; k++) {
+        uint32_t hits = 0, kick = 0;
+        reset();
+        song.g[G_KVAR] = 0;
+        kr_generate(k);
+        for (i = 0; i < 32u; i++) {
+            hits += (uint32_t)__builtin_popcount(TDRUM->dstep[i].on[0] | TDRUM->dstep[i].on[1] << 8);
+            kick += dstep_has(&TDRUM->dstep[i], 0);
+        }
+        assert(hits > 16u && kick >= 3u && TDRUM->p[P_SLEN] == 32 && song.g[G_BPM] == KG_STYLE[k].bpm && kr.has && !kr.mutated);
+        assert(TDRUM->p[P_E0] == (int16_t)(DRUM_SAMPLED + KG_STYLE[k].kit));
+    }
+    printf("kglitch: DRUMS: the %u styles write two bars, their tempo and kit, the ORIGINAL           ok\n", KS_N);
+    /* 9. CHOP: CHAOS 0 DENSITY 0 changes nothing; at 100 it does; always from the ORIGINAL; RESTORE is exact; a change
+     * by hand becomes the ORIGINAL */
+    {
+        uint32_t sig_o, m1, m2;
+        reset();
+        song.g[G_KVAR] = 0;
+        kr_generate(KS_JUNGLE);
+        sig_o = kr_sig();
+        song.g[G_KCHAOS] = 0, song.g[G_KDENS] = 0;
+        kr_mutate(1);
+        assert(kr_sig() == sig_o && kr.changed == 0u);
+        song.g[G_KCHAOS] = 100, song.g[G_KDENS] = 100;
+        kr_mutate(1);
+        m1 = kr_sig();
+        assert(m1 != sig_o && kr.changed > 0u && kr.mutated);
+        for (i = 0; i < 50u; i++) kr_mutate(1);
+        for (i = 0; i < 32u; i++)                       /* (never further than one mutation from the ORIGINAL: the */
+            assert(TDRUM->micro[i] >= MICRO_MIN && TDRUM->micro[i] <= MICRO_MAX);   /* micro timing bounded) */
+        kr_restore();
+        assert(kr_sig() == sig_o && !kr.mutated);
+        kr_mutate(0);
+        m2 = kr_sig();
+        dstep_set(&TDRUM->dstep[1], 9, LV_NORM, 0);    /* by hand */
+        kr_mutate(0);
+        kr_restore();
+        assert(dstep_has(&TDRUM->dstep[1], 9) && kr_sig() != sig_o && m2 != sig_o);   /* the hand's pattern is the ORIGINAL */
+    }
+    printf("kglitch: CHOP: no change at 0, from the ORIGINAL, RESTORE exact, a hand edit kept        ok\n");
+    /* 10. CHOP EVERY 1 BAR and CHAOS mode mutate on the bar while PLAY runs (through mix_block, the real path) */
+    {
+        static int32_t o[CTL * 2u];
+        uint32_t b, sig_o, fxs = 0;
+        reset();
+        song.g[G_KVAR] = 0;
+        kr_generate(KS_DNB);
+        sig_o = kr_sig();
+        song.g[G_KEVERY] = 1;
+        song.playing = 0;
+        transport_req = 1;
+        for (b = 0; b < FS * 3u / CTL; b++) mix_block(o, CTL);
+        assert(kr.mutated && kr_sig() != sig_o && "EVERY 1 BAR");
+        transport_req = 2; mix_block(o, CTL);
+        kr_restore();
+        song.g[G_KEVERY] = 0, song.g[G_KCMODE] = 1, song.g[G_KCHAOS] = 100;
+        transport_req = 1;
+        for (b = 0; b < FS * 3u / CTL; b++) {
+            mix_block(o, CTL);
+            fxs += kg.now >= 0;
+            for (i = 0; i < CTL * 2u; i++) assert(o[i] >= -32768 && o[i] <= 32767);
+        }
+        assert(kr.mutated && fxs > 100u && "CHAOS mode: mutations and AUTO");
+        transport_req = 2; mix_block(o, CTL);
+        song.g[G_KCMODE] = 0;
+    }
+    printf("kglitch: CHOP EVERY and CHAOS mode mutate on the bar (mix_block), output bounded        ok\n");
+    /* 11. the LFO: off 0; on, within MOVEMENT / 2; INTENSITY per effect */
+    {
+        int32_t lo = 100, hi = -100;
+        reset();
+        song.g[G_KLFO] = 1, song.g[G_KMOVE] = 80;
+        run(NS, -1, 0, 0, ol, or_);
+        for (i = 0; i < 400u; i++) {
+            int32_t l[CTL] = {0}, r[CTL] = {0};
+            punch_process(l, r, CTL);
+            clk_pos += CTL * 120u * 40u; if (clk_pos >= BEAT_U) clk_pos -= BEAT_U, clk_beat++;
+            if (kd_lfo < lo) lo = kd_lfo;
+            if (kd_lfo > hi) hi = kd_lfo;
+        }
+        assert(lo >= -40 && hi <= 40 && hi - lo > 40 && "the LFO swings within MOVEMENT / 2");
+        song.g[G_KLFO] = 0;
+        { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); }
+        assert(kd_lfo == 0);
+        kd_int[DD_FUZZ] = 90; kd.cur = DD_FUZZ;
+        assert(dd_int() == 90u);
+        kd.cur = -1; kd_int[DD_FUZZ] = 50;
+    }
+    printf("kglitch: LFO within MOVEMENT / 2 (off: 0); INTENSITY per effect                         ok\n");
     printf("kglitch_test: passed\n");
     return 0;
 }

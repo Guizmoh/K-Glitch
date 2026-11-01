@@ -204,37 +204,80 @@ int main(int argc, char **argv)
     }
     open_family(FAM_EDIT); ui.force = 1; frame(); ppm("page-edit");
     open_family(FAM_FX); ui.force = 1; frame(); ppm("page-destroy");   /* K-GLITCH: FX opens on DESTROY */
-    check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: FX opens on DESTROY (CHAOS DENS MOVE OUT)");
-    {   /* K-GLITCH: MUTATE from D-SEQ, then playing: the step framed, the effect large; OUT MPC; D-SETUP */
-        uint32_t j;
+    check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: FX opens on DESTROY (CHAOS DENS MOVE CLEAR)");
+    {   /* K-GLITCH: the main screen (pads, ALGORITHM, PRESETS), DRUMS, CHOP, SEQ, BANK, CHAOS, SETUP, CLEAR */
+        uint32_t j, sig0, bpm0 = (uint32_t)song.g[G_BPM];
+        static track_t drum0;                           /* (the drum track as SLOOP's tests below expect it) */
+        drum0 = *TDRUM;
+        song.g[G_KBANK] = 1;
         song.g[G_KDENS] = 80, song.g[G_KCHAOS] = 75;
+        encs[panel.enc[EN_ALGO]] = 2; frame();
+        check(kg_sel == DD_GLITCH && song.sel == 0, "K-GLITCH DESTROY: ALGORITHM picks the effect (not the track)");
+        encs[panel.enc[EN_PRESET]] = 5; frame();
+        check(kd_int[DD_GLITCH] > 50 && song.g[G_KINT] == kd_int[DD_GLITCH], "K-GLITCH DESTROY: PRESETS its INTENSITY");
+        fm1_in.notes = 1u << key_of_white(5); frame();
+        check(punch.req == (int8_t)(PUNCH_NFX + 5) && kg_sel == 5 && !TSEL->seq_idx,
+              "K-GLITCH DESTROY: a white key alone is a pad (PITCH MAD), and selects it");
+        ui.force = 1; frame(); ppm("page-destroy");
+        fm1_in.notes = 0; frame();
+        check(punch.req == -1, "K-GLITCH DESTROY: the pad up: the mix comes back");
         encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-SEQ"), "K-GLITCH: SELECT: D-SEQ");
+        check(!strcmp(cur_page()->title, "D-DRUMS"), "K-GLITCH: SELECT: DRUMS");
+        sig0 = kr_sig();
+        song.g[G_KSTYLE] = KS_DRILL;
+        encs[panel.enc[EN_K4]] = 1; frame();
+        check(kr_sig() != sig0 && song.g[G_BPM] == 142 && TDRUM->p[P_SLEN] == 32 && kr.has,
+              "K-GLITCH DRUMS: GENERATE writes a DRILL pattern, 142 BPM, the ORIGINAL kept");
+        check(kg_pads == 0u, "K-GLITCH DRUMS: the keys play the drums");
+        ui.force = 1; frame(); ppm("page-k-drums");
+        encs[panel.enc[EN_SELECT]] = 1; frame();
+        check(!strcmp(cur_page()->title, "D-CHOP"), "K-GLITCH: SELECT: CHOP");
+        sig0 = kr_sig();
+        encs[panel.enc[EN_K1]] = 1; frame();
+        check(kr.mutated && kr_sig() != sig0, "K-GLITCH CHOP: MUTATE changes the rhythm");
+        tap(B_PLAY);
+        for (j = 0; j < 30u; j++) frame();
+        ui.force = 1; frame(); ppm("page-k-chop");
+        encs[panel.enc[EN_K2]] = 1; frame();
+        check(!kr.mutated && kr_sig() == sig0, "K-GLITCH CHOP: RESTORE brings the ORIGINAL back");
+        encs[panel.enc[EN_SELECT]] = 1; frame();
+        check(!strcmp(cur_page()->title, "D-SEQ"), "K-GLITCH: SELECT: SEQ");
         encs[panel.enc[EN_K4]] = 1; frame();
         for (j = 0; j < 16u && kg.seq[j] < 0; j++) {}
-        check(j < 16u, "K-GLITCH: D-SEQ KNOB 4: MUTATE writes an effect sequence");
-        encs[panel.enc[EN_K1]] = 2; frame();
-        check(song.g[G_KSTEP] == 3 && song.g[G_KSFX] == kg.seq[2] + 1, "K-GLITCH: KNOB 1 the step, KNOB 2 shows its effect");
+        check(j < 16u, "K-GLITCH SEQ: KNOB 4 (DICE) writes an effect sequence");
+        key(key_of_white(2)); frames(2);
+        check(song.g[G_KSTEP] == 3 && song.g[G_KSFX] == kg.seq[2] + 1 && punch.req == -1,
+              "K-GLITCH SEQ: a white key picks the step (no effect, no note)");
         encs[panel.enc[EN_K2]] = 1; frame();
-        check(kg.seq[2] + 1 == song.g[G_KSFX], "K-GLITCH: KNOB 2 sets the step's effect");
-        kg.seq[0] = PX_STUT;
-        tap(B_PLAY);
-        for (j = 0; j < 40u && !(song.playing && kg.now >= 0); j++) frame();
-        ui.force = 1; frame(); ppm("page-destroy-seq");
-        encs[panel.enc[EN_SELECT]] = -1; frame();
-        encs[panel.enc[EN_K4]] = 1; frame();
-        check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH: DESTROY KNOB 4: OUT MPC");
+        check(kg.seq[2] + 1 == song.g[G_KSFX], "K-GLITCH SEQ: KNOB 2 sets the step's effect");
         for (j = 0; j < 40u && kg.now < 0; j++) frame();
-        ui.force = 1; frame(); ppm("page-destroy-play");
-        encs[panel.enc[EN_K4]] = -1; frame();
-        tap(B_PLAY); frames(2);
-        encs[panel.enc[EN_SELECT]] = 2; frame();
-        check(!strcmp(cur_page()->title, "D-BANK"), "K-GLITCH: D-BANK (BANK, INTENSITY, HOLD)");
-        ui.force = 1; frame(); ppm("page-destroy-bank");
+        ui.force = 1; frame(); ppm("page-k-seq");
         encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-SETUP"), "K-GLITCH: D-SETUP (AUTO, CLEAR, MPC CH)");
-        ui.force = 1; frame(); ppm("page-destroy-setup");
-        kg_clear(); song.g[G_KTGT] = 0; song.g[G_KSFX] = 0;
+        check(!strcmp(cur_page()->title, "D-BANK"), "K-GLITCH: SELECT: BANK (BANK, INTENSITY, HOLD, LFO)");
+        ui.force = 1; frame(); ppm("page-k-bank");
+        encs[panel.enc[EN_SELECT]] = 1; frame();
+        check(!strcmp(cur_page()->title, "D-CHAOS"), "K-GLITCH: SELECT: CHAOS");
+        encs[panel.enc[EN_K1]] = 1; frame();
+        sig0 = kr.out_sig;
+        for (j = 0; j < 400u; j++) frame();
+        check(song.g[G_KCMODE] && kr.mutated, "K-GLITCH CHAOS: CHAOS mode mutates the rhythm on the bar");
+        ui.force = 1; frame(); ppm("page-k-chaos");
+        encs[panel.enc[EN_SELECT]] = 1; frame();
+        check(!strcmp(cur_page()->title, "D-SETUP"), "K-GLITCH: SELECT: SETUP (OUT, CH, CLEAR)");
+        encs[panel.enc[EN_K1]] = 1; frame();
+        check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH SETUP: KNOB 1: OUT MPC");
+        ui.force = 1; frame(); ppm("page-k-setup");
+        encs[panel.enc[EN_K1]] = -1; frame();
+        encs[panel.enc[EN_SELECT]] = -6; frame();
+        check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: back to DESTROY");
+        song.g[G_KHOLD] = 1; punch.req = (int8_t)(PUNCH_NFX + DD_FUZZ);
+        encs[panel.enc[EN_K4]] = 1; frame();
+        encs[panel.enc[EN_K4]] = 1; frame();
+        check(punch.req == -1 && !song.g[G_KHOLD] && !song.g[G_KCMODE] && !kr.mutated,
+              "K-GLITCH DESTROY: CLEAR (twice): every effect off, CHAOS off, the rhythm its ORIGINAL");
+        tap(B_PLAY); frames(2);
+        kg_clear(); song.g[G_KSFX] = 0; song.g[G_KBANK] = 0; song.g[G_BPM] = (int16_t)bpm0;
+        *TDRUM = drum0; kr.has = kr.mutated = 0;
         go_home(); frames(4);
     }
     open_fx(); ui.force = 1; frame(); ppm("page-fx");
@@ -1563,7 +1606,7 @@ int main(int argc, char **argv)
         uint32_t j, w, ins_d = 0, flt_a = 0, flt_o = 0;
         #define K(n, v) do { encs[panel.enc[n]] = (v); frames(5); } while (0)
         #define WALK(fa_, ti_, hit_) do { open_family(fa_); frame(); \
-            for (j = 0; j < 12u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); } \
+            for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */ \
             for (j = 0; j < 12u; j++) { if (PAGES[ui.page].fam == (fa_) && !strcmp(PAGES[ui.page].title, ti_)) hit_ = 1; \
                 encs[panel.enc[EN_SELECT]] = 1; frame(); } } while (0)
         song.playing = 0;
@@ -1761,8 +1804,8 @@ int main(int argc, char **argv)
         release(B_GLO); frames(16);
         check(mlu.on == 1u && !mlu.pick, "GLO + F#3: MIDI LEARN on");
         open_family(FAM_FX); frame();
-        for (j = 0; j < 12u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }
-        for (j = 0; j < 4u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 4): KNOB 1 = DIST */
+        for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */
+        for (j = 0; j < 7u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 7): KNOB 1 = DIST */
         frames(16);
         ui.force = 1; frame(); ppm("header-learn");
         K(EN_K1, 1);

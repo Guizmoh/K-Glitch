@@ -144,7 +144,7 @@ void emu_init(void)
         trk[i].engine = trk[i].eng_req;
     }
     TDRUM->p[P_E0] = DRUM_DEFAULT_KIT;
-    kg_break();                                         /* a break to destroy at once */
+    kr_generate(KS_JUNGLE);                             /* a break to destroy at once (the ORIGINAL) */
     usb.config = 1;                                     /* (the MIDI out queue runs: the page reads it) */
     sloop_splash();
 }

@@ -12,10 +12,12 @@
 ## Prochaines étapes
 
 - [x] La banque DRUM DESTROYER de 16 effets, INTENSITÉ, HOLD (0.2, testés sur l'hôte et dans l'émulateur).
-- [ ] LFO / MOVEMENT qui module l'intensité des effets ; une intensité par effet.
+- [x] Une intensité par effet (ALGO choisit, PRESETS règle), LFO piloté par MOVEMENT (0.3).
+- [x] Les 16 touches comme pads directs sur les pages K-GLITCH ; CLEAR (retour au son original).
+- [x] Les 3 modes : DRUMS (8 styles), CHOP (mutation du rythme : décaler, supprimer, répéter, rolls, ghosts, accents, longueurs ; RESTORE ; EVERY), CHAOS (0.3).
 - [ ] Comb filter dans FILTER CHAOS ; scratch avant/arrière plus « vinyle » ; stutter 3x / 8x en triolets.
-- [ ] MUTATE sur le rythme lui-même (décaler, supprimer, répéter des pas de batterie), pas seulement sur les effets.
-- [ ] Plus de breaks préchargés ; découpe (CHOP) dédiée aux breaks.
+- [ ] Découpe de vrais breaks échantillonnés (moteur SLICE de SLOOP + samples utilisateur) pilotée par CHOP.
+- [ ] Plus de styles DRUMS, et des fills générés.
 - [ ] Sauvegarder la séquence d'effets et les macros avec le projet.
 - [ ] MPC : CC continus depuis les potards, notes de slices, profils de mapping.
 - [ ] Étendre le style Ribbon classique aux autres pages.

@@ -117,10 +117,19 @@ enum {                          /* global parameters */
     G_KAUTO,                    /* D-SETUP: AUTO (OFF / ON) */
     G_KCLR,                     /* D-SETUP: clear the effect sequence (GO) */
     G_KCCCH,                    /* D-SETUP: the MPC's MIDI channel (OFF, 1..16) */
-    G_KBRK,                     /* D-SETUP: load the demo jungle break on the drum track (GO) */
     G_KBANK,                    /* D-BANK: the white keys, AUTO and MUTATE: SLOOP's effects or the DRUM DESTROYER bank */
     G_KINT,                     /* D-BANK: INTENSITY 0..100 % of the DRUM DESTROYER effects */
     G_KHOLD,                    /* D-BANK: HOLD, a key's effect stays after its release */
+    G_KLFO,                     /* D-BANK, CHAOS: the LFO on the effects' INTENSITY (MOVEMENT: its speed and depth) */
+    G_KCLEAR,                   /* DESTROY: CLEAR, back to the original sound (GO) */
+    G_KSTYLE,                   /* DRUMS: the style generated */
+    G_KVAR,                     /* DRUMS: VARIATION 0..100 % */
+    G_KGEN,                     /* DRUMS: GENERATE (GO) */
+    G_KMUTR,                    /* CHOP: MUTATE the rhythm (GO) */
+    G_KREST,                    /* CHOP: RESTORE the ORIGINAL (GO) */
+    G_KEVERY,                   /* CHOP: mutate on its own every OFF, 1, 2, 4, 8 bars */
+    G_KCTGT,                    /* CHOP: what mutates: DRUMS, or ALL (the synth tracks' note lengths too) */
+    G_KCMODE,                   /* CHAOS: CHAOS mode (OFF / ON) */
     G_COUNT
 };
 

@@ -96,7 +96,7 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
   <header>
     <div>
       <h1>K-<span>GLITCH</span></h1>
-      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.2</div>
+      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.3</div>
     </div>
     <div class="bar">
       <button id="lang" type="button">EN / FR</button>
@@ -127,12 +127,19 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
       <section>
         <h2>DESTROY</h2>
         <ul>
-          <li><span lang="fr">Un break jungle (170 BPM) est chargé : <b>PLAY</b> le lance.</span><span lang="en">A jungle break (170 BPM) is loaded: <b>PLAY</b> starts it.</span></li>
-          <li><span lang="fr"><b>FX</b> tapé : DESTROY &rarr; SEQ &rarr; BANK &rarr; SETUP (<b>SELECT</b> change de page).</span><span lang="en"><b>FX</b> tapped: DESTROY &rarr; SEQ &rarr; BANK &rarr; SETUP (<b>SELECT</b> turns the page).</span></li>
-          <li><span lang="fr"><b>FX maintenu</b> + une touche blanche : un des 16 effets DRUM DESTROYER (noms sur les touches) ; les noires : effets SLOOP.</span><span lang="en"><b>FX held</b> + a white key: one of the 16 DRUM DESTROYER effects (named on the keys); black keys: SLOOP effects.</span></li>
-          <li><span lang="fr">BANK : K1 la banque (DESTROY / SLOOP), K2 INTENSITÉ, K3 HOLD (l'effet reste après la touche).</span><span lang="en">BANK: K1 the bank (DESTROY / SLOOP), K2 INTENSITY, K3 HOLD (the effect stays after the key).</span></li>
-          <li><span lang="fr">DESTROY : K1 CHAOS, K2 DENSITÉ, K3 MOUVEMENT, K4 SORTIE (FM-1 / MPC / BOTH).</span><span lang="en">DESTROY: K1 CHAOS, K2 DENSITY, K3 MOVEMENT, K4 OUT (FM-1 / MPC / BOTH).</span></li>
-          <li><span lang="fr">FX SEQ : K1 le pas, K2 son effet, K3 SEQ, K4 DÉ (mutation). SETUP : K1 AUTO, K4 BREAK.</span><span lang="en">FX SEQ: K1 the step, K2 its effect, K3 SEQ, K4 DICE (mutate). SETUP: K1 AUTO, K4 BREAK.</span></li>
+          <li><span lang="fr">Un break jungle (170 BPM) est chargé : <b>PLAY</b> (Espace). <b>FX</b> (Tab) ouvre l'écran principal DRUM DESTROYER.</span><span lang="en">A jungle break (170 BPM) is loaded: <b>PLAY</b> (Space). <b>FX</b> (Tab) opens the DRUM DESTROYER main screen.</span></li>
+          <li><span lang="fr">Sur les pages K-GLITCH, les <b>touches blanches sont les 16 pads</b> (maintenir = effet, relâcher = son normal).</span><span lang="en">On the K-GLITCH pages the <b>white keys are the 16 pads</b> (hold = effect, let go = dry).</span></li>
+          <li><span lang="fr"><b>ALGO</b> (↑↓) choisit l'effet, <b>PRESETS</b> (PgUp/PgDn) règle son intensité ; un pad tenu + PRESETS : l'intensité de ce pad.</span><span lang="en"><b>ALGO</b> (↑↓) picks the effect, <b>PRESETS</b> (PgUp/PgDn) its intensity; a pad held + PRESETS: that pad's intensity.</span></li>
+          <li><span lang="fr">DESTROY : K1 CHAOS, K2 DENSITY, K3 MOVEMENT, K4 CLEAR (retour au son original).</span><span lang="en">DESTROY: K1 CHAOS, K2 DENSITY, K3 MOVEMENT, K4 CLEAR (back to the original sound).</span></li>
+        </ul>
+      </section>
+      <section>
+        <h2><span lang="fr">LES 3 MODES</span><span lang="en">THE 3 MODES</span></h2>
+        <ul>
+          <li><b>DRUMS</b> : <span lang="fr">K1 style (JUNGLE, BREAKCORE, DNB, DRILL, IDM, GLITCH, HALFTIME, FOOTWORK), K2 variation, K3 swing, K4 GO. Les touches y jouent la batterie.</span><span lang="en">K1 style (JUNGLE, BREAKCORE, DNB, DRILL, IDM, GLITCH, HALFTIME, FOOTWORK), K2 variation, K3 swing, K4 GO. The keys play the drums there.</span></li>
+          <li><b>CHOP</b> : <span lang="fr">K1 MUTATE (décale, supprime, répète, rolls, ghosts, longueurs), K2 RESTORE, K3 EVERY (mutation auto toutes les 1-8 mesures), K4 DRUMS / ALL. En orange : ce qui a changé.</span><span lang="en">K1 MUTATE (shift, delete, repeat, rolls, ghosts, lengths), K2 RESTORE, K3 EVERY (auto mutation every 1-8 bars), K4 DRUMS / ALL. Orange: what changed.</span></li>
+          <li><b>CHAOS</b> : <span lang="fr">K1 MODE : AUTO + LFO + mutations à chaque mesure, selon CHAOS.</span><span lang="en">K1 MODE: AUTO + LFO + mutations on every bar, by CHAOS.</span></li>
+          <li><b>SEQ</b> <span lang="fr">(une touche blanche = un pas, K2 son effet, K4 DICE), <b>BANK</b> (banque, intensité, HOLD, LFO), <b>SETUP</b> (sortie FM-1 / MPC / BOTH, canal).</span><span lang="en">(a white key = a step, K2 its effect, K4 DICE), <b>BANK</b> (bank, intensity, HOLD, LFO), <b>SETUP</b> (out FM-1 / MPC / BOTH, channel).</span></li>
         </ul>
       </section>
       <section>
@@ -140,7 +147,7 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
         <ul>
           <li><span lang="fr">Notes</span><span lang="en">Notes</span>: <kbd>Z</kbd><kbd>S</kbd><kbd>X</kbd>… <kbd>Q</kbd><kbd>2</kbd><kbd>W</kbd>…</li>
           <li><kbd>Tab</kbd> <span lang="fr">= FX (maintenu : punch-in)</span><span lang="en">= FX (held: punch-in)</span> &middot; <kbd>Espace</kbd> PLAY &middot; <kbd>Entrée</kbd> REC</li>
-          <li><kbd>←</kbd><kbd>→</kbd> SELECT &middot; <kbd>↑</kbd><kbd>↓</kbd> ALGO &middot; <kbd>PgUp</kbd><kbd>PgDn</kbd> PRESETS &middot; <kbd>Échap</kbd> HOME</li>
+          <li><kbd>←</kbd><kbd>→</kbd> SELECT (pages) &middot; <kbd>↑</kbd><kbd>↓</kbd> ALGO &middot; <kbd>PgUp</kbd><kbd>PgDn</kbd> PRESETS &middot; <kbd>Échap</kbd> HOME</li>
           <li><span lang="fr">Potards : molette, ou glisser vers le haut / le bas</span><span lang="en">Knobs: mouse wheel, or drag up / down</span></li>
         </ul>
       </section>
@@ -149,7 +156,7 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
         <ul>
           <li><span lang="fr"><b>MIDI</b> : choisir la sortie (la MPC). Les CC partent sur le canal 16.</span><span lang="en"><b>MIDI</b>: pick the output (the MPC). The CCs go out on channel 16.</span></li>
           <li><span lang="fr">Un CC par touche : 20–31 puis 102–116, 127 au début, 0 à la fin. CHAOS / DENS / MOVE / INTENS : CC 85, 86, 87, 89.</span><span lang="en">One CC per key: 20–31 then 102–116, 127 on, 0 off. CHAOS / DENS / MOVE / INTENS: CC 85, 86, 87, 89.</span></li>
-          <li><span lang="fr">L'horloge MIDI de la MPC entre aussi (GLO &gt; MIDI : SYNC).</span><span lang="en">The MPC's MIDI clock comes in too (GLO &gt; MIDI: SYNC).</span></li>
+          <li><span lang="fr">L'horloge MIDI de la MPC entre aussi (GLO &gt; MIDI : SYNC). Avec GLO &gt; SYSTEM &gt; MIDI OUT sur SEQ, la MPC reçoit aussi le rythme muté (batterie canal 10).</span><span lang="en">The MPC's MIDI clock comes in too (GLO &gt; MIDI: SYNC). With GLO &gt; SYSTEM &gt; MIDI OUT on SEQ, the MPC also gets the mutated rhythm (drums on channel 10).</span></li>
         </ul>
       </section>
     </div>

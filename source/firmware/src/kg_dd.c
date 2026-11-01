@@ -58,6 +58,18 @@ static struct {
     uint32_t rnd;
 } kd = {.cur = -1, .sub = -1, .rnd = 0x51A3E1B7u};
 
+/* INTENSITY: each effect its own (FX > BANK K2, PRESETS on the K-GLITCH pages), 0..100; the LFO (FX > BANK / CHAOS)
+ * moves it by up to MOVEMENT / 2 */
+static uint8_t kd_int[DD_N] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+static volatile int8_t kd_lfo;                   /* the LFO now, -50..50 (kg_route, per block) */
+static volatile uint8_t kg_sel;                  /* the effect ALGORITHM selects (and a pad pressed): DD_* */
+static volatile uint8_t kg_pads;                 /* UI: the keys are pads (1: the K-GLITCH pages) or SEQ's steps (2) */
+static volatile uint8_t kg_keystep;              /* ISR: a white key pressed on SEQ, + 1 (the UI takes it) */
+static uint32_t dd_int(void)
+{
+    int32_t v = kd_int[(uint32_t)(kd.cur >= 0 ? kd.cur : 0) % DD_N] + kd_lfo;
+    return (uint32_t)(v < 0 ? 0 : v > 100 ? 100 : v);
+}
 static uint32_t dd_beat(void) { return beat_samples(); }
 /* samples into the bar (the transport's when it runs, else since the effect started) */
 static uint32_t dd_barpos(void)
@@ -93,7 +105,7 @@ static int32_t dd_semi(int32_t s)
 /* the effect e takes over from the sample at ring index `base` (its fields set; the 16th's part in dd_tick) */
 static void dd_engage(int32_t e, uint32_t base)
 {
-    uint32_t beat = dd_beat(), I = kg_pct(G_KINT), pos = dd_barpos(), L;
+    uint32_t beat = dd_beat(), I = dd_int(), pos = dd_barpos(), L;
     kd.sub = (int8_t)e;
     kd.xf = 0;
     kd.own = 0;
@@ -177,7 +189,7 @@ static void dd_engage(int32_t e, uint32_t base)
 /* each 16th: what changes on the grid */
 static void dd_tick(uint32_t base)
 {
-    uint32_t I = kg_pct(G_KINT), r = kg_rand(&kd.rnd), step = dd_beat() / 4u;
+    uint32_t I = dd_int(), r = kg_rand(&kd.rnd), step = dd_beat() / 4u;
     if (kd.cur == DD_RAND || kd.cur == DD_TOTAL) {      /* a new effect each 16th */
         dd_engage((int32_t)(r % 14u), base);   /* (any of the first 14) */
         kd.mode = (uint8_t)(kd.cur == DD_TOTAL && (r >> 8) % 3u == 0u);   /* TOTAL: a ring modulator on top */
@@ -231,7 +243,7 @@ static void dd_tick(uint32_t base)
 /* the wet sample of the effect playing, for the dry x, y; idx the ring index of this sample */
 static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *wr)
 {
-    uint32_t I = kg_pct(G_KINT);
+    uint32_t I = dd_int();
     int32_t m;
     switch (kd.sub) {
     case DD_LOOP: {
@@ -252,7 +264,7 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
     case DD_MICRO:
         m = dd_declick(ring_at(kd.S + kd.k), kd.k, kd.L);
         if (kd.sub == DD_STUT)                        /* each repeat fades a little */
-            m = (int32_t)(((int64_t)m * (65536 - (int32_t)(kd.k * 13000u / kd.L))) >> 16);
+            m = ((m >> 2) * ((65536 - (int32_t)(kd.k * 13000u / kd.L)) >> 2)) >> 12;
         else if (kd.sub == DD_BREP)
             m = (m * kd.rep) >> 15;
         if (++kd.k >= kd.L) {
@@ -261,8 +273,8 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
                 uint32_t r = kg_rand(&kd.rnd) % 3u;
                 kd.L = dd_cap(kd.L0 >> r);
             } else if (kd.sub == DD_BREP) {
-                kd.rep = kd.rep * (int32_t)(400u - I) / 400;
-                if (kd.rep < 8192) kd.rep = 8192;     /* (never below a quarter) */
+                kd.rep = kd.rep * (int32_t)(500u - I) / 500;
+                if (kd.rep < 16384) kd.rep = 16384;   /* (never below half) */
                 if (I > 70u && kd.L > kd.L0 / 8u)
                     kd.L = dd_cap(kd.L / 2u);
             }
@@ -327,8 +339,8 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
             *wl = *wr = m;
             return;
         }
-        *wl = (int32_t)(((int64_t)x * kd.gg) >> 15);
-        *wr = (int32_t)(((int64_t)y * kd.gg) >> 15);
+        *wl = ((x >> 3) * (kd.gg >> 3)) >> 9;          /* (32 bits: no 64-bit product on the FM-1) */
+        *wr = ((y >> 3) * (kd.gg >> 3)) >> 9;
         return;
     case DD_FILTER:
         *wl = x, *wr = y;                              /* (the filter runs on the block: kd_process) */
@@ -336,14 +348,14 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
     case DD_RING: {
         int32_t s = sine_i(kd.ph);
         kd.ph += kd.dph;
-        *wl = (int32_t)(((int64_t)x * s) >> 15);
-        *wr = (int32_t)(((int64_t)y * s) >> 15);
+        *wl = ((x >> 2) * (s >> 2)) >> 11;
+        *wr = ((y >> 2) * (s >> 2)) >> 11;
         return;
     }
     case DD_FUZZ: {
         int32_t d = 256 + (int32_t)I * 40, v[2] = {x, y}, j;
         for (j = 0; j < 2; j++) {
-            int32_t u = (int32_t)(((int64_t)v[j] * d) >> 8);
+            int32_t u = (clamp(v[j], -262143, 262143) * (d >> 2)) >> 6;
             if (u > 14000) u = 14000 + ((u - 14000) >> 3);   /* (the mix: 16-bit scale) */
             if (u < -14000) u = -14000 + ((u + 14000) >> 3);
             v[j] = clamp(u, -20000, 20000) * 2 / 5;     /* (the level about as the dry one) */
@@ -393,7 +405,7 @@ static void kd_process(int32_t *l, int32_t *r, uint32_t n)
         kd.s16 = s16;
         dd_tick(base);
     }
-    I = kg_pct(G_KINT);
+    I = dd_int();
     if (kd.sub == DD_GATE) {                           /* the slot of the bar: open or shut */
         uint32_t per = I > 50u ? 32u : 16u, slot = dd_barpos() * per / (dd_beat() * 4u + 1u);
         if (slot < kd.i32 || kd.i32 == 0xFFFFFFFFu) {  /* a new bar: a new pattern */
@@ -410,8 +422,8 @@ static void kd_process(int32_t *l, int32_t *r, uint32_t n)
         kd.cut += (kd.cut_to - kd.cut) / 8;
         tsvf_coef(&c, kd.cut, kd.reso);
         for (i = 0; i < n; i++) {
-            l[i] += (int32_t)(((int64_t)(tsvf_lp(&c, l[i] >> 2, &kd.f1l, &kd.f2l) * 4 - l[i]) * kd.g) >> 15);
-            r[i] += (int32_t)(((int64_t)(tsvf_lp(&c, r[i] >> 2, &kd.f1r, &kd.f2r) * 4 - r[i]) * kd.g) >> 15);
+            l[i] += ((clamp(tsvf_lp(&c, l[i] >> 2, &kd.f1l, &kd.f2l) * 4 - l[i], -(1 << 20), 1 << 20) >> 3) * (kd.g >> 3)) >> 9;
+            r[i] += ((clamp(tsvf_lp(&c, r[i] >> 2, &kd.f1r, &kd.f2r) * 4 - r[i], -(1 << 20), 1 << 20) >> 3) * (kd.g >> 3)) >> 9;
         }
     }
     for (i = 0; i < n; i++) {
@@ -434,7 +446,7 @@ static void kd_process(int32_t *l, int32_t *r, uint32_t n)
             if (kd.mode) {
                 int32_t s = sine_i(kd.ph2);
                 kd.ph2 += 600u * (0xFFFFFFFFu / FS);   /* (600 Hz) */
-                wl = (int32_t)(((int64_t)wl * s) >> 15), wr = (int32_t)(((int64_t)wr * s) >> 15);
+                wl = ((wl >> 2) * (s >> 2)) >> 11, wr = ((wr >> 2) * (s >> 2)) >> 11;
             }
         }
         if (kd.xf < 64) {                              /* a sub-effect just came in: from the dry sound */
@@ -442,8 +454,9 @@ static void kd_process(int32_t *l, int32_t *r, uint32_t n)
             wr = y + (((wr - y) * kd.xf) >> 6);
             kd.xf++;
         }
-        l[i] = clamp(x + (int32_t)(((int64_t)(wl - x) * kd.g) >> 15), -(1 << 21), (1 << 21) - 1);
-        r[i] = clamp(y + (int32_t)(((int64_t)(wr - y) * kd.g) >> 15), -(1 << 21), (1 << 21) - 1);
+        wl = clamp(wl - x, -(1 << 20), 1 << 20), wr = clamp(wr - y, -(1 << 20), 1 << 20);
+        l[i] = clamp(x + (((wl >> 3) * (kd.g >> 3)) >> 9), -(1 << 21), (1 << 21) - 1);   /* (32 bits) */
+        r[i] = clamp(y + (((wr >> 3) * (kd.g >> 3)) >> 9), -(1 << 21), (1 << 21) - 1);
         kd.t++;
     }
     if (kd.g == 0 && want != kd.cur) {                 /* faded out: the next one starts on the next block */

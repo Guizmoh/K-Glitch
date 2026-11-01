@@ -8,7 +8,8 @@
  *   3. AUTO (FX > D-SETUP): on each 16th, DENSITY % of a chance to start a gesture, picked from a pool that CHAOS
  *      widens (the gentle loops and stutters first, then reverse / crush / half speed..., then tape stop, freeze,
  *      wobble...); MOVEMENT makes the gestures short (high) or long, up to a beat (low).
- * MUTATE (FX > D-SEQ) writes a new effect sequence from the same three macros.
+ * MUTATE (FX > D-SEQ) writes a new effect sequence from the same three macros; CHOP mutates the rhythm itself and
+ * DRUMS writes one (kg_rhythm.c); CHAOS mode (FX > CHAOS) turns AUTO and the LFO on and mutates on the bar.
  * The effects: SLOOP's 27 punch-in ones (PX_*) and K-GLITCH's DRUM DESTROYER bank (kg_dd.c, PUNCH_NFX + DD_*), which
  * FX > BANK puts on the white keys and in AUTO / MUTATE; INTENSITY shapes them; HOLD keeps a key's effect after its
  * release (until another key or HOLD off).
@@ -18,7 +19,7 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.2"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.3"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 16u
@@ -75,6 +76,8 @@ static uint32_t kg_rand(uint32_t *s)              /* xorshift32 */
 }
 static uint32_t kg_pct(int32_t g) { return (uint32_t)(song.g[g] < 0 ? 0 : song.g[g] > 100 ? 100 : song.g[g]); }
 #include "kg_dd.c"                              /* the DRUM DESTROYER bank: ids PUNCH_NFX .. KG_NFX - 1 */
+static void kg_mutate(uint32_t seed);
+#include "kg_rhythm.c"                          /* DRUMS (the generator) and CHOP (the rhythm's mutations) */
 /* an effect's CC: its key's (DRUM DESTROYER n is on SLOOP's white key n: the same CC, the MPC maps keys) */
 static uint32_t kg_cc_of(int32_t fx) { return KG_CC[fx < (int32_t)PUNCH_NFX ? fx : fx - (int32_t)PUNCH_NFX]; }
 static const char *kg_name(int32_t fx) { return fx < (int32_t)PUNCH_NFX ? PUNCH_NAME[fx] : DD_NAME[fx - (int32_t)PUNCH_NFX]; }
@@ -112,7 +115,22 @@ static void kg_cc(uint32_t ch, uint32_t cc, uint32_t v)
 static int32_t kg_route(int32_t key)
 {
     int32_t fx = key, out = (int32_t)song.g[G_KTGT], ch = (int32_t)song.g[G_KCCCH];
-    uint32_t i;
+    uint32_t i, autos = song.g[G_KAUTO] || song.g[G_KCMODE];   /* (CHAOS mode: AUTO and the LFO on) */
+    {   /* the LFO: MOVEMENT its depth (up to 50 points of INTENSITY) and its speed (4 bars .. a beat), on the transport */
+        static const uint8_t BEATS[5] = {16, 8, 4, 2, 1};
+        static uint32_t free_ph;
+        uint32_t mv = kg_pct(G_KMOVE), nb = BEATS[mv * 5u / 101u], ph;
+        if (song.playing) {
+            uint32_t q = clk_pos / 41u;                   /* (FS * 60 units a beat: ~65536ths) */
+            ph = (((clk_beat % nb) << 16) + (q > 65535u ? 65535u : q)) / nb << 16;
+        } else
+            ph = free_ph += (0xFFFFFFFFu / ((uint32_t)FS / CTL * 2u)) / nb;   /* (stopped: as at 120 BPM) */
+        kd_lfo = (int8_t)(song.g[G_KLFO] || song.g[G_KCMODE] ? sine_i(ph) * (int32_t)(mv / 2u) / 32767 : 0);
+    }
+    if (song.playing)
+        kr_bar();                                     /* CHOP EVERY, CHAOS mode: the rhythm mutates on the bar */
+    else
+        kr.bar = 0xFFFFFFFFu;
     if (song.playing) {
         uint32_t s16 = clk_beat * 4u + clk_pos / ((uint32_t)FS * 15u);   /* (clk_pos: FS * 60 units a beat) */
         if (s16 != kg.last16) {                       /* a new 16th */
@@ -122,7 +140,7 @@ static int32_t kg_route(int32_t key)
                 kg.auto_left--;
             if (!kg.auto_left) {
                 kg.auto_fx = -1;
-                if (song.g[G_KAUTO] && kg_rand(&kg.rnd) % 100u < kg_pct(G_KDENS)) {
+                if (autos && kg_rand(&kg.rnd) % 100u < kg_pct(G_KDENS)) {
                     kg.auto_fx = kg_pick(&kg.rnd);
                     kg.auto_left = (uint8_t)kg_len(&kg.rnd);
                 }
@@ -191,33 +209,16 @@ static void kg_clear(void)
     for (i = 0; i < KG_STEPS; i++)
         kg.seq[i] = -1;
 }
-
-/* BREAK (FX > D-SETUP, KNOB 4; the emulator at power-on): a two-bar jungle break on the drum track, after the classic
- * amen phrasing (kicks 1 and 3, the snare's push and its ghosts, a ride in 8ths), at 170 BPM: something to destroy at
- * once. Main loop; the drum track's pattern only (its sounds, the kit, stay) */
-static void kg_break(void)
+/* CLEAR (FX > DESTROY, KNOB 4): back to the original sound. Every effect let go (a held one too), AUTO, the effect
+ * sequencer, CHOP's EVERY and CHAOS mode off, the rhythm back to its ORIGINAL; the effect sequence itself is kept
+ * (SEQ ON plays it again). Main loop */
+static void kg_clean(void)
 {
-    /* per 16th of the two bars: K kick, S snare, g ghost snare, h hat, o open hat, r ride, c crash */
-    static const char *const BAR[2] = {"K.K.S..gKgK.S..g", "K.K.S..gKg..Sg.g"};
-    static const char *const TOP = "r.h.r.h.r.h.r.o.";
-    track_t *t = TDRUM;
-    uint32_t b, i;
+    song.g[G_KHOLD] = song.g[G_KAUTO] = song.g[G_KSEQ] = song.g[G_KEVERY] = song.g[G_KCMODE] = 0;
+    punch.req = -1;
+    punch.keybit = 0;
     fm1_irq_off();
-    for (i = 0; i < NSTEP; i++)
-        memset(&t->dstep[i], 0, sizeof t->dstep[i]);
-    for (b = 0; b < 2u; b++)
-        for (i = 0; i < 16u; i++) {
-            dstep_t *s = &t->dstep[b * 16u + i];
-            char c = BAR[b][i], h = TOP[i];
-            if (c == 'K') dstep_set(s, 0, i ? LV_NORM : LV_HARD, 0);
-            if (c == 'S') dstep_set(s, 2, LV_HARD, 0);
-            if (c == 'g') dstep_set(s, 8, LV_GHOST, 0);
-            if (h == 'r') dstep_set(s, 12, LV_NORM, 0);
-            if (h == 'h') dstep_set(s, 4, LV_SOFT, 0);
-            if (h == 'o') dstep_set(s, 5, LV_NORM, 0);
-        }
-    dstep_set(&t->dstep[31], 4, LV_NORM, 1);          /* (a hat ratchet into the turn) */
-    t->p[P_SLEN] = 32;
-    song.g[G_BPM] = 170;
+    kr_restore();
     fm1_irq_on();
 }
+

@@ -484,7 +484,7 @@ UI_SMALL static void project_new(void)
     for (i = 0; i < G_COUNT; i++)
         if (i != G_SLOT && i != G_DRCH && i != G_SYNC && i != G_MIDI && i != G_ROUTE && (i < G_CH1 || i > G_CHOTH) &&
             i != G_BEND && i != G_FXCH && i != G_DRMAP && i != G_RMCH && i != G_CLKOUT && i != G_FXFADE &&
-            i != G_KTGT && i != G_KCCCH && i != G_KSEQ && i != G_KAUTO && i != G_KBANK && i != G_KINT)   /* (K-GLITCH: where they play, kept) */                                                                     /* (the
+            i < G_KCHAOS)   /* (K-GLITCH's: live, kept) */   /* (K-GLITCH: where they play, kept) */                                                                     /* (the
                                                                  * FM-1's settings: GLO > MIDI 2.6) */
             song.g[i] = GP[i].def;
     song.solo = 0;
@@ -566,6 +566,8 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         ml_knob(TSEL, id);                                /* MIDI LEARN: this parameter (2.6) */
     if (pg->scope == SC_GLOBAL && id == G_KHOLD && !v && !punch.keybit)   /* K-GLITCH: HOLD off lets a held effect go */
         punch.req = -1;
+    if (pg->scope == SC_GLOBAL && id == G_KINT)           /* K-GLITCH: the selected effect's INTENSITY */
+        kd_int[kg_sel % DD_N] = (uint8_t)v;
     if (pg->scope == SC_GLOBAL && id == G_KSTEP)          /* K-GLITCH D-SEQ: the step's effect shows */
         song.g[G_KSFX] = (int16_t)(kg.seq[(v - 1) & 15] + 1);
     if (pg->scope == SC_GLOBAL && id == G_KSFX) {
@@ -575,7 +577,7 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
     if (!v)
         return;
     if (pg->scope == SC_GLOBAL && (id == G_LOAD || id == G_SAVE || id == G_CLRSEQ || id == G_INITSND || id == G_NEWPRJ ||
-                                   id == G_KCLR || id == G_KBRK) &&
+                                   id == G_KCLR || id == G_KCLEAR) &&
         ui.arm != id) {                                   /* one detent arms, a second one within ~1.5 s acts */
         *vp = 0;
         ui.arm = (uint8_t)id;
@@ -615,10 +617,27 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         song.g[G_KSFX] = (int16_t)(kg.seq[(song.g[G_KSTEP] - 1) & 15] + 1);
         ui_message("MUTATED");
         break;
-    case G_KBRK:                                          /* K-GLITCH: the demo break, 170 BPM */
+    case G_KCLEAR:                                        /* K-GLITCH: back to the original sound */
         *vp = 0;
-        kg_break();
-        ui_message("JUNGLE BREAK 170");
+        kg_clean();
+        ui_message("CLEAN: THE ORIGINAL");
+        break;
+    case G_KGEN:                                          /* K-GLITCH DRUMS: a pattern in the style */
+        *vp = 0;
+        kr_generate((uint32_t)song.g[G_KSTYLE]);
+        ui_say(N_KSTYLE_P[song.g[G_KSTYLE] % KS_N], " GENERATED");
+        break;
+    case G_KMUTR:                                         /* K-GLITCH CHOP: the rhythm mutated */
+        *vp = 0;
+        kr_mutate_ui();
+        ui_message("RHYTHM MUTATED");
+        break;
+    case G_KREST:
+        *vp = 0;
+        fm1_irq_off();
+        kr_restore();
+        fm1_irq_on();
+        ui_message(kr.has ? "ORIGINAL RESTORED" : "NOTHING TO RESTORE");
         break;
     case G_KCLR:
         *vp = 0;
@@ -1289,6 +1308,18 @@ UI_SMALL static void ui_input(void)
     if (song.seq_mode && cur_page()->scope == SC_STEP && !ui.sheet)
         seq_entry(notes);                                 /* (and the MIDI keyboard's: midi_entry) */
 
+    if (!ui.home && cur_page()->graph == GR_KG && !ft_on) {   /* K-GLITCH: ALGORITHM the effect, PRESETS its INTENSITY */
+        if ((s = panel_enc(EN_ALGO)) != 0) {
+            kg_sel = (uint8_t)(((int32_t)kg_sel + s % (int32_t)DD_N + (int32_t)DD_N) % (int32_t)DD_N);
+            ui_message(DD_NAME[kg_sel]);
+        }
+        if ((s = panel_enc(EN_PRESET)) != 0) {
+            kd_int[kg_sel % DD_N] = (uint8_t)clamp(kd_int[kg_sel % DD_N] + accel(EN_PRESET, s, 100), 0, 100);
+            ui.hot_col = 4;                               /* (the screen lights the intensity) */
+            ui.hot_t = 40;
+        }
+        song.g[G_KINT] = kd_int[kg_sel % DD_N];
+    }
     if (on_notes_page() && (s = panel_enc(EN_PRESET)) != 0) {   /* (2.7.2) NOTES: PRESETS zooms, 8 .. 64 steps */
         ui.zoom = (uint8_t)(clamp((int32_t)(int8_t)ui.zoom + (s > 0 ? 1 : -1), -1, 2));
         ui.force = 1;
