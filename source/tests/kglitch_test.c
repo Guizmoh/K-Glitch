@@ -438,6 +438,30 @@ int main(int argc, char **argv)
         for (i = 0; i < 10u; i++) assert(kg.seq[i] < 0 && now16[i] < 0);
     }
     printf("kglitch: automation: REC writes the pad's 16ths and INTENSITY, plays them back, CLEAR erases ok\n");
+    /* REC on a 2-bar loop: the lane as long as the loop (32 steps), what a 16-step lane had repeated, nothing lost */
+    {
+        uint32_t k;
+        int8_t fx = (int8_t)(PUNCH_NFX + DD_STUT);
+        reset();
+        for (k = 0; k < NTRK; k++) trk[k].p[P_SLEN] = 16;
+        TDRUM->p[P_SLEN] = 32;
+        song.g[G_KSEQ] = 0;
+        song.rec = 1;
+        run(NS, fx, 20u * S16 + S16 / 4u, 24u * S16, ol, or_);
+        assert(song.g[G_KSEQ] == 2 && "a 32-step loop records on 32 steps");
+        for (k = 0; k < 32u; k++) assert(k >= 20u && k < 24u ? kg.seq[k] == fx : kg.seq[k] != fx);
+        reset();
+        for (k = 0; k < NTRK; k++) trk[k].p[P_SLEN] = 16;
+        song.g[G_KSEQ] = 1;
+        kg.seq[3] = (int8_t)(PUNCH_NFX + DD_GATE);
+        TDRUM->p[P_SLEN] = 64;
+        song.rec = 1;
+        run(NS, fx, 20u * S16 + S16 / 4u, 24u * S16, ol, or_);
+        assert(song.g[G_KSEQ] == 3 && kg.seq[3] == (int8_t)(PUNCH_NFX + DD_GATE) && kg.seq[19] == kg.seq[3] &&
+               kg.seq[51] == kg.seq[3] && kg.seq[21] == fx && kg.seq[5] != fx && "a 16-step lane made 64: repeated, then recorded");
+        song.rec = 0;
+    }
+    printf("kglitch: REC on a 32- or 64-step loop: the lane follows the loop, what it had kept      ok\n");
     /* 14. probability: a step at 0 % never plays, at 100 % always, at 50 % about half the time */
     {
         uint32_t bars, hits = 0;

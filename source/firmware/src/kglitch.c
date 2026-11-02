@@ -163,6 +163,27 @@ static void kg_cc(uint32_t ch, uint32_t cc, uint32_t v)
     midi_out_event(0x0Bu | (0xB0u | (ch & 15u)) << 8 | (cc & 127u) << 16 | (v & 127u) << 24);
 }
 
+/* REC (ISR): the effect lane at least as long as the loop playing (its longest track: 16, 32 or 64 steps), so a 2- or
+ * 4-bar loop records its effects on all its bars. A lane made longer repeats what it had (as it played), so nothing
+ * recorded is lost (off: the lane as it was kept, CLEAN keeps it); never shortened here (FX > SEQ, K4 does that) */
+static void kg_rec_len(void)
+{
+    uint32_t i, loop = 0, len = kg_seqlen(), want;
+    for (i = 0; i < NTRK; i++)
+        if ((uint32_t)trk[i].p[P_SLEN] > loop) loop = (uint32_t)trk[i].p[P_SLEN];
+    want = loop > 32u ? 3u : loop > 16u ? 2u : 1u;
+    if (len && (uint32_t)song.g[G_KSEQ] >= want)
+        return;
+    if (len)                                          /* longer: the steps so far again, as they played */
+        for (i = len; i < KG_STEPS; i++) {
+            kg.seq[i] = kg.seq[i % len], kg.seq2[i] = kg.seq2[i % len], kg.sint[i] = kg.sint[i % len];
+            kg.prob[i] = kg.prob[i % len], kg.fnote[i] = kg.fnote[i % len], kg.fmode[i] = kg.fmode[i % len];
+        }
+    song.g[G_KSEQ] = (int16_t)(len && (uint32_t)song.g[G_KSEQ] > want ? song.g[G_KSEQ] : want);
+    if (kg.last16 != 0xFFFFFFFFu)
+        kg.step = (uint8_t)(kg.last16 % kg_seqlen());   /* (this 16th, in the longer lane) */
+}
+
 /* once a block, from punch_process: the effect the mix plays (-1 none) given the keys' (key) */
 static int32_t kg_route(int32_t key)
 {
@@ -216,7 +237,7 @@ static int32_t kg_route(int32_t key)
             kg.fnote[kg.step] = (uint8_t)song.g[G_KFCUT];
             kg.fmode[kg.step] = (uint8_t)(((uint32_t)song.g[G_KFTYPE] + 1u) | ((uint32_t)song.g[G_KFRES] >> 3) << 4);
             kg_recd = 1;
-            if (!song.g[G_KSEQ]) song.g[G_KSEQ] = 1;
+            kg_rec_len();
         }
         kf_anote = kf_amode = 0;
         kf_touch = 0;
@@ -236,8 +257,8 @@ static int32_t kg_route(int32_t key)
         if (multi)
             for (k = 0; k < 4u; k++) KG_ADD(kg_held[k], 1, 0);
         KG_ADD(fx, 1, 0);
-        if (song.playing && song.rec && nl && !song.g[G_KSEQ])
-            song.g[G_KSEQ] = 1;                       /* (REC with the lane off: it records on 16 steps) */
+        if (song.playing && song.rec && nl)
+            kg_rec_len();                             /* (REC: the lane as long as the loop) */
         if (song.playing && song.g[G_KSEQ]) {
             if (kg_erase) {                           /* CLEAR held: the steps passing are erased (as the PO-33) */
                 kg.seq[kg.step] = kg.seq2[kg.step] = -1;
