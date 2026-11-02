@@ -99,7 +99,7 @@ Page BANK, K4. **SOLO** : un nouvel effet remplace le précédent. **MULTI** : l
 
 ### Le sampler (LOOP, SLICE, GRAIN)
 - **REC** enregistre, à partir de la mesure suivante, 1, 2 ou 4 mesures de **ce qui joue** (effets compris) ; la boucle tourne ensuite calée sur le tempo. SOURCE MUTE coupe les pistes pour n'entendre que la boucle (à détruire avec les pads : elle passe dans tous les effets).
-- **Mémoire** : le FM-1 n'a pas de RAM libre pour ça ; la boucle occupe la ligne du **delay tempo** (128 Ko, 2,97 s en mono 22 kHz : 2 mesures jusqu'à 162 BPM, 1 mesure jusqu'à 81). Pendant qu'une boucle est gardée, le delay tempo est muet ; MODE OFF libère la boucle et rend le delay.
+- **Mémoire et son** : le FM-1 n'a pas de RAM libre pour ça ; la boucle occupe la ligne du **delay tempo** (128 Ko), en échantillons 8 bits par blocs de 16 qui partagent une échelle (« bloc flottant ») : **pleine bande à 44,1 kHz** (les aigus, les charlestons) sur 2,88 s, soit 1 mesure jusqu'à 84 BPM ; quand les mesures demandées ne tiennent pas, elle passe en 22 kHz (filtre demi-bande) sur 5,76 s, soit 2 mesures jusqu'à 84 BPM. Relue avec une interpolation cubique, au même niveau que la source. Pendant qu'une boucle est gardée, le delay tempo est muet ; MODE OFF libère la boucle et rend le delay.
 - **SLICE** : 16 slices ; pour chacune, laquelle joue (réorganisation), à l'envers, retrigger x2, x3, x4, x8 (stutter). Les touches blanches jouent une slice (et l'écrivent dans la carte pendant REC).
 - **GRAIN** : 4 grains de 10 à 250 ms, position (ou la touche tenue), densité, pitch ±12, CHAOS = dispersion.
 

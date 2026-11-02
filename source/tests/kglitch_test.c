@@ -510,9 +510,9 @@ int main(int argc, char **argv)
         kl_arm();
         transport_req = 1;
         for (b = 0; b < FS * 4u / CTL && kl.st != KLS_HAS; b++) mix_block(o, CTL);
-        assert(kl.st == KLS_HAS && kl.bars == 1u && kl.len == kl_bar_samples() / 2u && song.g[G_KLMODE] == KL_LOOP);
+        assert(kl.st == KLS_HAS && kl.bars == 1u && kl.rate == 1u && kl.len == kl_bar_samples() / KL_BLK * KL_BLK && song.g[G_KLMODE] == KL_LOOP);
         assert(kl_line());
-        for (j = 0; j < 64u; j++) e += (double)kl_buf[j * 512u] * kl_buf[j * 512u];
+        for (j = 0; j < 64u; j++) e += (double)kl_get(j * 512u) * kl_get(j * 512u);
         assert(e > 0 && "something recorded");
         for (b = 0; b < FS / CTL; b++) {               /* a second of the loop */
             mix_block(o, CTL);

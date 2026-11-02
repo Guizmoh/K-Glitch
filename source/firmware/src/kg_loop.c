@@ -3,9 +3,13 @@
  * Included by kglitch.c; runs in the audio interrupt (fx.c mix_block: kl_play before the punch-in effects, so they
  * destroy the loop too; kl_capture after them: what you hear is what is recorded, the loop itself included).
  *
- * Memory: the FM-1 has no room for another buffer. The loop lives in the tempo delay's line (fx.c dly_buf, 128 KB):
- * 65536 samples, mono, at 22.05 kHz: 2.97 s (2 bars down to 162 BPM, 1 bar down to 81). While a loop is held the
- * tempo delay is silent; MODE OFF lets the loop go and gives the delay its line back.
+ * Memory: the FM-1 has no room for another buffer. The loop lives in the tempo delay's line (fx.c dly_buf, 128 KB),
+ * mono, as 8-bit samples in blocks of 16 that share a scale (block floating point: about 48 dB under each block's
+ * peak, and every bit of the 16 for the quiet ones): 126976 samples. At the full 44.1 kHz (the whole spectrum, the
+ * hats' air) 2.88 s: 1 bar down to 84 BPM, 2 bars down to 167; the BARS asked that do not fit at 44.1 kHz are
+ * recorded at 22.05 kHz (a half-band filter first), 5.76 s: 2 bars down to 84 BPM, 4 down to 167; still too long: fewer
+ * bars. Played back with a cubic interpolation. While a loop is held the tempo delay is silent; MODE OFF lets the loop
+ * go and gives the delay its line back.
  *
  * LOOP page: REC arms; the recording starts on the next bar (PLAY starts the transport if it is stopped) and lasts
  * BARS (1, 2, 4: as many as fit); then the loop plays, locked to the bar (a new tempo varies its speed). SOURCE MUTE:
@@ -20,16 +24,23 @@
 enum { KL_OFF, KL_LOOP, KL_SLICE, KL_GRAIN };     /* G_KLMODE */
 enum { KLS_EMPTY, KLS_ARMED, KLS_REC, KLS_HAS };
 #define KL_NS 16u                                 /* slices */
-static int16_t *const kl_buf = dly_buf;
+#define KL_BLK 16u                                /* samples a block (one scale) */
+#define KL_NBLK 7936u                             /* blocks: 16 bytes + a 4-bit scale each, in the delay's 131072 bytes */
+#define KL_MAXS (KL_NBLK * KL_BLK)                /* 126976 samples */
+_Static_assert(KL_MAXS + KL_NBLK / 2u <= sizeof(int16_t) * DLY_LEN, "the loop fits the delay's line");
+static uint8_t *const kl_b8 = (uint8_t *)dly_buf;   /* the samples, then the blocks' scales (two a byte) */
 static struct {
     volatile uint8_t st;          /* KLS_* (anything but EMPTY: the delay's line is the loop's: fx.c kl_line) */
     uint8_t bars;                 /* the loop's length in bars */
-    uint32_t len;                 /* its samples (22.05 kHz) */
+    uint32_t len;                 /* its samples (at FS / rate) */
+    uint8_t rate;                 /* 1: 44.1 kHz, 2: 22.05 kHz (longer loops) */
+    uint8_t bn;                   /* REC: samples in the block being filled */
+    int32_t blk[KL_BLK];          /* .. that block */
+    int32_t h[7];                 /* REC at 22.05 kHz: the half-band filter's last inputs */
     uint32_t w;                   /* REC: the next one */
     uint32_t beat0;               /* the transport's beat it started on */
     uint32_t last_beat;
-    int32_t half;                 /* REC: the first of a pair (two samples make one) */
-    uint8_t odd;
+    uint8_t odd;                  /* REC at 22.05 kHz: one input of two */
     uint8_t map[KL_NS], rev[KL_NS], ret[KL_NS];   /* SLICE: which slice plays, backwards, retriggered x ret (1..8) */
     volatile int8_t pad;          /* a white key held: the slice (or the grain position) it plays, -1 none */
     uint8_t pad_new;              /* (it was just pressed: from the slice's start) */
@@ -47,12 +58,38 @@ static volatile uint8_t kl_padkey;                /* the key held for kl.pad, + 
 
 static uint32_t kl_bar_samples(void) { return beat_samples() * 4u; }
 static int kl_line(void) { return kl.st != KLS_EMPTY; }
-/* the loop at position q8 (Q8 samples), linear */
+/* the loop's sample i (the mix's scale) */
+static int32_t kl_get(uint32_t i)
+{
+    uint32_t e = (uint32_t)(kl_b8[KL_MAXS + (i >> 5)] >> ((i >> 2) & 4u)) & 15u;
+    return (int32_t)(int8_t)kl_b8[i] << e;
+}
+/* the loop at position q8 (Q8 samples), cubic (Hermite) */
 static int32_t kl_at(uint32_t q8)
 {
-    uint32_t i = (q8 >> 8) % kl.len, j = i + 1u >= kl.len ? 0u : i + 1u;
-    int32_t a = kl_buf[i], b = kl_buf[j];
-    return a + (((b - a) * (int32_t)(q8 & 255u)) >> 8);
+    uint32_t i = (q8 >> 8) % kl.len, n = kl.len;
+    int32_t xm = kl_get(i ? i - 1u : n - 1u), x0 = kl_get(i), x1 = kl_get(i + 1u < n ? i + 1u : 0u),
+            x2 = kl_get(i + 2u < n ? i + 2u : i + 2u - n), t = (int32_t)(q8 & 255u);
+    int32_t c1 = (x1 - xm) >> 1, c2 = xm - ((5 * x0) >> 1) + 2 * x1 - (x2 >> 1), c3 = ((x2 - xm) >> 1) + ((3 * (x0 - x1)) >> 1);
+    c3 = clamp(c3, -(1 << 21), 1 << 21), c2 = clamp(c2, -(1 << 21), 1 << 21);   /* (x 256 three times: 32 bits) */
+    return x0 + ((((((c3 * t) >> 8) + c2) * t >> 8) + c1) * t >> 8);
+}
+/* REC: a block of 16 into the line, with its scale (the smallest that keeps its peak in 8 bits) */
+static void kl_put_block(void)
+{
+    uint32_t b = kl.w / KL_BLK, k, e = 0, pk = 0;
+    for (k = 0; k < KL_BLK; k++) {
+        uint32_t a = (uint32_t)(kl.blk[k] < 0 ? -kl.blk[k] : kl.blk[k]);
+        if (a > pk) pk = a;
+    }
+    while (e < 15u && (pk + (e ? 1u << (e - 1u) : 0u)) >> e > 127u) e++;
+    for (k = 0; k < KL_BLK; k++) {
+        int32_t v = e ? (kl.blk[k] + (1 << (e - 1u))) >> e : kl.blk[k];
+        kl_b8[kl.w + k] = (uint8_t)(int8_t)clamp(v, -128, 127);
+    }
+    kl_b8[KL_MAXS + b / 2u] = (uint8_t)((kl_b8[KL_MAXS + b / 2u] & (b & 1u ? 0x0Fu : 0xF0u)) | e << ((b & 1u) * 4u));
+    kl.w += KL_BLK;
+    kl.bn = 0;
 }
 static void kl_outline(void)                      /* the waveform's peaks, 110 columns (after a recording) */
 {
@@ -60,7 +97,7 @@ static void kl_outline(void)                      /* the waveform's peaks, 110 c
     for (c = 0; c < 110u; c++) {
         uint32_t a = c * kl.len / 110u, b = (c + 1u) * kl.len / 110u, pk = 0;
         for (i = a; i < b; i += 4u) {
-            int32_t v = kl_buf[i];
+            int32_t v = kl_get(i);
             uint32_t m = (uint32_t)(v < 0 ? -v : v);
             if (m > pk) pk = m;
         }
@@ -182,8 +219,7 @@ static void kl_play(int32_t *l, int32_t *r, uint32_t n)
             if (env > 256) env = 256;
             y = (y * env) >> 8;
         }
-        y = (y * 3) >> 1;                         /* (stored as the mix / 2 x 3/4: about its level back) */
-        l[i] += y;
+        l[i] += y;                                /* (stored at the mix's level) */
         r[i] += y;
     }
 }
@@ -199,15 +235,19 @@ static void kl_capture(const int32_t *l, const int32_t *r, uint32_t n)
             kl.last_beat = b;
             return;
         }
-        {   /* BARS, as many as fit the line */
-            uint32_t want = 1u << ((uint32_t)song.g[G_KLBARS] % 3u), bar = kl_bar_samples() / 2u;
-            while (want > 1u && want * bar > KL_N) want >>= 1;
+        {   /* BARS: at 44.1 kHz if they fit, else at 22.05; else as many as fit */
+            uint32_t want = 1u << ((uint32_t)song.g[G_KLBARS] % 3u), bar = kl_bar_samples();
+            kl.rate = (uint8_t)(want * bar <= KL_MAXS ? 1u : 2u);
+            bar /= kl.rate;
+            while (want > 1u && want * bar > KL_MAXS) want >>= 1;
             kl.bars = (uint8_t)want;
-            kl.len = want * bar > KL_N ? KL_N : want * bar;
+            kl.len = (want * bar > KL_MAXS ? KL_MAXS : want * bar) / KL_BLK * KL_BLK;
         }
         kl.beat0 = b;
         kl.w = 0;
+        kl.bn = 0;
         kl.odd = 0;
+        memset(kl.h, 0, sizeof kl.h);
         kl.st = KLS_REC;
     }
     if (kl.st != KLS_REC) return;
@@ -216,10 +256,16 @@ static void kl_capture(const int32_t *l, const int32_t *r, uint32_t n)
         return;
     }
     for (i = 0; i < n && kl.w < kl.len; i++) {
-        int32_t m = (l[i] + r[i]) >> 1;
-        if (!kl.odd) kl.half = m;
-        else kl_buf[kl.w++] = (int16_t)clamp((kl.half + m) * 2 / 3 >> 1, -32768, 32767);   /* (x 2/3 of the mix / 2) */
-        kl.odd ^= 1u;
+        int32_t m = clamp((l[i] + r[i]) >> 1, -(1 << 21), 1 << 21);
+        if (kl.rate == 2u) {                       /* 22.05 kHz: a half-band low-pass (-1 0 9 16 9 0 -1) / 32, one of two */
+            kl.h[0] = kl.h[1], kl.h[1] = kl.h[2], kl.h[2] = kl.h[3], kl.h[3] = kl.h[4], kl.h[4] = kl.h[5], kl.h[5] = kl.h[6];
+            kl.h[6] = m;
+            kl.odd ^= 1u;
+            if (kl.odd) continue;
+            m = (16 * kl.h[3] + 9 * (kl.h[2] + kl.h[4]) - (kl.h[0] + kl.h[6])) >> 5;
+        }
+        kl.blk[kl.bn++] = m;
+        if (kl.bn == KL_BLK) kl_put_block();
     }
     if (kl.w >= kl.len) {
         kl.st = KLS_HAS;
