@@ -169,9 +169,9 @@ fun TonightIdle(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TonightLive(l: LiveState, now: Long, onStop: () -> Unit) {
+fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp = 0.dp, onStop: () -> Unit) {
     Column(
-        Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+        Modifier.verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = topInset),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ScreenHeader("Surveillance en cours", "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone")

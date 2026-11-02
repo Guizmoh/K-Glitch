@@ -77,4 +77,20 @@ class ScreenshotTest {
     @Test fun tutoHello() = shot { com.somnia.app.ui.screens.OnboardingFrame(0, 1f) }
 
     @Test fun splash() = paparazzi.snapshot { SomniaTheme { com.somnia.app.ui.screens.SplashPoster(onDone = {}, autoCloseMs = 999_999) } }
+
+    @Test fun liveSceneMockup() = paparazzi.snapshot {
+        SomniaTheme {
+            androidx.compose.foundation.layout.Box {
+                com.somnia.app.ui.components.NightScene()
+                TonightLive(
+                    LiveState(
+                        sessionId = 1, startTime = t0, levelDb = -42f, noiseFloorDb = -55f, thresholdDb = -44f, capturing = false,
+                        eventCount = 9, counts = mapOf(SoundType.SNORING to 5, SoundType.SPEECH to 2, SoundType.LAUGHTER to 1, SoundType.CRYING to 1),
+                        lastEvent = SoundType.SPEECH, lastEventTime = t0 + 3_000_000L, alarmTarget = t0 + 30_000_000L,
+                    ),
+                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 150.dp,
+                ) {}
+            }
+        }
+    }
 }
