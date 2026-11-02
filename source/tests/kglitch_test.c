@@ -473,6 +473,28 @@ int main(int argc, char **argv)
             }
         printf("kglitch: GLITCH: the %u presets sound across the keyboard, bounded                     ok\n", ENG_GLITCH.npresets);
     }
+    /* 18. the state kept in flash (kg_pack / kg_unpack): back exactly; a damaged record changes nothing; the loop's
+     * MODE is not brought back (its sound is RAM only) */
+    {
+        static kg_blob_t a, c;
+        uint32_t k;
+        reset();
+        for (k = 0; k < KG_STEPS; k++) kg.seq[k] = (int8_t)(k % KG_NFX), kg.seq2[k] = -1, kg.sint[k] = (uint8_t)k, kg.prob[k] = (uint8_t)(k % 101u);
+        kd_int[3] = 77, kl.map[2] = 9, kl.rev[5] = 1, kl.ret[7] = 8;
+        song.g[G_KCHAOS] = 66, song.g[G_KSEQ] = 3, song.g[G_KMULTI] = 1, song.g[G_KLMODE] = KL_GRAIN;
+        kg_pack(&a);
+        reset();
+        kd_int[3] = 50, kl.map[2] = 2, kl.rev[5] = 0, kl.ret[7] = 1;
+        assert(kg_unpack(&a) == 0);
+        kg_pack(&c);
+        assert(kg.seq[5] == 5 && kg.prob[40] == 40 && kd_int[3] == 77 && kl.map[2] == 9 && kl.ret[7] == 8);
+        assert(song.g[G_KCHAOS] == 66 && song.g[G_KSEQ] == 3 && song.g[G_KMULTI] == 1 && song.g[G_KLMODE] == 0);
+        a.seq[3] ^= 1;                                  /* damaged */
+        kd_int[3] = 12;
+        assert(kg_unpack(&a) == -1 && kd_int[3] == 12);
+        kd_int[3] = 50, kl.map[2] = 2, kl.rev[5] = 0, kl.ret[7] = 1;
+    }
+    printf("kglitch: the state for flash: back exactly, a damaged record refused                     ok\n");
     printf("kglitch_test: passed\n");
     return 0;
 }

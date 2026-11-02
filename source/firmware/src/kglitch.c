@@ -19,7 +19,7 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.4"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.5"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */
@@ -336,3 +336,65 @@ static void kg_clean(void)
     fm1_irq_on();
 }
 
+
+/* ---- the K-GLITCH state kept in flash (storage.c's tail record of the settings object; project.c saves it 3 s after a
+ * change, stopped, and takes it back at power-on): the effect lane (both layers, intensities, probabilities), each
+ * effect's INTENSITY, the slices' map, and K-GLITCH's settings. The loop's sound itself is RAM only */
+#define KG_BLOB_MAGIC 0x314C474Bu                 /* "KGL1" */
+typedef struct {
+    uint32_t magic;
+    uint16_t ng, ver;
+    int8_t seq[KG_STEPS], seq2[KG_STEPS];
+    uint8_t sint[KG_STEPS], prob[KG_STEPS];
+    uint8_t dint[DD_N], map[KL_NS], rev[KL_NS], ret[KL_NS];
+    int16_t g[G_COUNT - G_KCHAOS];
+    uint32_t sum;
+} kg_blob_t;
+_Static_assert(sizeof(kg_blob_t) <= 512u, "the tail record holds it");
+static kg_blob_t kg_blob;
+static uint32_t kg_blob_sum(const kg_blob_t *b)
+{
+    const uint8_t *p = (const uint8_t *)b;
+    uint32_t h = 2166136261u, i;
+    for (i = 0; i < sizeof *b - 4u; i++) h = (h ^ p[i]) * 16777619u;
+    return h;
+}
+static void kg_pack(kg_blob_t *b)                 /* (main loop) */
+{
+    uint32_t i;
+    memset(b, 0, sizeof *b);
+    b->magic = KG_BLOB_MAGIC;
+    b->ng = (uint16_t)(G_COUNT - G_KCHAOS);
+    b->ver = 1;
+    for (i = 0; i < KG_STEPS; i++)
+        b->seq[i] = kg.seq[i], b->seq2[i] = kg.seq2[i], b->sint[i] = kg.sint[i], b->prob[i] = kg.prob[i];
+    for (i = 0; i < DD_N; i++) b->dint[i] = kd_int[i];
+    for (i = 0; i < KL_NS; i++) b->map[i] = kl.map[i], b->rev[i] = kl.rev[i], b->ret[i] = kl.ret[i];
+    for (i = 0; i < (uint32_t)(G_COUNT - G_KCHAOS); i++) b->g[i] = song.g[G_KCHAOS + i];
+    b->sum = kg_blob_sum(b);
+}
+static int kg_unpack(const kg_blob_t *b)          /* 0: taken, -1: not one (nothing changed) */
+{
+    uint32_t i, ng;
+    if (b->magic != KG_BLOB_MAGIC || b->sum != kg_blob_sum(b))
+        return -1;
+    for (i = 0; i < KG_STEPS; i++) {
+        kg.seq[i] = b->seq[i] < (int8_t)KG_NFX ? b->seq[i] : -1;
+        kg.seq2[i] = b->seq2[i] < (int8_t)KG_NFX ? b->seq2[i] : -1;
+        kg.sint[i] = b->sint[i] <= 101u ? b->sint[i] : 0u;
+        kg.prob[i] = b->prob[i] <= 100u ? b->prob[i] : 100u;
+    }
+    for (i = 0; i < DD_N; i++) kd_int[i] = b->dint[i] <= 100u ? b->dint[i] : 50u;
+    for (i = 0; i < KL_NS; i++) {
+        kl.map[i] = (uint8_t)(b->map[i] % KL_NS);
+        kl.rev[i] = (uint8_t)(b->rev[i] != 0);
+        kl.ret[i] = b->ret[i] >= 1u && b->ret[i] <= 8u ? b->ret[i] : 1u;
+    }
+    ng = b->ng < (uint32_t)(G_COUNT - G_KCHAOS) ? b->ng : (uint32_t)(G_COUNT - G_KCHAOS);   /* (an older record: fewer) */
+    for (i = 0; i < ng; i++) {
+        uint32_t id = G_KCHAOS + i;
+        if (id == G_KLMODE) continue;              /* (no loop at power-on: its sound is RAM only) */
+        song.g[id] = (int16_t)clamp(b->g[i], GP[id].min, GP[id].max);
+    }
+    return 0;
+}

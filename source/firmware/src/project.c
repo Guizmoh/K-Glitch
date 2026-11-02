@@ -833,6 +833,10 @@ UI_SMALL static void persist_boot(void)                    /* before settings_in
                 if (st_side_load(OBJ_SETTINGS, &r, sizeof r) == 0)
                     side_take(&r);
             }
+#ifdef KGLITCH_VERSION
+            if (st_tail_load(OBJ_SETTINGS, &kg_blob, sizeof kg_blob) == 0)   /* (K-GLITCH's state, power-on) */
+                kg_unpack(&kg_blob);
+#endif
         } else if (n == (int)(8u + sizeof(panel_t)) && p.magic == 0x50455231u) {   /* "PER1": palette, panel */
             const uint32_t *w = (const uint32_t *)&p;
             panel_t old;
@@ -958,8 +962,16 @@ UI_SMALL static int settings_write(const persist_t *p)
     side_fill(&side_out);
     st_side = &side_out;
     st_side_len = sizeof side_out;
+#ifdef KGLITCH_VERSION
+    kg_pack(&kg_blob);                              /* (K-GLITCH: its state in the tail record) */
+    st_tail = &kg_blob;
+    st_tail_len = sizeof kg_blob;
+#endif
     rc = st_save3(OBJ_SETTINGS, p, sizeof *p, &dsu, sizeof dsu, mp, midi_part_default(mp) ? 0u : sizeof mp);
     st_side = 0;
+#ifdef KGLITCH_VERSION
+    st_tail = 0;
+#endif
     if (rc)
         return -1;
     dsu_dirty = 0;
@@ -1020,6 +1032,44 @@ UI_SMALL static void settings_save(void)
         persist_saved = p;
 #endif
 }
+
+#ifdef KGLITCH_VERSION
+/* K-GLITCH: its state saved with the settings, 3 s after its last change, the transport stopped (no erase while
+ * playing: the flash stalls the code); unchanged, nothing written. Main loop (ui_input.c) */
+static void kg_store_poll(void)
+{
+#if FELUCCA_FLASH
+    static uint32_t saved_h, t0, booted;
+    kg_blob_t b;
+    uint32_t h;
+    if (!flash_ok)
+        return;
+    kg_pack(&b);
+    h = b.sum;
+    if (!booted) {                                  /* (what power-on brought back is what is saved) */
+        booted = 1;
+        saved_h = h;
+    }
+    if (h == saved_h) {
+        t0 = 0;
+        return;
+    }
+    if (!t0)
+        t0 = fm1_ms | 1u;
+    if (song.playing || transport_req || fm1_ms - t0 < 3000u)
+        return;
+    {
+        persist_t p;
+        persist_fill(&p);
+        if (settings_write(&p) == 0) {
+            persist_saved = p;
+            saved_h = h;
+        }
+        t0 = 0;
+    }
+#endif
+}
+#endif
 
 #if FELUCCA_FLASH
 _Static_assert(sizeof(project_t) <= ST_PAYLOAD_MAX, "project does not fit one flash sector");

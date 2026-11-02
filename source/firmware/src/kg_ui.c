@@ -246,18 +246,22 @@ UI_SMALL static void kg_paint(void)
     {
         int32_t pos[KG_NPG], w[KG_NPG], tot = 0, off;
         for (i = 0; i < KG_NPG; i++) { w[i] = kg_t5w(TAB[i]) + 14; pos[i] = tot; tot += w[i] + 3; }
-        off = pos[pn] + w[pn] / 2 - 96;
-        if (off > tot - 196) off = tot - 196;
+        off = pos[pn] + w[pn] / 2 - 86;
+        if (off > tot - 174) off = tot - 174;
         if (off < 0) off = 0;
         for (i = 0; i < KG_NPG; i++) {
             int32_t tx = 4 + pos[i] - off;
-            if (tx < 2 || tx + w[i] > 198) continue;   /* (only whole tabs) */
+            if (tx < 2 || tx + w[i] > 176) continue;   /* (only whole tabs; the beat and the tempo after) */
             if (i == pn) kg_rbox(tx, 2, w[i], 13, KG_ACC, KG_ACC);
             kg_t5(tx + 7, 5, TAB[i], i == pn ? KG_BG : KG_MUTE);
         }
     }
     kg_u2a(s, (uint32_t)song.g[G_BPM]);
     kg_t5(224 - kg_t5w(s), 5, s, KG_INK);
+    for (i = 0; i < 4u; i++) {                         /* the beat: four dots, the one playing lit (the bar's first orange) */
+        int32_t bx = 224 - kg_t5w(s) - 26 + (int32_t)i * 6, on = song.playing && (clk_beat & 3u) == i;
+        cv_rect(bx, 7, 4, 4, on ? (i ? KG_INK : KG_ACC) : KG_RULE);
+    }
     if (song.playing) for (i = 0; i < 7u; i++) cv_rect(229, 5 + (int32_t)i, (int32_t)(i < 4u ? i + 1u : 7u - i), 1, KG_ACC);
     else cv_rect(229, 6, 6, 6, KG_MUTE);
     /* the card: title, the orange line under it (or the last message), the tags */
@@ -475,6 +479,7 @@ UI_SMALL static uint32_t kg_signature(void)
     h ^= (song.playing ? kg.step + 1u : 0u) * 977u + (uint32_t)(kg.now + 2) * 65537u + kg.src * 31u + ui.page * 7919u;
     for (i = G_KCHAOS; i < G_COUNT; i++) h = (h ^ (uint32_t)song.g[i]) * 16777619u;
     for (i = 0; i < DD_N; i++) h = (h ^ kd_int[i]) * 16777619u;
+    h ^= (song.playing ? (clk_beat & 3u) + 1u : 0u) * 0x2545F491u;
     h ^= (uint32_t)song.g[G_BPM] * 104729u + (ui.hot_t ? ui.hot_col + 1u : 0u) * 13u + kg_sel * 7u + (uint32_t)song.g[G_SWING];
     for (i = 0; i < KL_NS; i++) h = (h ^ (uint32_t)kl.map[i] ^ (uint32_t)kl.rev[i] << 5 ^ (uint32_t)kl.ret[i] << 6) * 16777619u;
     for (i = 0; i < KG_STEPS; i++) h = (h ^ (uint32_t)(kg.seq2[i] + 2) ^ (uint32_t)kg.prob[i] << 8) * 16777619u;

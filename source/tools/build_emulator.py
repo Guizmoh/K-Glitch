@@ -13,7 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GEN, OUT = ROOT / "build/gen", ROOT / "build/emu"
 EXPORTS = ["init", "home", "screen", "screen_gen", "audio", "rate", "block", "render", "midi_buf", "midi_take", "frame",
-           "button", "key", "keys", "enc", "master", "playing", "midi_in"]
+           "button", "key", "keys", "enc", "master", "playing", "midi_in", "state_get", "state_size", "state_sum",
+           "state_buf", "state_put"]
 
 
 def main():

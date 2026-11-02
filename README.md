@@ -2,7 +2,7 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.4**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.5**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
 ## Essayer : l'émulateur
 
@@ -67,7 +67,10 @@ Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec
 - **AUTO** : à chaque 16e, DENSITY % de chances de lancer un effet choisi selon CHAOS.
 - **MPC** : les effets partent en MIDI CC (voir [docs/MPC_REMOTE.md](docs/MPC_REMOTE.md)). Avec GLO > SYSTEM > MIDI OUT sur SEQ, la MPC reçoit aussi le rythme muté en notes.
 
-Priorité : pad > séquenceur > AUTO. Ces réglages sont « live » : pas encore sauvegardés dans les projets.
+Priorité : pad > séquenceur > AUTO.
+
+### Sauvegarde
+L'état K-GLITCH (la séquence d'effets avec ses deux couches, intensités et probabilités, l'intensité de chaque effet, la carte des slices et tous les réglages K-GLITCH) est **enregistré automatiquement** dans la flash, 3 s après un changement, transport arrêté (jamais pendant la lecture : la flash bloque le code), et **revient au démarrage**. Il est rangé à la fin du secteur des réglages de SLOOP (copies A / B : une coupure pendant l'écriture ne perd rien ; un SLOOP d'origine l'ignore). Le son de la boucle du sampler, lui, reste en RAM. Dans l'émulateur, l'état est gardé dans le navigateur.
 
 ## Code
 

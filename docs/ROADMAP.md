@@ -23,7 +23,7 @@
 - [ ] Charger de vrais breaks (samples utilisateur) dans le sampler.
 - [ ] Éditeur web : vérifier la compatibilité (le moteur GLITCH ajoute un numéro de moteur).
 - [ ] Plus de styles DRUMS, et des fills générés.
-- [ ] Sauvegarder la séquence d'effets et les macros avec le projet.
+- [x] Sauvegarde automatique de l'état K-GLITCH en flash, rechargé au démarrage (0.5).
 - [ ] MPC : CC continus depuis les potards, notes de slices, profils de mapping.
 - [ ] Étendre le style Ribbon classique aux autres pages.
 

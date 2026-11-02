@@ -98,7 +98,7 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
   <header>
     <div>
       <h1>K-<span>GLITCH</span></h1>
-      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.4</div>
+      <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.5</div>
     </div>
     <div class="bar">
       <button id="pix" type="button" title="Écran lissé ou pixels réels / smooth screen or real pixels">PIXELS</button>
@@ -197,11 +197,16 @@ const wasmBytes = Uint8Array.from(atob(WASM_B64), c => c.charCodeAt(0));
 /* ---- the engine: the firmware as WebAssembly; the same code in the audio worklet or on the page */
 const ENGINE_SRC = `
 class Engine {
-  constructor(bytes, mem) {
+  constructor(bytes, mem, boot) {
     this.x = new WebAssembly.Instance(new WebAssembly.Module(bytes), {}).exports;
     const x = this.x;
     if (mem) { const g = mem.length - x.memory.buffer.byteLength; if (g > 0) x.memory.grow(Math.ceil(g / 65536)); new Uint8Array(x.memory.buffer).set(mem); }
-    else { x.emu_init(); x.emu_home(); }
+    else {
+      x.emu_init();
+      if (boot && boot.length === x.emu_state_size()) { new Uint8Array(x.memory.buffer, x.emu_state_buf(), boot.length).set(boot); x.emu_state_put(); }
+      x.emu_home();
+    }
+    this.ssum = x.emu_state_sum(); this.sn = 0;
     this.pos = 256; this.acc = 0; this.buf = null; this.sg = -1; this.emit = () => {};
   }
   input(d) {
@@ -217,6 +222,11 @@ class Engine {
     if (g !== this.sg) { this.sg = g; out.fb = new Uint16Array(x.memory.buffer, x.emu_screen(), 57600).slice(); }
     const n = x.emu_midi_take();
     if (n) out.midi = new Uint32Array(x.memory.buffer, x.emu_midi_buf(), n).slice();
+    if (++this.sn >= 60) {                          /* about every second: K-GLITCH's state, when it changed */
+      this.sn = 0;
+      const s = x.emu_state_sum();
+      if (s !== this.ssum) { this.ssum = s; out.state = new Uint8Array(x.memory.buffer, x.emu_state_get(), x.emu_state_size()).slice(); }
+    }
     this.emit(out, out.fb ? [out.fb.buffer] : []);
   }
   render(L, R) {
@@ -266,6 +276,7 @@ function logMidi(st, d1, d2) {
 }
 function onUi(m) {
   if (m.fb) drawScreen(m.fb);
+  if (m.state) try { let b = ""; m.state.forEach(v => b += String.fromCharCode(v)); localStorage.setItem("kg.state", btoa(b)); } catch (e) {}
   btnEls[BTN.PLAY].el.classList.toggle("on", !!m.playing);
   if (m.midi) for (const p of m.midi) {
     const st = (p >>> 8) & 255, d1 = (p >>> 16) & 127, d2 = (p >>> 24) & 127;
@@ -282,7 +293,9 @@ function startIdle() {
   $("status").textContent = T("Le son démarre au premier appui (touche, bouton ou clavier).", "Sound starts at the first press (a key, a button or the keyboard).");
   try {
     const L = new Float32Array(256), R = new Float32Array(256);
-    eng = new Engine(wasmBytes, null);
+    let st = null;
+    try { const t = localStorage.getItem("kg.state"); if (t) st = Uint8Array.from(atob(t), c => c.charCodeAt(0)); } catch (e) {}
+    eng = new Engine(wasmBytes, null, st);
     eng.emit = onUi;
     send = d => eng.input(d);
     idle = setInterval(() => { for (let k = 0; k < 4; k++) eng.render(L, R); }, 23);

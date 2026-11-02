@@ -172,6 +172,23 @@ UI_SMALL static int st_side_load(uint32_t obj, void *dst, uint32_t n)
     return st_read(st_sector(obj, (uint32_t)c) + ST_SIDE_OFF, dst, n) ? -1 : 0;
 }
 
+/* K-GLITCH: a tail record at the end of a copy's sector (ST_TAIL_OFF..), past any payload this firmware writes there
+ * (the settings object's ends near 2.5 KB): programmed with the payload, before the header, so it is committed with
+ * its copy (A / B, as the side record). It checks itself (kglitch.c kg_unpack: a magic and a checksum); an older SLOOP
+ * never reads it, and its save leaves it erased */
+#define ST_TAIL_OFF (ST_SECTOR - 512u)
+#define ST_TAIL_MAX 512u
+static const void *st_tail;                         /* the next save's tail record (0: none) */
+static uint32_t st_tail_len;
+UI_SMALL static int st_tail_load(uint32_t obj, void *dst, uint32_t n)
+{
+    st_hdr_t h;
+    int c = st_current(obj, &h);
+    if (c < 0 || n > ST_TAIL_MAX)
+        return -1;
+    return st_read(st_sector(obj, (uint32_t)c) + ST_TAIL_OFF, dst, n) ? -1 : 0;
+}
+
 /* an object in up to three parts, src then src2 then src3 (SLOOP 2.5: the settings and the SYN kits after them;
  * 2.6: then the MIDI LEARN map) */
 UI_SMALL static int st_save3(uint32_t obj, const void *src, uint32_t len, const void *src2, uint32_t len2, const void *src3,
@@ -206,6 +223,17 @@ UI_SMALL static int st_save3(uint32_t obj, const void *src, uint32_t len, const 
             sb[off] = ((const uint8_t *)st_side)[off];      /* (RAM source) */
         if ((rc = st_prog(base + ST_SIDE_OFF, sb, st_side_len)) != 0)
             return rc;
+    }
+    if (st_tail && st_tail_len && st_tail_len <= ST_TAIL_MAX && len <= ST_TAIL_OFF - ST_PAYLOAD_OFF) {   /* (K-GLITCH) */
+        static uint8_t tb[256];
+        uint32_t k;
+        for (off = 0; off < st_tail_len; off += 256u) {
+            uint32_t n = st_tail_len - off > 256u ? 256u : st_tail_len - off;
+            for (k = 0; k < n; k++)
+                tb[k] = ((const uint8_t *)st_tail)[off + k];   /* (RAM source) */
+            if ((rc = st_prog(base + ST_TAIL_OFF + off, tb, n)) != 0)
+                return rc;
+        }
     }
     h.magic = ST_MAGIC;
     h.type = (uint16_t)obj;

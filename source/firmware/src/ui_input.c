@@ -1188,8 +1188,10 @@ UI_SMALL static void remote_poll(void)
     fm1_remote_btn = m;
 }
 
+static void kg_store_poll(void);                    /* K-GLITCH: its state into flash (project.c) */
 UI_SMALL static void ui_input(void)
 {
+    kg_store_poll();
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     uint32_t home = btn_hold(&ui.home_t0, B_HOME, now, 1);
     int32_t s;

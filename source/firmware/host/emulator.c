@@ -105,6 +105,7 @@ static void up_name(uint32_t k, char *b) { (void)k; b[0] = 0; }
 static void up_slot_label(char *b, uint32_t k) { fmt_int(b, (int32_t)k + 1); }
 static void up_ui(uint32_t op, uint32_t k) { (void)op; (void)k; }
 static void settings_save(void) {}
+static void kg_store_poll(void) {}                  /* (the page keeps the state: emu_state_get / emu_state_put) */
 #include "../src/ui_song.c"
 #include "../src/ui_studio.c"
 #include "../src/icons.c"
@@ -213,3 +214,9 @@ void emu_midi_in(uint32_t st, uint32_t d1, uint32_t d2)   /* a MIDI message from
         mi_w++;
     }
 }
+/* K-GLITCH's state (kglitch.c kg_blob_t), as the FM-1 keeps it in flash: the page keeps it in the browser */
+uint8_t *emu_state_get(void) { kg_pack(&kg_blob); return (uint8_t *)&kg_blob; }
+uint32_t emu_state_size(void) { return sizeof kg_blob; }
+uint32_t emu_state_sum(void) { kg_blob_t b; kg_pack(&b); return b.sum; }
+uint8_t *emu_state_buf(void) { return (uint8_t *)&kg_blob; }
+int emu_state_put(void) { return kg_unpack(&kg_blob); }   /* (after the page wrote emu_state_buf) */
