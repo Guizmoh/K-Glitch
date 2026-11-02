@@ -8,6 +8,8 @@
 
 Ouvrir [`emulator/index.html`](emulator/index.html) dans un navigateur (une seule page, fonctionne hors ligne). Le firmware y tourne réellement (son, écran, séquenceur, effets) en WebAssembly. Un break jungle à 170 BPM est chargé : **PLAY** (ou Espace), puis **FX**.
 
+**Aide-mémoire** : [`docs/cheatsheet.html`](docs/cheatsheet.html) (boutons, pages, effets, filtres, CC MPC, clavier).
+
 Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cible wasm32 et wasm-ld, Python 3 + Pillow).
 
 ## Ce que K-GLITCH ajoute à SLOOP
