@@ -1,4 +1,5 @@
 <resources>
-    <color name="night">#FF0E1230</color>
+    <color name="night">#FF0B1026</color>
     <color name="moon">#FFB9A7FF</color>
+    <color name="logo_bg">#FF2B3A8C</color>
 </resources>

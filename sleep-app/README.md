@@ -1,8 +1,17 @@
-# Somnia : suivi du sommeil pour Android
+# Police du Dodo 👮💤 : suivi du sommeil pour Android
 
-Somnia écoute la nuit et **n'enregistre que les sons qui se détachent du bruit de fond** : paroles, cris (terreurs nocturnes), ronflements, rires, pleurs, toux. Chaque son est reconnu automatiquement et peut être réécouté le matin, avec une version « voix isolée » pour mieux comprendre ce qui a été dit.
+![Écrans de Police du Dodo : accueil, historique des nuits, réveil](docs/apercu.png)
+
+Police du Dodo écoute la nuit et **n'enregistre que les sons qui se détachent du bruit de fond** : paroles, cris (terreurs nocturnes), ronflements, rires, pleurs, toux. Chaque son est reconnu automatiquement et peut être réécouté le matin, avec une version « voix isolée » pour mieux comprendre ce qui a été dit.
 
 Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
+
+## Interface
+- **Ce soir** : un gros bouton « Commencer », le rapport du soir (caféine, sport, écrans…) et le score de la dernière nuit.
+- **Pendant la nuit** : un orbe qui réagit au son, le temps écoulé et le nombre de sons relevés par type. Le bouton « Je me réveille » arrête la surveillance.
+- **Mes nuits** : un rapport par nuit avec le score, les chiffres clés, les phases et la liste des sons à réécouter (original ou voix isolée).
+- **Tendances** : graphiques sur 7, 30 ou 90 jours et « l'enquête » sur ce qui influence vos nuits.
+- **Réglages** : 3 modes (Discret, Normal, Tout capter) suffisent en général. Le réglage fin par type de son est rangé dans une section repliable.
 
 ## Fonctionnalités
 
@@ -58,15 +67,21 @@ cd sleep-app
 
 Le modèle YAMNet (4 Mo, licence Apache 2.0) est téléchargé automatiquement au premier build. L'APK est ensuite dans `app/build/outputs/apk/debug/app-debug.apk`.
 
-Pour lancer les tests unitaires (détecteur, isolation de la voix, classification, analyse du sommeil) :
+Pour lancer les tests unitaires (détecteur, isolation de la voix, classification, analyse du sommeil, captures d'écran) :
 
 ```bash
 ./gradlew testDebugUnitTest
 ```
 
+Pour régénérer les captures d'écran dans `app/src/test/snapshots/` :
+
+```bash
+./gradlew recordPaparazziDebug
+```
+
 ## Conseils d'utilisation
 - Branchez le téléphone : l'écoute dure toute la nuit.
-- Excluez Somnia de l'optimisation de la batterie, sinon certains fabricants coupent le service.
+- Excluez Police du Dodo de l'optimisation de la batterie, sinon certains fabricants coupent le service.
 - Posez le téléphone près de la tête, micro vers vous. Mettez-le sur le matelas si vous voulez mesurer les mouvements.
 - Pour un enfant (pleurs, terreurs nocturnes), posez le téléphone dans sa chambre et montez la sensibilité des catégories Pleurs et Cris.
 
@@ -77,6 +92,8 @@ Pour lancer les tests unitaires (détecteur, isolation de la voix, classificatio
 
 ## Structure du code
 
+Le code garde le nom de paquet interne `com.somnia.app`. L'identifiant de l'application installée est `com.policedudodo.app`.
+
 ```
 app/src/main/java/com/somnia/app/
 ├── audio/      détection (SoundEventDetector, NoiseFloorTracker), YAMNet,
@@ -85,5 +102,6 @@ app/src/main/java/com/somnia/app/
 ├── analysis/   phases et score (SleepAnalyzer), journal et conseils (Insights)
 ├── alarm/      réveil, rappel du coucher, écran de réveil
 ├── data/       base Room (nuits, sons, minutes) et réglages
-└── ui/         écrans Compose : Cette nuit, Nuits, détail, Tendances, Réglages
+└── ui/         écrans Compose (Ce soir, Mes nuits, rapport, Tendances, Réglages),
+                thème « nuit » et composants (cartes, orbe, logo du policier)
 ```

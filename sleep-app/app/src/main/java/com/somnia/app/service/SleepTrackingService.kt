@@ -113,7 +113,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
         settings = SettingsRepository.get(this).settings.value
         startTime = System.currentTimeMillis()
         ServiceCompat.startForeground(
-            this, NOTIF_ID, buildNotification("Écoute de la nuit en cours…"),
+            this, NOTIF_ID, buildNotification("Surveillance de la nuit en cours…"),
             if (Build.VERSION.SDK_INT >= 30) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0,
         )
         wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -394,7 +394,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
         )
         return NotificationCompat.Builder(this, SomniaApp.CH_TRACKING)
             .setSmallIcon(R.drawable.ic_moon)
-            .setContentTitle("Somnia écoute votre nuit")
+            .setContentTitle("Police du Dodo surveille votre nuit 👮")
             .setContentText(text)
             .setOngoing(true)
             .setContentIntent(open)

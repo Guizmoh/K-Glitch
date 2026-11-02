@@ -39,14 +39,32 @@ data class Settings(
 
     companion object {
         fun defaultTypeSensitivity(): Map<SoundType, Int> = mapOf(
-            SoundType.SPEECH to 6,
+            SoundType.SPEECH to 7,
             SoundType.NIGHT_TERROR to 7,
             SoundType.SNORING to 7,
             SoundType.LAUGHTER to 7,
             SoundType.CRYING to 7,
             SoundType.COUGH to 5,
-            SoundType.BREATHING to 4,
+            SoundType.BREATHING to 5,
         )
+    }
+}
+
+/** Modes de captation prêts à l'emploi (réglage simple). */
+enum class CapturePreset(val label: String, val description: String, val mic: Int, val types: Int) {
+    DISCREET("Discret", "Seulement les sons forts et nets : cris, paroles distinctes, gros ronflements.", 4, 4),
+    NORMAL("Normal", "Le bon équilibre pour la plupart des chambres.", 6, 7),
+    ALL("Tout capter", "Chuchotements, petits rires, légers sanglots… plus de fausses alertes.", 9, 9);
+
+    fun apply(s: Settings) = s.copy(
+        micSensitivity = mic,
+        typeSensitivity = s.typeSensitivity.mapValues { (t, _) ->
+            if (t == SoundType.BREATHING || t == SoundType.COUGH) (types - 2).coerceAtLeast(1) else types
+        },
+    )
+
+    companion object {
+        fun of(s: Settings): CapturePreset? = entries.firstOrNull { it.apply(s) == s }
     }
 }
 

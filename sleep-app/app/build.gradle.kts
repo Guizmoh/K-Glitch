@@ -5,6 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+    // Captures d'écran des interfaces Compose sur la JVM (./gradlew recordPaparazziDebug)
+    id("app.cash.paparazzi")
 }
 
 // Modèle YAMNet (Google, Apache 2.0) : 521 classes de sons dont « Speech »,
@@ -33,7 +35,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.somnia.app"
+        applicationId = "com.policedudodo.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

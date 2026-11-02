@@ -72,7 +72,7 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
     fun exportCsv(context: Context) = viewModelScope.launch {
         val file = withContext(Dispatchers.IO) {
             val dir = File(context.cacheDir, "exports").apply { mkdirs() }
-            val f = File(dir, "somnia_export.csv")
+            val f = File(dir, "police_du_dodo_export.csv")
             val sessions = dao.finishedSessions()
             val events = dao.allEvents().groupBy { it.sessionId }
             f.bufferedWriter().use { w ->

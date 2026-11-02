@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.somnia.app.audio.SoundType
@@ -30,22 +31,7 @@ import com.somnia.app.ui.theme.DeepColor
 import com.somnia.app.ui.theme.LightColor
 import com.somnia.app.ui.theme.Moon
 import com.somnia.app.ui.theme.color
-
-@Composable
-fun SectionCard(title: String? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = modifier.fillMaxWidth().padding(vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            if (title != null) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(8.dp))
-            }
-            content()
-        }
-    }
-}
+import com.somnia.app.ui.theme.scoreColor
 
 /** Hypnogramme : éveillé en haut, profond en bas, événements sonores en dessous. */
 @Composable
@@ -136,9 +122,11 @@ fun LevelMeter(levelDb: Float, floorDb: Float, thresholdDb: Float, capturing: Bo
 @Composable
 fun ScoreRing(score: Int?, modifier: Modifier = Modifier) {
     Canvas(modifier) {
-        val stroke = 10.dp.toPx()
-        drawArc(Color.White.copy(alpha = 0.1f), 135f, 270f, false, style = Stroke(stroke))
-        val c = when { score == null -> Color.Gray; score >= 80 -> Color(0xFF7DDE92); score >= 60 -> Color(0xFFFFD166); else -> AwakeColor }
-        drawArc(c, 135f, 270f * ((score ?: 0) / 100f), false, style = Stroke(stroke))
+        val stroke = (size.minDimension / 9f)
+        val inset = stroke / 2
+        val arcSize = Size(size.width - stroke, size.height - stroke)
+        val tl = Offset(inset, inset)
+        drawArc(Color.White.copy(alpha = 0.1f), 135f, 270f, false, tl, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        if ((score ?: 0) > 0) drawArc(scoreColor(score), 135f, 270f * ((score ?: 0) / 100f), false, tl, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
     }
 }
