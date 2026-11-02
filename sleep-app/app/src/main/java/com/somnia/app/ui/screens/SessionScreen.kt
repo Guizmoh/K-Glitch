@@ -75,6 +75,8 @@ import com.somnia.app.ui.theme.color
 import com.somnia.app.ui.theme.icon
 import androidx.compose.material.icons.rounded.SentimentDissatisfied
 import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SentimentNeutral
 import androidx.compose.material.icons.rounded.SentimentSatisfied
@@ -111,6 +113,13 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
                 Column(Modifier.weight(1f)) {
                     Text("Rapport de nuit", style = MaterialTheme.typography.labelLarge, color = TextSoft)
                     Text(Fmt.day(s.startTime), style = MaterialTheme.typography.titleLarge)
+                }
+                IconButton(onClick = { vm.toggleNightFavorite(s) }) {
+                    Icon(
+                        if (s.favorite) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                        if (s.favorite) "Retirer des favoris" else "Mettre la nuit en favori",
+                        tint = if (s.favorite) com.somnia.app.ui.theme.Badge else TextSoft,
+                    )
                 }
                 IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Supprimer la nuit", tint = TextSoft) }
             }

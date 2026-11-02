@@ -57,7 +57,7 @@ class ScreenshotTest {
                 snoringMinutes = listOf(12, 0, 35, 4)[i], awakenings = listOf(1, 3, 0, 5)[i], morningMood = listOf(4, 3, 5, 2)[i],
             )
         }
-        com.somnia.app.ui.screens.HistoryContent(nights) {}
+        com.somnia.app.ui.screens.HistoryContent(nights.mapIndexed { i, n -> n.copy(favorite = i == 0 || i == 2) }, open = {})
     }
 
     @Test fun alarm() = shot { com.somnia.app.alarm.AlarmScreen(onStop = {}, onSnooze = {}, startAwake = true) }

@@ -15,6 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -38,13 +41,22 @@ import com.somnia.app.ui.theme.scoreColor
 @Composable
 fun HistoryScreen(vm: SomniaViewModel, open: (Long) -> Unit) {
     val sessions by vm.sessions.collectAsState()
-    HistoryContent(sessions, open)
+    HistoryContent(sessions, open, onStar = { vm.toggleNightFavorite(it) })
 }
 
 @Composable
-fun HistoryContent(sessions: List<SleepSession>, open: (Long) -> Unit) {
+fun HistoryContent(all: List<SleepSession>, open: (Long) -> Unit, onStar: (SleepSession) -> Unit = {}) {
+    var onlyFav by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val sessions = if (onlyFav) all.filter { it.favorite } else all
     LazyColumn(Modifier.padding(horizontal = 20.dp)) {
-        item { ScreenHeader("Mes nuits", "${sessions.size} nuit(s) dans le registre") }
+        item {
+            ScreenHeader("Mes nuits", "${all.size} nuit(s) dans le registre · ${all.count { it.favorite }} favorite(s)")
+            com.somnia.app.ui.components.Segmented(listOf("Toutes", "Favorites"), if (onlyFav) 1 else 0) { onlyFav = it == 1 }
+            Spacer(Modifier.height(6.dp))
+        }
+        if (onlyFav && sessions.isEmpty()) item {
+            Text("Aucune nuit favorite. Touchez l'étoile d'une nuit pour la garder.", color = TextSoft, modifier = Modifier.padding(vertical = 16.dp))
+        }
         if (sessions.isEmpty()) item {
             Column(Modifier.padding(top = 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 PoliceLogo(96.dp, awake = false)
@@ -74,7 +86,13 @@ fun HistoryContent(sessions: List<SleepSession>, open: (Long) -> Unit) {
                             if (s.awakenings > 0) Pill("👀 ${s.awakenings} réveil(s)", AwakeColor)
                         }
                     }
-                    Text("›", fontSize = 28.sp, color = TextSoft)
+                    androidx.compose.material3.IconButton(onClick = { onStar(s) }) {
+                        androidx.compose.material3.Icon(
+                            if (s.favorite) androidx.compose.material.icons.Icons.Rounded.Star else androidx.compose.material.icons.Icons.Rounded.StarBorder,
+                            if (s.favorite) "Retirer des favoris" else "Mettre en favori",
+                            tint = if (s.favorite) Badge else TextSoft,
+                        )
+                    }
                 }
             }
         }

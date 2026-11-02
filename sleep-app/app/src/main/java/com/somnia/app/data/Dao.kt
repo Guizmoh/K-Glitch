@@ -30,13 +30,16 @@ interface SleepDao {
     @Insert suspend fun insertEvent(e: SoundEventEntity): Long
     @Update suspend fun updateEvent(e: SoundEventEntity)
     @Delete suspend fun deleteEvent(e: SoundEventEntity)
-    @Query("SELECT * FROM events WHERE sessionId = :sid ORDER BY timestamp")
+    @Query("SELECT * FROM events WHERE sessionId = :sid AND hidden = 0 ORDER BY timestamp")
     fun events(sid: Long): Flow<List<SoundEventEntity>>
     @Query("SELECT * FROM events WHERE sessionId = :sid ORDER BY timestamp")
     suspend fun eventsList(sid: Long): List<SoundEventEntity>
-    @Query("SELECT * FROM events")
+    @Query("SELECT * FROM events WHERE hidden = 0")
     suspend fun allEvents(): List<SoundEventEntity>
-    @Query("SELECT * FROM events WHERE timestamp < :before AND favorite = 0 AND audioPath IS NOT NULL")
+    @Query(
+        "SELECT * FROM events WHERE timestamp < :before AND favorite = 0 AND audioPath IS NOT NULL " +
+            "AND sessionId NOT IN (SELECT id FROM sessions WHERE favorite = 1)",
+    )
     suspend fun oldRecordings(before: Long): List<SoundEventEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertMinute(m: MinuteStat)

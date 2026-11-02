@@ -236,6 +236,8 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         scores = cls.scores.entries.sortedByDescending { it.value }
                             .joinToString(";") { "${it.key.name}=${"%.2f".format(java.util.Locale.US, it.value)}" },
                         audioPath = audio, enhancedPath = enhanced,
+                        // Type désactivé dans les réglages : compté, mais ni enregistré ni affiché
+                        hidden = !keepAudio,
                     ),
                 )
                 // Paroles et cris : transcription en texte si le modèle est installé

@@ -57,6 +57,8 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
         dao.event(e.id)?.let { dao.updateEvent(it.copy(transcript = text)) }
     }
 
+    fun toggleNightFavorite(s: SleepSession) = viewModelScope.launch { dao.updateSession(s.copy(favorite = !s.favorite)) }
+
     fun toggleFavorite(e: SoundEventEntity) = viewModelScope.launch { dao.updateEvent(e.copy(favorite = !e.favorite)) }
 
     fun deleteEvent(e: SoundEventEntity) = viewModelScope.launch {

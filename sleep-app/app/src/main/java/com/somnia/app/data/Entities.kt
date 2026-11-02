@@ -31,6 +31,8 @@ data class SleepSession(
     val movementMedian: Float? = null,
     /** Nombre de nuits précédentes utilisées pour calibrer l'analyse. */
     val calibrationNights: Int = 0,
+    /** Nuit en favori : jamais de suppression automatique de ses sons. */
+    val favorite: Boolean = false,
 )
 
 @Entity(
@@ -60,6 +62,8 @@ data class SoundEventEntity(
     val transcript: String? = null,
     /** Type corrigé à la main par l'utilisateur. */
     val userCorrected: Boolean = false,
+    /** Type désactivé (interrupteur OFF) : compté dans les statistiques mais ni enregistré ni affiché. */
+    val hidden: Boolean = false,
 )
 
 /** Statistiques minute par minute : mouvement (accéléromètre) et son. */
