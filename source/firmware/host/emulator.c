@@ -129,6 +129,7 @@ void emu_init(void)
     memset(user_flash, 0xFF, sizeof user_flash);
     panel = PANEL_DEFAULT;
     layers_init();
+    settings_init();                                    /* (the palette: the greys of the labels, the header, the footer) */
     for (i = 0; i < G_COUNT; i++) song.g[i] = GP[i].def;
     song.g[G_SYNC] = 0;
     song.master_q12 = 4096;
