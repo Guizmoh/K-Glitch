@@ -20,21 +20,21 @@ import androidx.compose.ui.unit.sp
 import com.somnia.app.audio.SoundType
 
 // Palette « Police du Dodo » : bleu nuit, bleu police, or de l'insigne.
-val Night = Color(0xFF0F1530)
-val NightMid = Color(0xFF141B3A)
-val NightCard = Color(0xFF18203F)
-val CardStroke = Color(0xFF263057)
+val Night = Color(0xFF213268)
+val NightMid = Color(0xFF283C7A)
+val NightCard = Color(0x5A16234F) // vitre teintée semi-opaque
+val CardStroke = Color(0x3DFFFFFF)
 val PoliceBlue = Color(0xFFE6C47A) // or de l'insigne (couleur d'accent)
 val PoliceBlueDark = Color(0xFF2A3360)
 val Badge = Color(0xFFE6C47A)
 val Moon = Color(0xFFC9BCFF)
-val TextSoft = Color(0xFF9AA2C0)
+val TextSoft = Color(0xFFB9C1DE)
 val DeepColor = Color(0xFF4A5AA8)
 val LightColor = Color(0xFF8FB7FF)
 val AwakeColor = Color(0xFFE3A07F)
 val Good = Color(0xFF8FCFA5)
 
-val BackgroundBrush = Brush.verticalGradient(listOf(Color(0xFF131A38), Night))
+val BackgroundBrush = Brush.verticalGradient(listOf(Color(0xFF34509A), Color(0xFF283E80), Night))
 val PrimaryBrush = Brush.linearGradient(listOf(Color(0xFFE6C47A), Color(0xFFE6C47A)))
 val SunriseBrush = Brush.linearGradient(listOf(Color(0xFFF1E6CF), Color(0xFFF1E6CF)))
 
@@ -69,8 +69,8 @@ private val scheme = darkColorScheme(
     surface = Night,
     surfaceVariant = NightCard,
     surfaceContainer = NightMid,
-    surfaceContainerHigh = Color(0xFF1E2558),
-    surfaceContainerHighest = Color(0xFF262E66),
+    surfaceContainerHigh = Color(0xFF2C4084),
+    surfaceContainerHighest = Color(0xFF34498F),
     onBackground = Color(0xFFEDE8DC),
     onSurface = Color(0xFFEDE8DC),
     onSurfaceVariant = TextSoft,

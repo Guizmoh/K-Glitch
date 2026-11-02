@@ -54,6 +54,13 @@ import com.somnia.app.ui.theme.TextSoft
 
 private val CardShape = RoundedCornerShape(16.dp)
 private val ON_GOLD = Color(0xFF151A33)
+/** Reflet de la vitre : plus clair en haut. */
+private val GlassSheen = Brush.verticalGradient(listOf(Color(0x24FFFFFF), Color(0x08FFFFFF)))
+private val GlassEdge = Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x1AFFFFFF)))
+
+/** Effet vitre teintée : teinte bleu nuit translucide + reflet + liseré clair. */
+fun Modifier.tintedGlass(shape: androidx.compose.ui.graphics.Shape = CardShape): Modifier =
+    this.clip(shape).background(NightCard).background(GlassSheen).border(1.dp, GlassEdge, shape)
 
 /** Fond uni bleu nuit. */
 @Composable
@@ -94,7 +101,7 @@ fun GlassCard(
 ) {
     Column(
         modifier.fillMaxWidth().padding(vertical = 5.dp).clip(CardShape)
-            .background(NightCard).border(1.dp, CardStroke, CardShape)
+            .tintedGlass()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(16.dp),
     ) {
@@ -134,7 +141,7 @@ fun ExpandableCard(title: String, icon: String, subtitle: String? = null, conten
 /** Chiffre clé. */
 @Composable
 fun StatTile(symbol: String, value: String, label: String, modifier: Modifier = Modifier, accent: Color = Color.Unspecified) {
-    Column(modifier.clip(CardShape).background(NightCard).border(1.dp, CardStroke, CardShape).padding(14.dp)) {
+    Column(modifier.tintedGlass().padding(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             symbolIcon(symbol)?.let { Icon(it, null, tint = TextSoft, modifier = Modifier.size(16.dp)) }
             Text("  " + label.uppercase(), style = MaterialTheme.typography.labelSmall, color = TextSoft, maxLines = 1)
@@ -174,7 +181,7 @@ fun GradientButton(text: String, modifier: Modifier = Modifier, brush: Brush = S
 @Composable
 fun BigRoundButton(title: String, subtitle: String, onClick: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp).clip(CardShape).background(NightCard).border(1.dp, CardStroke, CardShape).padding(20.dp),
+        Modifier.fillMaxWidth().padding(vertical = 8.dp).tintedGlass().padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PoliceLogo(132.dp, awake = true)
@@ -206,12 +213,12 @@ fun ListeningOrb(levelDb: Float, floorDb: Float, capturing: Boolean, center: @Co
 @Composable
 fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val shape = RoundedCornerShape(12.dp)
-    Row(Modifier.fillMaxWidth().clip(shape).background(Color(0xFF121935)).border(1.dp, CardStroke, shape).padding(3.dp)) {
+    Row(Modifier.fillMaxWidth().tintedGlass(shape).padding(3.dp)) {
         options.forEachIndexed { i, o ->
             val sel = i == selected
             Box(
                 Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
-                    .background(if (sel) NightCard else Color.Transparent)
+                    .background(if (sel) Color(0x33FFFFFF) else Color.Transparent)
                     .then(if (sel) Modifier.border(1.dp, Badge.copy(alpha = 0.5f), RoundedCornerShape(10.dp)) else Modifier)
                     .clickable { onSelect(i) }.padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center,

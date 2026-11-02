@@ -49,6 +49,7 @@ import com.somnia.app.ui.components.GlassCard
 import com.somnia.app.ui.components.GradientButton
 import com.somnia.app.ui.components.LevelMeter
 import com.somnia.app.ui.components.ListeningOrb
+import com.somnia.app.ui.components.NightScene
 import com.somnia.app.ui.components.Pill
 import com.somnia.app.ui.components.PoliceLogo
 import com.somnia.app.ui.components.ScoreRing
@@ -98,7 +99,10 @@ fun TonightScreen(vm: SomniaViewModel, openSession: (Long) -> Unit) {
     } else {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
         LaunchedEffect(Unit) { while (true) { delay(1000); now = System.currentTimeMillis() } }
-        TonightLive(l, now) { SleepTrackingService.stop(ctx); openSession(l.sessionId) }
+        Box {
+            NightScene()
+            TonightLive(l, now, topInset = 150.dp) { SleepTrackingService.stop(ctx); openSession(l.sessionId) }
+        }
     }
 }
 

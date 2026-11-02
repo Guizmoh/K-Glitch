@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         containerColor = Color.Transparent,
                         bottomBar = {
-                            NavigationBar(containerColor = Color(0xFF111834), tonalElevation = 0.dp) {
+                            NavigationBar(containerColor = Color(0xE01C2A5E), tonalElevation = 0.dp) {
                                 tabs.forEach { (r, label, ico) ->
                                     val selected = route == r || (r == "history" && route?.startsWith("session") == true)
                                     NavigationBarItem(

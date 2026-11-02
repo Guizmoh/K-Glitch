@@ -61,7 +61,7 @@ fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Fl
     Box(Modifier.size(size)) {
         Box(
             Modifier.size(size).clip(CircleShape)
-                .background(Brush.radialGradient(listOf(Color(0xFF3A4DB0), Color(0xFF0C1135))))
+                .background(Brush.radialGradient(listOf(Color(0xFF4A62C2), Color(0xFF1C2A5E))))
                 .border((size.value / 60f).coerceAtLeast(1f).dp, GOLD.copy(alpha = 0.8f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {

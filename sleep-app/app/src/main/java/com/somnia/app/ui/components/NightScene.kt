@@ -19,15 +19,15 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Palette inspirée de l'affiche (nuit bleue, lumières chaudes, feuillage éclairé)
-private val SKY_TOP = Color(0xFF0E1533)
-private val SKY_LOW = Color(0xFF233670)
-private val CLOUD_DARK = Color(0xFF34477F)
-private val CLOUD_LIGHT = Color(0xFF8396C9)
-private val CITY_FAR = Color(0xFF26356A)
-private val CITY_NEAR = Color(0xFF111938)
-private val FILL_BOTTOM = Color(0xFF0F1530)
+private val SKY_TOP = Color(0xFF233773)
+private val SKY_LOW = Color(0xFF4262AE)
+private val CLOUD_DARK = Color(0xFF5068AA)
+private val CLOUD_LIGHT = Color(0xFFB4C3EA)
+private val CITY_FAR = Color(0xFF3A5096)
+private val CITY_NEAR = Color(0xFF26397A)
+private val FILL_BOTTOM = Color(0xFF213268)
 private val WINDOW = Color(0xFFF2C46B)
-private val LEAF_DARK = listOf(Color(0xFF14261F), Color(0xFF1B3326), Color(0xFF22402B))
+private val LEAF_DARK = listOf(Color(0xFF1C3A2E), Color(0xFF244634), Color(0xFF2D533A))
 private val LEAF_LIT = listOf(Color(0xFF3F6431), Color(0xFF5E8236), Color(0xFF8DA640), Color(0xFFB8C25A))
 
 /**

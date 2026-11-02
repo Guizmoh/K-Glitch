@@ -110,7 +110,7 @@ fun LevelMeter(levelDb: Float, floorDb: Float, thresholdDb: Float, capturing: Bo
     Canvas(Modifier.fillMaxWidth().height(28.dp)) {
         drawRoundRect(Color.White.copy(alpha = 0.08f), cornerRadius = CornerRadius(8.dp.toPx()))
         drawRoundRect(
-            if (capturing) Color(0xFFFF8A80) else Moon,
+            if (capturing) Color(0xFFE08A7E) else com.somnia.app.ui.theme.Badge,
             size = Size(size.width * f(levelDb), size.height), cornerRadius = CornerRadius(8.dp.toPx()),
         )
         drawLine(Color(0xFF9E9EB8), Offset(size.width * f(floorDb), 0f), Offset(size.width * f(floorDb), size.height), 3.dp.toPx())
