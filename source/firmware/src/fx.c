@@ -5,6 +5,7 @@
 #define DLY_LEN 65536u           /* 1.49 s: 1/4 down to 41 BPM, 1/8 dotted down to 31, 1/4 dotted down to 61 (clamped below) */
 #define CHO_LEN 2048u
 static int16_t dly_buf[DLY_LEN] __attribute__((section(".pool")));
+static int kl_line(void);                       /* K-GLITCH LOOP (kg_loop.c): the line holds a loop, the delay is silent */
 static int16_t cho_buf[CHO_LEN] __attribute__((section(".pool")));
 /* the reverb: two input diffusers, then four delay lines mixed by a Hadamard matrix (a feedback delay
  * network: every echo feeds all four, so it thickens instead of ringing like a comb), damped in the
@@ -241,10 +242,14 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         }
         fx.cho_w++;
         /* delay with a low-passed feedback (in the middle) */
-        x = dly_buf[(fx.dly_w - dl) & (DLY_LEN - 1u)];
-        fx.dly_lp += mulq15(x - fx.dly_lp, col);
-        dly_buf[fx.dly_w & (DLY_LEN - 1u)] =
-            (int16_t)clamp((dly_in[i] >> 1) + mulq15(fx.dly_lp, fb), -32768, 32767);
+        if (kl_line()) {                            /* (K-GLITCH: the line is a loop's) */
+            x = 0;
+        } else {
+            x = dly_buf[(fx.dly_w - dl) & (DLY_LEN - 1u)];
+            fx.dly_lp += mulq15(x - fx.dly_lp, col);
+            dly_buf[fx.dly_w & (DLY_LEN - 1u)] =
+                (int16_t)clamp((dly_in[i] >> 1) + mulq15(fx.dly_lp, fb), -32768, 32767);
+        }
         fx.dly_w++;
         x = mulq15(x << 1, dmix);
         yl += x;
@@ -1225,8 +1230,10 @@ static void mix_block(int32_t *out, uint32_t n)
         mix_r[i] += wet_r[i];
     }
     dust_process(mix_l, mix_r, n);
+    kl_play(mix_l, mix_r, n);                           /* K-GLITCH LOOP: the loop in, to be destroyed (kg_loop.c) */
     punch_process(mix_l, mix_r, n);
     kd_process(mix_l, mix_r, n);                        /* K-GLITCH: the DRUM DESTROYER bank (kg_dd.c) */
+    kl_capture(mix_l, mix_r, n);                        /* K-GLITCH LOOP: what plays, recorded */
     djf_process(mix_l, mix_r, n);
     m1 = (int32_t)song.master_q12;
     m0 = master_cur < 0 ? m1 : master_cur;

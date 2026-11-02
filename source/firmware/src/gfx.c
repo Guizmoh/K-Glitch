@@ -209,6 +209,19 @@ static inline void cv_pset(int32_t x, int32_t y, uint16_t c)
     if ((uint32_t)x < cv_w && (uint32_t)y < cv_h)
         cv_px[(uint32_t)y * cv_w + (uint32_t)x] = swap16(c);
 }
+/* (K-GLITCH) c over the pixel already there, alpha a / 15: anti-aliased text on any background (not only on black) */
+static inline void cv_pblend(int32_t x, int32_t y, uint16_t c, uint32_t a)
+{
+    y += cv_oy;
+    if ((uint32_t)x < cv_w && (uint32_t)y < cv_h) {
+        uint16_t *p = &cv_px[(uint32_t)y * cv_w + (uint32_t)x];
+        uint32_t b = swap16(*p), r, g, bl;
+        r = (((c >> 11) & 31u) * a + ((b >> 11) & 31u) * (15u - a)) / 15u;
+        g = (((c >> 5) & 63u) * a + ((b >> 5) & 63u) * (15u - a)) / 15u;
+        bl = ((c & 31u) * a + (b & 31u) * (15u - a)) / 15u;
+        *p = swap16(r << 11 | g << 5 | bl);
+    }
+}
 
 static void cv_rect(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
 {
@@ -290,7 +303,7 @@ static int32_t cv_text(int32_t x, int32_t y, const felucca_font_t *f, const char
                 uint32_t sx = gx >> f->sh, v = gd[(gy >> f->sh) * bpr + sx / 2u];
                 v = (sx & 1u) ? (v & 15u) : (v >> 4);
                 if (v)
-                    cv_pset(x - f->pad + (int32_t)gx, y + (int32_t)gy, ramp[v]);
+                    cv_pblend(x - f->pad + (int32_t)gx, y + (int32_t)gy, c, v);   /* (K-GLITCH: over what is there) */
             }
         x += f->adv[gi];
     }

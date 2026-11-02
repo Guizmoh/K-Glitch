@@ -33,7 +33,7 @@ static const char *const DD_NAME[DD_N] = {"LOOP DESTROY", "STUTTER X", "GLITCH",
                                           "TIME STRETCH", "RING MOD", "FUZZ", "RANDOMIZER", "TOTAL CHAOS"};
 #define DD_W 2048u                                /* PITCH and STRETCH: the grain window (46 ms) */
 
-static struct {
+typedef struct {
     int8_t cur, sub;          /* the effect running (DD_*, -1 none); what plays this 16th (RANDOMIZER, TOTAL: picked) */
     int32_t g;                /* its wet gain, 0..32767 */
     int32_t xf;               /* a sub-effect's fade in, 0..64 */
@@ -56,19 +56,26 @@ static struct {
     int32_t hl, hr;           /* GLITCH: the held sample */
     uint32_t hn, corrupt, csrc, noise;   /* GLITCH: hold count, corrupted samples left, their source, noise left */
     uint32_t rnd;
-} kd = {.cur = -1, .sub = -1, .rnd = 0x51A3E1B7u};
+} kd_t;
+#define KD_SLOTS 3u                               /* MULTI: three DRUM DESTROYER effects at once, one after the other */
+static kd_t kd_slot[KD_SLOTS] = {{.cur = -1, .sub = -1, .rnd = 0x51A3E1B7u}, {.cur = -1, .sub = -1, .rnd = 0x2F6B1D3Bu},
+                                 {.cur = -1, .sub = -1, .rnd = 0x7E3A5C19u}};
+static kd_t *kdp = &kd_slot[0];                   /* the slot running (kd_process); the code below reads it as kd */
+#define kd (*kdp)
+static volatile int8_t kd_wantv[KD_SLOTS] = {-1, -1, -1};   /* the effect each slot should play (kg_route), -1 none */
+static volatile uint8_t kd_sintv[KD_SLOTS];       /* its recorded INTENSITY + 1 (0: the effect's own) */
 
 /* INTENSITY: each effect its own (FX > BANK K2, PRESETS on the K-GLITCH pages), 0..100; the LFO (FX > BANK / CHAOS)
  * moves it by up to MOVEMENT / 2 */
 static uint8_t kd_int[DD_N] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
 static volatile int8_t kd_lfo;                   /* the LFO now, -50..50 (kg_route, per block) */
-static volatile uint8_t kd_sint;                 /* a recorded step's INTENSITY + 1 (0: the effect's own; kg_route) */
 static volatile uint8_t kg_sel;                  /* the effect ALGORITHM selects (and a pad pressed): DD_* */
 static volatile uint8_t kg_pads;                 /* UI: the keys are pads (1: the K-GLITCH pages) or SEQ's steps (2) */
 static volatile uint8_t kg_keystep;              /* ISR: a white key pressed on SEQ, + 1 (the UI takes it) */
 static uint32_t dd_int(void)
 {
-    int32_t v = (kd_sint ? kd_sint - 1 : kd_int[(uint32_t)(kd.cur >= 0 ? kd.cur : 0) % DD_N]) + kd_lfo;
+    uint32_t si = kd_sintv[(uint32_t)(kdp - kd_slot) % KD_SLOTS];
+    int32_t v = (si ? (int32_t)si - 1 : kd_int[(uint32_t)(kd.cur >= 0 ? kd.cur : 0) % DD_N]) + kd_lfo;
     return (uint32_t)(v < 0 ? 0 : v > 100 ? 100 : v);
 }
 static uint32_t dd_beat(void) { return beat_samples(); }
@@ -90,8 +97,14 @@ static int32_t dd_declick(int32_t y, uint32_t k, uint32_t L)
 /* the ring's writer leaves a held segment alone once it has been written (punch.c) */
 static int kd_owns(uint32_t w)
 {
-    uint32_t d = w - kd.S;
-    return kd.cur >= 0 && kd.own && d >= kd.L0 && (d & (PUNCH_N - 1u)) < kd.L0;
+    uint32_t i;
+    for (i = 0; i < KD_SLOTS; i++) {
+        const kd_t *q = &kd_slot[i];
+        uint32_t d = w - q->S;
+        if (q->cur >= 0 && q->own && d >= q->L0 && (d & (PUNCH_N - 1u)) < q->L0)
+            return 1;
+    }
+    return 0;
 }
 /* 2^(s/12), Q16, s -24..24 */
 static int32_t dd_semi(int32_t s)
@@ -387,11 +400,20 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
 }
 
 /* the effect that should play now, from kg_route (-1 none); fx.c, after punch_process */
-static volatile int8_t kd_want = -1;
+static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want);
+/* the slots, one after the other (MULTI: the second destroys what the first made); fx.c, after punch_process */
 static void kd_process(int32_t *l, int32_t *r, uint32_t n)
 {
+    uint32_t s;
+    for (s = 0; s < KD_SLOTS; s++) {
+        kdp = &kd_slot[s];
+        kd_process1(l, r, n, kd_wantv[s]);
+    }
+    kdp = &kd_slot[0];
+}
+static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
+{
     uint32_t i, base = punch.w - n, s16, I;
-    int32_t want = kd_want;
     if (kd.cur < 0 && want < 0)
         return;
     if (kd.cur < 0) {                                  /* a new one */

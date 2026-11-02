@@ -51,7 +51,6 @@ static struct {
 
 static int32_t kg_route(int32_t key);              /* K-GLITCH (kglitch.c): the effect the mix plays now */
 static int kd_owns(uint32_t w);                    /* K-GLITCH (kg_dd.c): a DRUM DESTROYER segment held */
-static volatile int8_t kd_want;                    /* K-GLITCH (kg_dd.c): the DRUM DESTROYER effect asked for, -1 none */
 static int px_loop(int32_t fx) { return fx <= PX_STUT || fx == PX_LOOP8T; }   /* on the grid */
 static int px_replay(int32_t fx) { return fx <= PX_HALF || fx == PX_LOOP8T; } /* replays a span of the ring */
 
@@ -236,9 +235,7 @@ static void punch_process(int32_t *l, int32_t *r, uint32_t n)
 {
     uint32_t i;
     int32_t want = kg_route(punch.req), pstep;   /* K-GLITCH: the keys, else the effect sequencer, else AUTO */
-    kd_want = (int8_t)(want >= (int32_t)PUNCH_NFX ? want - (int32_t)PUNCH_NFX : -1);   /* a DRUM DESTROYER one: kd_process */
-    if (want >= (int32_t)PUNCH_NFX)
-        want = -1;
+                                                 /* (the DRUM DESTROYER ones: kg_route sets kd_wantv) */
     uint32_t beat, step, echo_d, binc, fdec;
     static int32_t kl[CTL], kr[CTL];                    /* (static: the ISR stack is small) */
     tsvf_t c1, c2;

@@ -564,12 +564,40 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         ui.lock_par = (uint8_t)id;                        /* the SEQ layer's lock parameter: the last one touched */
     if (pg->scope != SC_GLOBAL)
         ml_knob(TSEL, id);                                /* MIDI LEARN: this parameter (2.6) */
-    if (pg->scope == SC_GLOBAL && id == G_KHOLD && !v && !punch.keybit)   /* K-GLITCH: HOLD off lets a held effect go */
+    if (pg->scope == SC_GLOBAL && id == G_KHOLD && !v && !punch.keybit) {   /* K-GLITCH: HOLD off lets a held effect go */
         punch.req = -1;
+        kg_hold_clear();
+    }
+    if (pg->scope == SC_GLOBAL && id == G_KMULTI)
+        kg_hold_clear();
+    if (pg->scope == SC_GLOBAL && id == G_KLMODE && v == KL_OFF && kl.st != KLS_EMPTY) {   /* K-GLITCH LOOP: let go */
+        kl_free();
+        ui_message("LOOP LET GO, DELAY BACK");
+    }
+    if (pg->scope == SC_GLOBAL && id == G_KLSL) {         /* SLICE: the slice's settings show */
+        uint32_t sl = (uint32_t)(v - 1) % KL_NS;
+        static const uint8_t RI[9] = {0, 0, 1, 2, 3, 3, 3, 3, 4};
+        song.g[G_KLPLAY] = (int16_t)(kl.map[sl] + 1u);
+        song.g[G_KLREV] = kl.rev[sl];
+        song.g[G_KLRET] = RI[kl.ret[sl] % 9u];
+    }
+    if (pg->scope == SC_GLOBAL && (id == G_KLPLAY || id == G_KLREV || id == G_KLRET)) {
+        static const uint8_t RET[5] = {1, 2, 3, 4, 8};
+        uint32_t sl = (uint32_t)(song.g[G_KLSL] - 1) % KL_NS;
+        if (id == G_KLPLAY) kl.map[sl] = (uint8_t)((v - 1) % (int32_t)KL_NS);
+        if (id == G_KLREV) kl.rev[sl] = (uint8_t)v;
+        if (id == G_KLRET) kl.ret[sl] = RET[v % 5];
+        return;
+    }
+    if (pg->scope == SC_GLOBAL && id == G_KPROB) {        /* SEQ: the step's probability */
+        kg.prob[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] = (uint8_t)v;
+        return;
+    }
     if (pg->scope == SC_GLOBAL && id == G_KINT)           /* K-GLITCH: the selected effect's INTENSITY */
         kd_int[kg_sel % DD_N] = (uint8_t)v;
     if (pg->scope == SC_GLOBAL && id == G_KSTEP)          /* K-GLITCH D-SEQ: the step's effect shows */
-        song.g[G_KSFX] = (int16_t)(kg.seq[(uint32_t)(v - 1) % KG_STEPS] + 1);
+        song.g[G_KSFX] = (int16_t)(kg.seq[(uint32_t)(v - 1) % KG_STEPS] + 1),
+        song.g[G_KPROB] = kg.prob[(uint32_t)(v - 1) % KG_STEPS];
     if (pg->scope == SC_GLOBAL && id == G_KSFX) {
         kg.seq[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] = (int8_t)(v - 1);
         kg.sint[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] = 0;
@@ -627,6 +655,13 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         *vp = 0;
         kr_generate((uint32_t)song.g[G_KSTYLE]);
         ui_say(N_KSTYLE_P[song.g[G_KSTYLE] % KS_N], " GENERATED");
+        break;
+    case G_KLREC:                                         /* K-GLITCH LOOP: armed, on the next bar */
+        *vp = 0;
+        kl_arm();
+        if (!song.playing)
+            transport_req = 1;
+        ui_message("LOOP: REC ON THE NEXT BAR");
         break;
     case G_KDICE:                                         /* K-GLITCH CHOP: a random recipe */
         *vp = 0;
@@ -1278,8 +1313,33 @@ UI_SMALL static void ui_input(void)
     {   /* K-GLITCH: on its pages (not DRUMS: the keys play there) OCT- is CLEAR. Held while PLAY runs: the effect lane's
          * steps passing are erased (REC or not, as the PO-33); held a second stopped: the whole lane */
         static uint32_t clr_t0;
-        uint32_t ob = 1u << panel.btn[B_OCTDN], held = !ui.home && cur_page()->graph == GR_KG && kg_pads &&
-                                                         (fm1_in.buttons & ob) != 0u;
+        uint32_t ob = 1u << panel.btn[B_OCTDN], pb = 1u << panel.btn[B_OCTUP], kgp = !ui.home && cur_page()->graph == GR_KG && kg_pads,
+                 held = kgp && (fm1_in.buttons & ob) != 0u, slicep = kgp && kg_pads == 3u;
+        if (kgp && (pressed & pb)) {                      /* OCT+: DICE, the page's (SEQ the effects, LOOP the slices,
+                                                           * else the rhythm) */
+            pressed &= ~pb;
+            if (kg_pads == 2u) {
+                kg_mutate(ui.frame + fm1_ms);
+                song.g[G_KSFX] = (int16_t)(kg.seq[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] + 1);
+                ui_message("FX DICE");
+            } else if (slicep) {
+                kl_dice();
+
+                ui_message("SLICES DICED");
+            } else {
+                kr_dice_ui();
+                ui_say("DICE: ", kr.recipe);
+            }
+        }
+        if (slicep && held) {                             /* (LOOP, SLICE, GRAIN: CLEAR puts the slices back in order) */
+            pressed &= ~ob;
+            if (!clr_t0) {
+                clr_t0 = fm1_ms | 1u;
+                kl_reset();
+                ui_message("SLICES IN ORDER");
+            }
+            held = 0;
+        }
         kg_erase = (uint8_t)(held && song.playing);
         if (held) {
             pressed &= ~ob;
@@ -1291,7 +1351,7 @@ UI_SMALL static void ui_input(void)
                 ui_message("FX AUTOMATION CLEARED");
                 clr_t0 = 1u;                          /* (once a hold) */
             }
-        } else
+        } else if (!(slicep && (fm1_in.buttons & ob)))
             clr_t0 = 0;
     }
     for (id = 0; id < 14u; id++) {

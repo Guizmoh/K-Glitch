@@ -2208,6 +2208,13 @@ static void key_down(uint32_t k)
             return;
         }
     }
+    if (layer == LY_PLAY && kg_pads == 3u) {          /* K-GLITCH LOOP, SLICE, GRAIN: a white key plays a slice */
+        int32_t w = punch_key(k);
+        if (w >= 0 && w < 16) {
+            kl_pad_down((uint32_t)w, k);
+            return;
+        }
+    }
     if (layer == LY_PLAY && kg_pads)                  /* K-GLITCH's pages: the keys are the punch-in pads */
         layer = LY_FX;
     switch (layer) {
@@ -2219,6 +2226,7 @@ static void key_down(uint32_t k)
             punch.keybit = 1u << k;
             if (fx >= (int32_t)PUNCH_NFX)               /* (K-GLITCH: a DRUM DESTROYER pad selects its effect) */
                 kg_sel = (uint8_t)(fx - (int32_t)PUNCH_NFX);
+            kg_hold_add(fx);                          /* (K-GLITCH MULTI: the pads held stack) */
         }
         return;
     }
@@ -2335,9 +2343,13 @@ static void key_up(uint32_t k)
 {
     uint32_t i, mc, kind = kb_kind[k];
     track_t *t = &trk[kb_trk[k] % NTRK];
+    if (kl_padkey == k + 1u)                          /* (K-GLITCH LOOP: the slice's key let go) */
+        kl_pad_up();
     kb_kind[k] = KS_NONE;
     switch (kind) {
     case KS_FX:
+        if (!song.g[G_KHOLD])                         /* (K-GLITCH MULTI: off the stack, unless HOLD) */
+            kg_hold_del(kg_fx_of_key(k));
         if (punch.keybit == 1u << k) {                /* its key is up: the mix comes back */
             punch.keybit = 0;
             if (!song.g[G_KHOLD])                     /* (K-GLITCH: HOLD keeps it, until another key or HOLD off) */

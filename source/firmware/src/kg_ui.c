@@ -9,7 +9,6 @@
  *   rows         K1..K4: name, value in cyan; the one just turned filled orange
  *   footer       an orange rule, what the four knobs are, what the buttons do
  * Families of effects: loops and stutters cyan, filters and kills violet, time and pitch amber, destruction red. */
-#include "kg_font5.h"
 
 /* the K-WASUB "ribbon classic" palette: slate, an orange accent, cyan values */
 #define KG_BG RGB(20, 27, 35)
@@ -49,20 +48,9 @@ UI_SMALL static uint16_t kg_fam(int32_t fx)
     if (fx == PX_REV || fx == PX_STOP || fx == PX_HALF || fx == PX_RWD || fx == PX_OCT || fx == PX_FREEZE) return KG_AMB;
     return KG_RED;
 }
-/* the 5 x 7 font: x, y the top left; returns the x after the text */
-UI_SMALL static int32_t kg_t5(int32_t x, int32_t y, const char *s, uint16_t c)
-{
-    for (; *s; s++, x += 6) {
-        uint32_t ch = (uint8_t)*s, r, k;
-        if (ch >= 'a' && ch <= 'z') ch -= 32u;
-        if (ch < 32u || ch > 126u) continue;
-        for (r = 0; r < 7u; r++)
-            for (k = 0; k < 5u; k++)
-                if (KG_FONT5[ch - 32u][r] >> (4u - k) & 1u) cv_pset(x + (int32_t)k, y + (int32_t)r, c);
-    }
-    return x;
-}
-UI_SMALL static int32_t kg_t5w(const char *s) { return (int32_t)str_len(s) * 6 - 1; }
+/* the small font (FONT_T, 6 x 11, anti-aliased: tools/gen_font.py): x, y the top of the capitals; returns the x after */
+UI_SMALL static int32_t kg_t5(int32_t x, int32_t y, const char *s, uint16_t c) { return cv_text(x, y - 1, &FONT_T, s, c); }
+UI_SMALL static int32_t kg_t5w(const char *s) { return text_w(&FONT_T, s) - 1; }
 UI_SMALL static void kg_box(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)   /* a 1 px frame */
 {
     cv_rect(x, y, w, 1, c);
@@ -86,12 +74,15 @@ static void kg_u2a(char *b, uint32_t v)            /* an unsigned number, writte
     *b = 0;
 }
 
-/* the page: 0 DESTROY, 1 DRUMS, 2 CHOP, 3 SEQ, 4 BANK, 5 CHAOS, 6 SETUP */
+/* the page: 0 DESTROY, 1 DRUMS, 2 CHOP, 3 LOOP, 4 SLICE, 5 GRAIN, 6 SEQ, 7 BANK, 8 CHAOS, 9 SETUP */
+#define KG_NPG 10u
+enum { KP_DESTROY, KP_DRUMS, KP_CHOP, KP_LOOP, KP_SLICE, KP_GRAIN, KP_SEQ, KP_BANK, KP_CHAOS, KP_SETUP };
 UI_SMALL static uint32_t kg_pageno(void)
 {
-    static const uint8_t ID[7] = {G_KCHAOS, G_KSTYLE, G_KDICE, G_KSTEP, G_KBANK, G_KCMODE, G_KTGT};
+    static const uint8_t ID[KG_NPG] = {G_KCHAOS, G_KSTYLE, G_KDICE, G_KLREC, G_KLSL, G_KGPOS, G_KSTEP, G_KBANK, G_KCMODE,
+                                       G_KTGT};
     uint32_t id = cur_page()->id[0], i;
-    for (i = 0; i < 7u; i++)
+    for (i = 0; i < KG_NPG; i++)
         if (ID[i] == id) return i;
     return 0;
 }
@@ -171,30 +162,83 @@ UI_SMALL static void kg_pads16(int32_t now)
         }
     }
 }
+/* LOOP, SLICE, GRAIN: the loop's waveform across the panel, its 16 slices; SLICE: what each plays (its number,
+ * orange when moved, a bar under a reversed one, dots for a retrigger); GRAIN: the position and the spray; the
+ * playhead (the transport's) white */
+UI_SMALL static void kg_loopview(uint32_t pn)
+{
+    uint32_t c, i;
+    int32_t x0 = 14, w = 212, ymid = 76;
+    if (kl.ov_new == 2u) kl_outline();
+    if (kl.st != KLS_HAS && kl.st != KLS_REC) {
+        cv_text(x0 + 20, 62, &FONT_S, kl.st == KLS_ARMED ? "WAITING FOR THE BAR" : "NO LOOP: K1 REC", KG_MUTE);
+        kg_t5(x0 + 20, 82, "(THE TEMPO DELAY LENDS ITS LINE)", KG_RULE);
+        return;
+    }
+    for (c = 0; c < 110u; c++) {                   /* the outline, two pixels a column */
+        int32_t h = kl.st == KLS_HAS ? kl.ov[c] : (c * kl.len / 110u < kl.w ? 10 : 1);
+        uint16_t col = kl.st == KLS_REC ? KG_RED : kg_mix(KG_PANEL, KG_CYAN, 200);
+        cv_rect(x0 + (int32_t)c * 2 - 1 + 1, ymid - h, 1, 2 * h + 1, col);
+        cv_rect(x0 + (int32_t)c * 2 + 1, ymid - h / 2, 1, h + 1, kg_mix(KG_PANEL, col, 120));
+    }
+    for (i = 0; i <= KL_NS; i++)                    /* the slices */
+        cv_rect(x0 + (int32_t)i * w / 16 - 1, 53, 1, i % 4u ? 4 : 6, KG_RULE);
+    if (pn == KP_SLICE || (pn == KP_LOOP && song.g[G_KLMODE] == KL_SLICE))
+        for (i = 0; i < KL_NS; i++) {
+            int32_t sx = x0 + (int32_t)i * w / 16;
+            char nb[4];
+            uint16_t col = kl.map[i] != i ? KG_ACC : KG_MUTE;
+            if ((int32_t)i + 1 == song.g[G_KLSL] && pn == KP_SLICE) {
+                cv_rect(sx, 89, w / 16 - 1, 11, KG_ACC);
+                col = KG_BG;
+            }
+            kg_u2a(nb, kl.map[i] + 1u);
+            kg_t5(sx + (w / 16 - kg_t5w(nb)) / 2, 91, nb, col);
+            if (kl.rev[i]) cv_rect(sx + 1, 102, w / 16 - 3, 2, KG_AMB);
+            if (kl.ret[i] > 1u)
+                for (c = 0; c < kl.ret[i] && c < 4u; c++) cv_rect(sx + 2 + (int32_t)c * 3, 106, 2, 2, KG_VIO);
+        }
+    if (pn == KP_GRAIN || (pn == KP_LOOP && song.g[G_KLMODE] == KL_GRAIN)) {   /* the position, the spray */
+        int32_t gx = x0 + (kl.pad >= 0 ? kl.pad * w / 16 : (int32_t)kg_pct(G_KGPOS) * w / 100);
+        int32_t sw = (int32_t)kg_pct(G_KCHAOS) * w / 800;
+        cv_rect(gx, 90, sw + 2, 3, kg_mix(KG_PANEL, KG_VIO, 140));
+        cv_rect(gx, 54, 2, 46, KG_VIO);
+        kg_t5(x0, 104, "GRAINS", KG_VIO);
+    }
+    if (song.playing && kl.st == KLS_HAS && song.g[G_KLMODE] != KL_OFF) {   /* the playhead */
+        uint32_t total = kl_bar_samples() * kl.bars, pos = ((clk_beat - kl.beat0) % (4u * kl.bars)) * beat_samples() + clk_samples();
+        int32_t px = x0 + (int32_t)(total ? (pos / 64u) * (uint32_t)w / (total / 64u + 1u) : 0u);
+        cv_rect(px, 53, 1, 50, KG_INK);
+        if (kl.pad >= 0) cv_rect(x0 + kl.pad * w / 16, 53, w / 16, 2, KG_ACC);
+    }
+}
+
 UI_SMALL static void kg_paint(void)
 {
-    static const char *const TAB[7] = {"DESTROY", "DRUMS", "CHOP", "SEQ", "BANK", "CHAOS", "SETUP"};
-    static const char *const TITLE[7] = {"DRUM DESTROYER", "DRUMS", "CHOP / MUTATE", "EFFECT SEQUENCE", "THE 16 PADS",
-                                         "CHAOS", "SETUP / MPC"};
+    static const char *const TAB[KG_NPG] = {"DESTROY", "DRUMS", "CHOP", "LOOP", "SLICE", "GRAIN", "SEQ", "BANK", "CHAOS",
+                                            "SETUP"};
+    static const char *const TITLE[KG_NPG] = {"DRUM DESTROYER", "DRUMS", "CHOP / MUTATE", "LOOP SAMPLER", "SLICES",
+                                              "GRAINS", "EFFECT SEQUENCE", "THE 16 PADS", "CHAOS", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
-    static const char *const HINT[7] = {"ALGO FX | PRESETS INTENS | OCT- CLEAR", "K4 GENERATE | THE KEYS PLAY THE DRUMS",
-                                        "K1 DICE | K2 MUTATE | K3 RESTORE", "KEY STEP (REC: PAD) | OCT- CLEAR",
-                                        "KEYS PADS | HOLD: THE EFFECT STAYS", "AUTO + LFO + MUTATIONS ON THE BAR",
-                                        "OUT: FM-1, MPC, BOTH | CH: THE MPC'S"};
+    static const char *const HINT[KG_NPG] = {"ALGO FX | PRESETS INTENS | OCT+ DICE", "K4 GENERATE | KEYS PLAY THE DRUMS",
+                                             "K1 DICE | K2 MUTATE | K3 RESTORE", "K1 REC: NEXT BAR | KEYS: SLICES",
+                                             "KEYS: SLICES | OCT+ DICE | OCT- ORDER", "KEYS: POSITION | CHAOS: SPRAY",
+                                             "KEY STEP | OCT+ DICE | OCT- CLEAR", "KEYS PADS | FX: SOLO OR MULTI",
+                                             "AUTO + LFO + MUTATIONS ON THE BAR", "OUT: FM-1, MPC, BOTH | CH: THE MPC'S"};
     static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
     const page_t *pg = cur_page();
     uint32_t pn = kg_pageno(), i, out = (uint32_t)song.g[G_KTGT] % 3u;
-    int32_t now = kg.now, play = song.playing ? (int32_t)kg.step : -1, cur = pn == 3u ? (int32_t)song.g[G_KSTEP] - 1 : -1, x;
+    int32_t now = kg.now, play = song.playing ? (int32_t)kg.step : -1, cur = pn == KP_SEQ ? (int32_t)song.g[G_KSTEP] - 1 : -1, x;
     char s[48], k[64];
     cv_rect(0, 0, 240, 240, KG_BG);
     /* the ribbon: the seven pages as tabs, scrolled so the one shown (an orange pill) stays in sight */
     {
-        int32_t pos[7], w[7], tot = 0, off;
-        for (i = 0; i < 7u; i++) { w[i] = kg_t5w(TAB[i]) + 14; pos[i] = tot; tot += w[i] + 3; }
+        int32_t pos[KG_NPG], w[KG_NPG], tot = 0, off;
+        for (i = 0; i < KG_NPG; i++) { w[i] = kg_t5w(TAB[i]) + 14; pos[i] = tot; tot += w[i] + 3; }
         off = pos[pn] + w[pn] / 2 - 96;
         if (off > tot - 196) off = tot - 196;
         if (off < 0) off = 0;
-        for (i = 0; i < 7u; i++) {
+        for (i = 0; i < KG_NPG; i++) {
             int32_t tx = 4 + pos[i] - off;
             if (tx < 2 || tx + w[i] > 198) continue;   /* (only whole tabs) */
             if (i == pn) kg_rbox(tx, 2, w[i], 13, KG_ACC, KG_ACC);
@@ -212,18 +256,18 @@ UI_SMALL static void kg_paint(void)
     s[0] = 0;
     if (ui.msg_t) str_cpy(s, ui.msg, sizeof s);
     else switch (pn) {
-    case 0:
+    case KP_DESTROY:
         str_cpy(s, DD_NAME[kg_sel % DD_N], sizeof s);
         str_cpy(s + str_len(s), " | INTENS ", sizeof s - str_len(s));
         kg_u2a(s + str_len(s), kd_int[kg_sel % DD_N]);
         str_cpy(s + str_len(s), "%", sizeof s - str_len(s));
         break;
-    case 1:
+    case KP_DRUMS:
         str_cpy(s, N_KSTYLE_P[song.g[G_KSTYLE] % KS_N], sizeof s);
         str_cpy(s + str_len(s), " | KIT ", sizeof s - str_len(s));
         str_cpy(s + str_len(s), DRUM_KIT_NAMES[drum_kit()], sizeof s - str_len(s));
         break;
-    case 2:
+    case KP_CHOP:
         if (kr.mutated && kr.recipe[0]) {
             str_cpy(s, "DICE: ", sizeof s);
             str_cpy(s + str_len(s), kr.recipe, sizeof s - str_len(s));
@@ -234,7 +278,24 @@ UI_SMALL static void kg_paint(void)
         } else
             str_cpy(s, kr.has ? "THE ORIGINAL" : "NOTHING MUTATED YET", sizeof s);
         break;
-    case 3: {
+    case KP_LOOP:
+    case KP_SLICE:
+    case KP_GRAIN:
+        if (kl.st == KLS_EMPTY) str_cpy(s, "EMPTY | K1 REC: RECORD WHAT PLAYS", sizeof s);
+        else if (kl.st == KLS_ARMED) str_cpy(s, "REC ARMED: ON THE NEXT BAR", sizeof s);
+        else if (kl.st == KLS_REC) {
+            str_cpy(s, "RECORDING ", sizeof s);
+            kg_u2a(s + str_len(s), kl.len ? kl.w * 100u / kl.len : 0u);
+            str_cpy(s + str_len(s), "%", sizeof s - str_len(s));
+        } else {
+            static const char *const M[4] = {"OFF", "LOOP", "SLICE", "GRAIN"};
+            kg_u2a(s, kl.bars);
+            str_cpy(s + str_len(s), kl.bars > 1u ? " BARS | " : " BAR | ", sizeof s - str_len(s));
+            str_cpy(s + str_len(s), M[(uint32_t)song.g[G_KLMODE] & 3u], sizeof s - str_len(s));
+            str_cpy(s + str_len(s), song.g[G_KLSRC] ? " | MIX" : " | TRACKS MUTED", sizeof s - str_len(s));
+        }
+        break;
+    case KP_SEQ: {
         uint32_t n = 0, len = kg_seqlen();
         if (song.playing && song.rec) {
             str_cpy(s, "REC: PLAY THE PADS", sizeof s);
@@ -248,7 +309,7 @@ UI_SMALL static void kg_paint(void)
         kg_u2a(s + str_len(s), len / 16u);
         str_cpy(s + str_len(s), " | ", sizeof s - str_len(s));
         kg_u2a(s + str_len(s), n);
-        str_cpy(s + str_len(s), " FX | STEP INT ", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " FX | INT ", sizeof s - str_len(s));
         {
             uint32_t si = kg.sint[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS];
             if (si) { kg_u2a(s + str_len(s), si - 1u); str_cpy(s + str_len(s), "%", sizeof s - str_len(s)); }
@@ -256,11 +317,11 @@ UI_SMALL static void kg_paint(void)
         }
         break;
     }
-    case 4:
+    case KP_BANK:
         str_cpy(s, song.g[G_KBANK] ? "DRUM DESTROYER | " : "SLOOP FX | ", sizeof s);
         str_cpy(s + str_len(s), DD_NAME[kg_sel % DD_N], sizeof s - str_len(s));
         break;
-    case 5:
+    case KP_CHAOS:
         str_cpy(s, song.g[G_KCMODE] ? "CHAOS MODE ON | " : "CHAOS MODE OFF | ", sizeof s);
         kg_u2a(s + str_len(s), (uint32_t)song.g[G_KCHAOS]);
         str_cpy(s + str_len(s), "%", sizeof s - str_len(s));
@@ -283,12 +344,15 @@ UI_SMALL static void kg_paint(void)
         if (kg_erase) { tx -= kg_t5w("CLEAR") + 12; kg_tag(tx, 24, "CLEAR", KG_INK, KG_BG); }
         else if (song.playing && song.rec) { tx -= kg_t5w("REC") + 12; kg_tag(tx, 24, "REC", KG_RED, KG_INK); }
         if ((song.g[G_KLFO] || song.g[G_KCMODE]) && tx > 150) { tx -= kg_t5w("LFO") + 12; kg_tag(tx, 24, "LFO", KG_VIO, KG_BG); }
+        if (song.g[G_KMULTI] && tx > 160) { tx -= kg_t5w("MULTI") + 12; kg_tag(tx, 24, "MULTI", KG_INK, KG_BG); }
     }
     /* the graph panel: the pads, the drums or the effect sequence; the effect playing and the mix under it */
     kg_rbox(9, 49, 222, 76, KG_PANEL, KG_PANEL);
-    if (pn == 1u || pn == 2u || pn == 5u)
+    if (pn == KP_DRUMS || pn == KP_CHOP || pn == KP_CHAOS)
         kg_drumgrid(55);
-    else if (pn == 3u)
+    else if (pn == KP_LOOP || pn == KP_SLICE || pn == KP_GRAIN)
+        kg_loopview(pn);
+    else if (pn == KP_SEQ)
         for (i = 0; i < 16u; i++) {                   /* the page of 16 steps shown (kg_seqpage), each with its INTENSITY */
             uint32_t at = kg_seqpage() * 16u + i;
             int32_t cx = 13 + (int32_t)(i & 7u) * 27, cy = 53 + (int32_t)(i >> 3) * 22, fx = kg.seq[at], lit = (int32_t)at == play;
@@ -302,6 +366,12 @@ UI_SMALL static void kg_paint(void)
                 cv_rect(cx + 11, cy + 8, 2, 2, (i & 3u) == 0u ? KG_MUTE : KG_RULE);
             }
             if (kg.sint[at]) cv_rect(cx, cy + 16, (int32_t)(kg.sint[at] - 1u) / 4, 2, KG_INK);   /* (recorded INTENSITY) */
+            if (kg.seq2[at] >= 0)                       /* (a second effect on the step: its colour, a corner) */
+                for (x = 0; x < 6; x++) cv_rect(cx + 19 + x, cy, 6 - x, 1, kg_fam(kg.seq2[at])), cv_rect(cx + 19 + x, cy + x, 1, 1, KG_INK);
+            if (kg.prob[at] < 100u && fx >= 0) {        /* (a probability: a white bar along the top, its share) */
+                cv_rect(cx, cy, 25, 2, KG_PANEL);
+                cv_rect(cx, cy, (int32_t)kg.prob[at] / 4, 2, KG_INK);
+            }
             if (lit) kg_box(cx - 1, cy - 1, 27, 20, kg_erase ? KG_RED : KG_INK);
             if ((int32_t)at == cur) cv_rect(cx + 3, cy + 19, 19, 2, KG_ACC);
         }
@@ -310,8 +380,17 @@ UI_SMALL static void kg_paint(void)
     {
         int32_t ok = now >= 0 && now < (int32_t)KG_NFX;
         const char *n = ok ? kg_name(now) : song.playing ? "READY" : "STOPPED";
-        x = kg_t5(14, 99, n, ok ? kg_fam(now) : KG_MUTE);
-        if (ok) kg_t5(x + 6, 99, SRC[kg.src & 3u], KG_MUTE);
+        if (pn == KP_LOOP || pn == KP_SLICE || pn == KP_GRAIN) {   /* (the loop view uses the panel) */
+        } else if (kg.nfx > 1u) {                      /* MULTI: the effects stacked, named */
+            x = 14;
+            for (i = 0; i < 4u && kg.list[i] >= 0; i++) {
+                if (i) x = kg_t5(x + 2, 99, "+", KG_MUTE);
+                x = kg_t5(x + 2, 99, KG_SHORT[kg.list[i]], kg_fam(kg.list[i]));
+            }
+        } else {
+            x = kg_t5(14, 99, n, ok ? kg_fam(now) : KG_MUTE);
+            if (ok) kg_t5(x + 6, 99, SRC[kg.src & 3u], KG_MUTE);
+        }
     }
     /* the rows: K1..K4, the one just turned orange */
     for (i = 0; i < 4u; i++) {
@@ -386,7 +465,13 @@ UI_SMALL static uint32_t kg_signature(void)
     for (i = G_KCHAOS; i < G_COUNT; i++) h = (h ^ (uint32_t)song.g[i]) * 16777619u;
     for (i = 0; i < DD_N; i++) h = (h ^ kd_int[i]) * 16777619u;
     h ^= (uint32_t)song.g[G_BPM] * 104729u + (ui.hot_t ? ui.hot_col + 1u : 0u) * 13u + kg_sel * 7u + (uint32_t)song.g[G_SWING];
-    if (kg_pageno() == 1u || kg_pageno() == 2u || kg_pageno() == 5u)   /* the drum grid: the pattern, the 16th playing */
+    for (i = 0; i < KL_NS; i++) h = (h ^ (uint32_t)kl.map[i] ^ (uint32_t)kl.rev[i] << 5 ^ (uint32_t)kl.ret[i] << 6) * 16777619u;
+    for (i = 0; i < KG_STEPS; i++) h = (h ^ (uint32_t)(kg.seq2[i] + 2) ^ (uint32_t)kg.prob[i] << 8) * 16777619u;
+    for (i = 0; i < 4u; i++) h = (h ^ (uint32_t)(kg.list[i] + 2)) * 16777619u;
+    h ^= kl.st * 0x3C6EF372u + kl.w / 2048u * 0x85EBCA6Bu + (uint32_t)(kl.pad + 2) * 0x27D4EB2Fu + kl.ov_new;
+    if (kg_pageno() >= KP_LOOP && kg_pageno() <= KP_GRAIN && song.playing && kl.st == KLS_HAS)   /* (the playhead moves) */
+        h ^= (clk_beat * 8u + clk_pos / ((uint32_t)FS * 60u / 8u)) * 0x9E3779B1u;
+    if (kg_pageno() == KP_DRUMS || kg_pageno() == KP_CHOP || kg_pageno() == KP_CHAOS)   /* the drum grid: the pattern, the 16th playing */
         h ^= kr_sig() + (song.playing ? TDRUM->seq_idx + 1u : 0u) * 31337u + kr.changed + (uint32_t)TDRUM->p[P_E0] * 7u;
     if (ui.msg_t) h = str_hash(h ^ 0x9E37u, ui.msg);
     return h;
@@ -395,12 +480,21 @@ UI_SMALL static uint32_t kg_signature(void)
 UI_SMALL static void kg_screen_draw(void)
 {
     uint32_t sig, pn = kg_pageno();
-    kg_pads = (uint8_t)(pn == 3u ? 2u : pn == 1u ? 0u : 1u);   /* the keys: SEQ's steps, the drums (DRUMS), else pads */
+    /* the keys: SEQ's steps, the drums (DRUMS), the loop's slices (LOOP, SLICE, GRAIN), else the pads */
+    kg_pads = (uint8_t)(pn == KP_SEQ ? 2u : pn == KP_DRUMS ? 0u : pn >= KP_LOOP && pn <= KP_GRAIN ? 3u : 1u);
     if (kg_keystep) {                                   /* SEQ: a white key picked the step (on the page shown) */
         uint32_t at = kg_seqpage() * 16u + kg_keystep - 1u;
         song.g[G_KSTEP] = (int16_t)(at + 1u);
-        song.g[G_KSFX] = (int16_t)(kg.seq[at % KG_STEPS] + 1);
         kg_keystep = 0;
+    }
+    {   /* what the knobs show follows what changed elsewhere (REC, DICE): the step's, the slice's */
+        static const uint8_t RI[9] = {0, 0, 1, 2, 3, 3, 3, 3, 4};
+        uint32_t at = (uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS, sl = (uint32_t)(song.g[G_KLSL] - 1) % KL_NS;
+        song.g[G_KSFX] = (int16_t)(kg.seq[at] + 1);
+        song.g[G_KPROB] = kg.prob[at];
+        song.g[G_KLPLAY] = (int16_t)(kl.map[sl] + 1u);
+        song.g[G_KLREV] = kl.rev[sl];
+        song.g[G_KLRET] = RI[kl.ret[sl] % 9u];
     }
     song.g[G_KINT] = kd_int[kg_sel % DD_N];
     sig = kg_signature();
@@ -416,6 +510,6 @@ UI_SMALL static void kg_screen_draw(void)
             cv_blit(0, band * 120u);
         }
     }
-    if (ui.frame & 1u)
+    if ((ui.frame & 1u) && !(pn >= KP_LOOP && pn <= KP_GRAIN))   /* (the loop pages: the waveform is the view) */
         kg_scope();
 }

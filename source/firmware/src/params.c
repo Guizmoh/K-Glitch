@@ -65,7 +65,12 @@ static const char *const N_KBANK[] = {"SLOOP", "DESTR"};          /* K-GLITCH: t
 static const char *const N_KSTYLE_P[] = {"JUNGLE", "BRKCORE", "DNB", "DRILL", "IDM", "GLITCH", "HALFTM", "FTWORK"};   /* (kg_rhythm.c) */
 static const char *const N_KEVERY[] = {"OFF", "1 BAR", "2 BAR", "4 BAR", "8 BAR"};
 static const char *const N_KCTGT[] = {"DRUMS", "ALL"};
-static const char *const N_KSEQ[] = {"OFF", "16", "32", "64"};   /* the effect lane's length */
+static const char *const N_KSEQ[] = {"OFF", "16 ST", "32 ST", "64 ST"};   /* the effect lane's length (steps) */
+static const char *const N_KLBARS[] = {"1 BAR", "2 BARS", "4 BARS"};
+static const char *const N_KLMODE[] = {"OFF", "LOOP", "SLICE", "GRAIN"};
+static const char *const N_KLSRC[] = {"MUTE", "MIX"};
+static const char *const N_KLRET[] = {"X1", "X2", "X3", "X4", "X8"};
+static const char *const N_KMULTI[] = {"SOLO", "MULTI"};
 static const char *const N_KFX[] = {"--", "LOOP4", "LOOP8", "LOOP16", "LOOP32", "STUTT", "REV", "STOP", "HALF", "LOW",
                                     "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBL", "K LOW", "K MID", "K HI",
                                     "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE",
@@ -77,7 +82,7 @@ static const char *const N_SLDIV[] = {"1/8", "1/16", "1/32", "8T", "16T", "32T"}
 static const char *const N_CHORD[] = {"OFF", "TRIAD", "7TH", "9TH", "SUS4", "POWER"};   /* seq.c CHORD_DEG */
 static const char *const N_ROLL[] = {"1/8", "1/16", "1/32", "32T", "1/64"};   /* seq.c ROLL_DEN */
 static const char *const N_ENGNAME[] = {"ANALOG", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN",
-                                        "FM6", "PHYS", "NOISE",
+                                        "FM6", "PHYS", "NOISE", "GLITCH",
 #if FELUCCA_SLICE
                                              "SLICE",
 #endif
@@ -222,7 +227,7 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KTGT] = PE("OUT", N_KOUT, 0),
     [G_KSTEP] = PD("STEP", F_INT, 1, 64, 1),
     [G_KSFX] = PE("FX", N_KFX, 0),
-    [G_KSEQ] = PE("SEQ", N_KSEQ, 1),
+    [G_KSEQ] = PE("LENGTH", N_KSEQ, 1),
     [G_KMUT] = PE("DICE", N_GO, 0),
     [G_KAUTO] = PE("AUTO", N_ONOFF, 0),
     [G_KCLR] = PE("CLR SQ", N_GO, 0),
@@ -241,6 +246,20 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KCTGT] = PE("CHOP", N_KCTGT, 0),
     [G_KCMODE] = PE("MODE", N_ONOFF, 0),
     [G_KDICE] = PE("DICE", N_GO, 0),
+    [G_KLREC] = PE("REC", N_GO, 0),
+    [G_KLBARS] = PE("BARS", N_KLBARS, 1),
+    [G_KLMODE] = PE("MODE", N_KLMODE, 0),
+    [G_KLSRC] = PE("SOURCE", N_KLSRC, 0),
+    [G_KLSL] = PD("SLICE", F_INT, 1, 16, 1),
+    [G_KLPLAY] = PD("PLAYS", F_INT, 1, 16, 1),
+    [G_KLREV] = PE("REVRS", N_ONOFF, 0),
+    [G_KLRET] = PE("RETRIG", N_KLRET, 0),
+    [G_KGPOS] = {"POS", F_INT, 0, 100, 0, 0, "%"},
+    [G_KGSIZE] = {"SIZE", F_INT, 0, 100, 30, 0, "%"},
+    [G_KGDENS] = {"DENS", F_INT, 0, 100, 50, 0, "%"},
+    [G_KGPIT] = PD("PITCH", F_INT, -12, 12, 0),
+    [G_KPROB] = {"PROB", F_INT, 0, 100, 100, 0, "%"},
+    [G_KMULTI] = PE("FX", N_KMULTI, 0),
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -442,8 +461,11 @@ static const page_t PAGES[] = {
     {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
     {"D-DRUMS", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
     {"D-CHOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
-    {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KSEQ, G_KMUT}},
-    {"D-BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KLFO}},
+    {"D-LOOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */
+    {"D-SLICE", FAM_FX, SC_GLOBAL, GR_KG, {G_KLSL, G_KLPLAY, G_KLREV, G_KLRET}},
+    {"D-GRAIN", FAM_FX, SC_GLOBAL, GR_KG, {G_KGPOS, G_KGSIZE, G_KGDENS, G_KGPIT}},
+    {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KPROB, G_KSEQ}},   /* (OCT+: DICE) */
+    {"D-BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KMULTI}},
     {"D-CHAOS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
     {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KTGT, G_KCCCH, G_KCLR, G_KCTGT}},
     {"FX", FAM_FX, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},

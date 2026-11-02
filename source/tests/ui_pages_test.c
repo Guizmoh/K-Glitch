@@ -242,21 +242,66 @@ int main(int argc, char **argv)
         ui.force = 1; frame(); ppm("page-k-chop");
         encs[panel.enc[EN_K3]] = 1; frame();
         check(!kr.mutated && kr_sig() == sig0, "K-GLITCH CHOP: RESTORE brings the ORIGINAL back");
+        {   /* LOOP: REC records a bar of what plays (the delay's line), then LOOP; a key plays a slice; SLICE: reverse,
+             * retrigger, DICE (OCT+), in order again (OCT-); GRAIN; MODE OFF gives the line back */
+            uint32_t idm = 1;
+            encs[panel.enc[EN_SELECT]] = 1; frame();
+            check(!strcmp(cur_page()->title, "D-LOOP"), "K-GLITCH: SELECT: LOOP (REC, BARS, MODE, SOURCE)");
+            encs[panel.enc[EN_K1]] = 1; frame();
+            check(kl.st == KLS_ARMED && kl_line(), "K-GLITCH LOOP: REC: armed for the next bar (the delay's line lent)");
+            ui.force = 1; frame(); ppm("page-k-loop-armed");
+            for (j = 0; j < 600u && kl.st != KLS_HAS; j++) frame();
+            check(kl.st == KLS_HAS && kl.len > 30000u && song.g[G_KLMODE] == KL_LOOP && kl.bars >= 1u,
+                  "K-GLITCH LOOP: a bar recorded, then it plays (MODE LOOP)");
+            frames(30);
+            ui.force = 1; frame(); ppm("page-k-loop");
+            fm1_in.notes = 1u << key_of_white(3); frame();
+            check(kl.pad == 3 && punch.req == -1, "K-GLITCH LOOP: a white key plays slice 4 (not an effect)");
+            fm1_in.notes = 0; frame();
+            check(kl.pad == -1, "K-GLITCH LOOP: the key up: the loop again");
+            encs[panel.enc[EN_SELECT]] = 1; frame();
+            check(!strcmp(cur_page()->title, "D-SLICE"), "K-GLITCH: SELECT: SLICE (SLICE, PLAYS, REVERSE, RETRIG)");
+            song.g[G_KLMODE] = KL_SLICE;
+            encs[panel.enc[EN_K3]] = 1; frame();
+            encs[panel.enc[EN_K4]] = 1; frame();
+            encs[panel.enc[EN_K2]] = 4; frame();
+            check(kl.rev[0] == 1u && kl.ret[0] == 2u && kl.map[0] == 4u, "K-GLITCH SLICE: slice 1 plays 5, backwards, x2");
+            tap(B_OCTUP);
+            for (j = 0; j < KL_NS; j++) idm &= kl.map[j] == j;
+            check(!idm, "K-GLITCH SLICE: OCT+ DICE rearranges the slices");
+            frames(20);
+            ui.force = 1; frame(); ppm("page-k-slice");
+            press(B_OCTDN); frames(3); release(B_OCTDN);
+            for (j = 0, idm = 1; j < KL_NS; j++) idm &= kl.map[j] == j && !kl.rev[j] && kl.ret[j] == 1u;
+            check(idm && song.octave == 0, "K-GLITCH SLICE: OCT- puts them back in order");
+            encs[panel.enc[EN_SELECT]] = 1; frame();
+            check(!strcmp(cur_page()->title, "D-GRAIN"), "K-GLITCH: SELECT: GRAIN (POS, SIZE, DENS, PITCH)");
+            song.g[G_KLMODE] = KL_GRAIN;
+            encs[panel.enc[EN_K1]] = 40; frame();
+            frames(20);
+            ui.force = 1; frame(); ppm("page-k-grain");
+            encs[panel.enc[EN_SELECT]] = -2; frame();
+            encs[panel.enc[EN_K3]] = -3; frame();
+            check(kl.st == KLS_EMPTY && !kl_line(), "K-GLITCH LOOP: MODE OFF lets the loop go, the delay has its line");
+            encs[panel.enc[EN_SELECT]] = 2; frame();
+        }
         encs[panel.enc[EN_SELECT]] = 1; frame();
         check(!strcmp(cur_page()->title, "D-SEQ"), "K-GLITCH: SELECT: SEQ");
-        encs[panel.enc[EN_K4]] = 1; frame();
+        tap(B_OCTUP);
         for (j = 0; j < 16u && kg.seq[j] < 0; j++) {}
-        check(j < 16u, "K-GLITCH SEQ: KNOB 4 (DICE) writes an effect sequence");
+        check(j < 16u, "K-GLITCH SEQ: OCT+ (DICE) writes an effect sequence");
         key(key_of_white(2)); frames(2);
         check(song.g[G_KSTEP] == 3 && song.g[G_KSFX] == kg.seq[2] + 1 && punch.req == -1,
               "K-GLITCH SEQ: a white key picks the step (no effect, no note)");
         encs[panel.enc[EN_K2]] = 1; frame();
         check(kg.seq[2] + 1 == song.g[G_KSFX], "K-GLITCH SEQ: KNOB 2 sets the step's effect");
+        encs[panel.enc[EN_K3]] = -50; frame();
+        check(kg.prob[2] < 100u && song.g[G_KPROB] == kg.prob[2], "K-GLITCH SEQ: KNOB 3 the step's probability");
         {   /* automation: SEQ 32, REC, a pad held a beat: written on its 16ths with its INTENSITY; CLEAR (OCT-) held erases */
             uint32_t n0 = 0, n1 = 0, n2 = 0;
             kg_clear();
-            encs[panel.enc[EN_K3]] = 1; frame();
-            check(kg_seqlen() == 32u, "K-GLITCH SEQ: KNOB 3: the lane 32 steps");
+            encs[panel.enc[EN_K4]] = 1; frame();
+            check(kg_seqlen() == 32u, "K-GLITCH SEQ: KNOB 4 (LENGTH): 32 steps");
             kd_int[DD_GATE] = 77;
             song.rec = 1;
             fm1_in.notes = 1u << key_of_white(DD_GATE);
@@ -279,14 +324,27 @@ int main(int argc, char **argv)
             for (j = 0; j < 64u; j++) n2 += kg.seq[j] >= 0;
             check(n2 == 0u, "K-GLITCH CLEAR: held a second stopped: the whole lane");
             tap(B_PLAY);
-            encs[panel.enc[EN_K3]] = -1; frame();
-            encs[panel.enc[EN_K4]] = 1; frame();
+            encs[panel.enc[EN_K4]] = -1; frame();
+            tap(B_OCTUP);
         }
         for (j = 0; j < 40u && kg.now < 0; j++) frame();
         ui.force = 1; frame(); ppm("page-k-seq");
         encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-BANK"), "K-GLITCH: SELECT: BANK (BANK, INTENSITY, HOLD, LFO)");
-        ui.force = 1; frame(); ppm("page-k-bank");
+        check(!strcmp(cur_page()->title, "D-BANK"), "K-GLITCH: SELECT: BANK (BANK, INTENSITY, HOLD, MULTI)");
+        {   /* MULTI: three pads held: three effects at once (the DRUM DESTROYER slots); SOLO: the last one only */
+            uint32_t s2, busy = 0;
+            encs[panel.enc[EN_K4]] = 1; frame();
+            fm1_in.notes = 1u << key_of_white(1) | 1u << key_of_white(6) | 1u << key_of_white(12); frames(3);
+            for (s2 = 0; s2 < KD_SLOTS; s2++) busy += kd_wantv[s2] >= 0;
+            check(song.g[G_KMULTI] && kg.nfx >= 3u && busy == 3u, "K-GLITCH MULTI: three pads held (and the lane), three effects stacked");
+            ui.force = 1; frame(); ppm("page-k-bank");
+            fm1_in.notes = 0; frames(2);
+            encs[panel.enc[EN_K4]] = -1; frame();
+            fm1_in.notes = 1u << key_of_white(1); frame(); fm1_in.notes |= 1u << key_of_white(6); frames(3);
+            for (s2 = busy = 0; s2 < KD_SLOTS; s2++) busy += kd_wantv[s2] >= 0;
+            check(!song.g[G_KMULTI] && kg.nfx == 1u && busy == 1u, "K-GLITCH SOLO: the last pad only");
+            fm1_in.notes = 0; frames(2);
+        }
         encs[panel.enc[EN_SELECT]] = 1; frame();
         check(!strcmp(cur_page()->title, "D-CHAOS"), "K-GLITCH: SELECT: CHAOS");
         encs[panel.enc[EN_K1]] = 1; frame();
@@ -300,7 +358,7 @@ int main(int argc, char **argv)
         check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH SETUP: KNOB 1: OUT MPC");
         ui.force = 1; frame(); ppm("page-k-setup");
         encs[panel.enc[EN_K1]] = -1; frame();
-        encs[panel.enc[EN_SELECT]] = -6; frame();
+        encs[panel.enc[EN_SELECT]] = -9; frame();
         check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: back to DESTROY");
         song.g[G_KHOLD] = 1; punch.req = (int8_t)(PUNCH_NFX + DD_FUZZ);
         encs[panel.enc[EN_K4]] = 1; frame();
@@ -1639,7 +1697,7 @@ int main(int argc, char **argv)
         #define K(n, v) do { encs[panel.enc[n]] = (v); frames(5); } while (0)
         #define WALK(fa_, ti_, hit_) do { open_family(fa_); frame(); \
             for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */ \
-            for (j = 0; j < 12u; j++) { if (PAGES[ui.page].fam == (fa_) && !strcmp(PAGES[ui.page].title, ti_)) hit_ = 1; \
+            for (j = 0; j < 20u; j++) { if (PAGES[ui.page].fam == (fa_) && !strcmp(PAGES[ui.page].title, ti_)) hit_ = 1; \
                 encs[panel.enc[EN_SELECT]] = 1; frame(); } } while (0)
         song.playing = 0;
         song.sel = 0; steps_clear(&trk[0]); trk[0].p[P_SLEN] = 16; go_home(); frames(16);
@@ -1837,7 +1895,7 @@ int main(int argc, char **argv)
         check(mlu.on == 1u && !mlu.pick, "GLO + F#3: MIDI LEARN on");
         open_family(FAM_FX); frame();
         for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */
-        for (j = 0; j < 7u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 7): KNOB 1 = DIST */
+        for (j = 0; j < 10u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 10): KNOB 1 = DIST */
         frames(16);
         ui.force = 1; frame(); ppm("header-learn");
         K(EN_K1, 1);

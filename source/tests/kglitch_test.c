@@ -47,7 +47,11 @@ static void reset(void)
     song.g[G_KCHAOS] = 40, song.g[G_KDENS] = 50, song.g[G_KMOVE] = 50;
     song.g[G_KTGT] = KG_OUT_FM1, song.g[G_KSEQ] = 1, song.g[G_KAUTO] = 0, song.g[G_KCCCH] = 16;
     song.g[G_KBANK] = 0, song.g[G_KINT] = 50, song.g[G_KHOLD] = 0, song.g[G_KLFO] = 0, song.g[G_KCMODE] = 0, song.g[G_KEVERY] = 0;
-    kd.cur = -1, kd.g = 0, kd_want = -1;
+    for (cc_n = 0; cc_n < KD_SLOTS; cc_n++) kd_slot[cc_n].cur = -1, kd_slot[cc_n].g = 0, kd_wantv[cc_n] = -1, kd_sintv[cc_n] = 0;
+    kg_hold_clear();
+    song.g[G_KMULTI] = 0;
+    kg.sent_cc = 0;
+    kl.st = KLS_EMPTY, song.g[G_KLMODE] = 0;
     clk_beat = 0, clk_pos = 0;
     song.playing = 1;
     usb.config = 1;
@@ -154,20 +158,20 @@ int main(int argc, char **argv)
     song.g[G_KTGT] = KG_OUT_BOTH;
     run(4u * S16 + S16 / 2u, -1, 0, 0, ol, or_);
     assert(!same(ol, dl, 4u * S16, 4u * S16 + S16 / 2u) && "BOTH: the mix changes too");
-    assert(kg.sent_fx == PX_STUT);
+    assert(kg.sent_cc >> PX_STUT & 1u);
     song.g[G_KTGT] = KG_OUT_FM1;
     { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert(kg.sent_fx < 0 && (cc_log[cc_n - 1u] & 0xFFFFu) == (uint32_t)(KG_CC[PX_STUT] << 8));
+    assert(!kg.sent_cc && (cc_log[cc_n - 1u] & 0xFFFFu) == (uint32_t)(KG_CC[PX_STUT] << 8));
     song.g[G_KTGT] = KG_OUT_MPC;
     { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert(kg.sent_fx == PX_STUT && kg.sent_ch == 15u);
+    assert((kg.sent_cc >> PX_STUT & 1u) && kg.sent_ch == 15u);
     song.g[G_KCCCH] = 3;
     { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
     assert(kg.sent_ch == 2u && cc_log[cc_n - 2u] == (0xBFu << 16 | (uint32_t)KG_CC[PX_STUT] << 8) &&
            (cc_log[cc_n - 1u] >> 16 == 0xB2u || (cc_log[cc_n - 1u] >> 8 & 127u) >= KG_CC_CHAOS));
     song.playing = 0;
     { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert(kg.sent_fx < 0 && "stopped: nothing left up");
+    assert(!kg.sent_cc && "stopped: nothing left up");
     printf("kglitch: OUT BOTH changes the mix; leaving MPC, a new channel, STOP: no stuck CC       ok\n");
 
     /* 5. AUTO: DENSITY 0 nothing; 100: every 16th, from the CHAOS pool */
@@ -371,6 +375,104 @@ int main(int argc, char **argv)
         for (i = 0; i < 10u; i++) assert(kg.seq[i] < 0 && now16[i] < 0);
     }
     printf("kglitch: automation: REC writes the pad's 16ths and INTENSITY, plays them back, CLEAR erases ok\n");
+    /* 14. probability: a step at 0 % never plays, at 100 % always, at 50 % about half the time */
+    {
+        uint32_t bars, hits = 0;
+        reset();
+        kg.seq[4] = PX_STUT, kg.prob[4] = 0;
+        kg.seq[8] = PX_REV, kg.prob[8] = 50;
+        for (bars = 0; bars < 16u; bars++) {
+            clk_beat = bars * 4u, clk_pos = 0, kg.last16 = 0xFFFFFFFFu;
+            run(S16 * 10u, -1, 0, 0, ol, or_);
+            assert(now16[4] != PX_STUT && now16[0] == -1);
+            hits += now16[8] == PX_REV;
+        }
+        assert(hits >= 3u && hits <= 13u);
+    }
+    printf("kglitch: SEQ probability: 0 %% never, 50 %% about half the bars                            ok\n");
+    /* 15. MULTI: three pads at once: three slots, the mix changed more than by one; the CCs of all three; SOLO: one */
+    {
+        uint32_t k3;
+        reset();
+        song.g[G_KMULTI] = 1, song.g[G_KTGT] = KG_OUT_BOTH;
+        kg_hold_add((int32_t)(PUNCH_NFX + DD_GATE));
+        kg_hold_add((int32_t)(PUNCH_NFX + DD_RING));
+        kg_hold_add(PX_STUT);
+        run(NS / 2u, -1, 0, 0, ol, or_);
+        for (k3 = n = 0; k3 < KD_SLOTS; k3++) n += kd_slot[k3].cur >= 0;
+        assert(n == 2u && kg.nfx == 3u && punch.cur == PX_STUT);
+        assert((kg.sent_cc >> PX_STUT & 1u) && (kg.sent_cc >> DD_GATE & 1u) && (kg.sent_cc >> DD_RING & 1u));
+        assert(!same(ol, dl, S16, NS / 2u / CTL * CTL));
+        kg_hold_clear();
+        song.g[G_KMULTI] = 0;
+        run(S16 * 4u, (int32_t)(PUNCH_NFX + DD_FUZZ), 0, S16 * 4u, ol, or_);
+        assert(kg.nfx == 1u);
+    }
+    printf("kglitch: MULTI: three at once (two DRUM DESTROYER slots + SLOOP's), their CCs; SOLO one    ok\n");
+    /* 16. LOOP: armed, it records a bar from the next downbeat into the delay's line, then plays it back locked to the
+     * bar (the tracks muted: what plays is the loop); SLICE reversed / retriggered differs from LOOP; GRAIN sounds;
+     * the delay is silent meanwhile; OFF gives the line back */
+    {
+        static int32_t o[CTL * 2u], a[FS], bb[FS];
+        uint32_t b, j;
+        double e = 0;
+        reset();
+        song.g[G_KVAR] = 0;
+        kr_generate(KS_JUNGLE);
+        song.g[G_KLBARS] = 0;
+        kl_arm();
+        transport_req = 1;
+        for (b = 0; b < FS * 4u / CTL && kl.st != KLS_HAS; b++) mix_block(o, CTL);
+        assert(kl.st == KLS_HAS && kl.bars == 1u && kl.len == kl_bar_samples() / 2u && song.g[G_KLMODE] == KL_LOOP);
+        assert(kl_line());
+        for (j = 0; j < 64u; j++) e += (double)kl_buf[j * 512u] * kl_buf[j * 512u];
+        assert(e > 0 && "something recorded");
+        for (b = 0; b < FS / CTL; b++) {               /* a second of the loop */
+            mix_block(o, CTL);
+            for (j = 0; j < CTL; j++) a[b * CTL + j] = o[2u * j];
+        }
+        for (j = 0, e = 0; j < FS / CTL * CTL; j++) e += (double)a[j] * a[j];
+        assert(e > 1e9 && "the loop plays");
+        song.g[G_KLMODE] = KL_SLICE;
+        for (j = 0; j < KL_NS; j++) kl.rev[j] = 1, kl.ret[j] = 3;
+        for (b = 0; b < FS / CTL; b++) {
+            mix_block(o, CTL);
+            for (j = 0; j < CTL; j++) bb[b * CTL + j] = o[2u * j];
+        }
+        assert(!same(a, bb, 0, FS / CTL * CTL) && "SLICE: reversed, retriggered");
+        song.g[G_KLMODE] = KL_GRAIN, song.g[G_KGSIZE] = 30, song.g[G_KGDENS] = 80;
+        for (b = 0, e = 0; b < FS / CTL; b++) {
+            mix_block(o, CTL);
+            for (j = 0; j < CTL * 2u; j++) { e += (double)o[j] * o[j]; assert(o[j] >= -32768 && o[j] <= 32767); }
+        }
+        assert(e > 1e9 && "GRAIN sounds");
+        kl_free();
+        assert(!kl_line());
+        transport_req = 2; mix_block(o, CTL);
+    }
+    printf("kglitch: LOOP: a bar recorded on the downbeat, played locked, SLICE, GRAIN, the line back  ok\n");
+    /* 17. GLITCH (eng_glitch.c): every preset, notes across the keyboard: it sounds, stays bounded, ends */
+    {
+        static int32_t o[CTL * 2u];
+        uint32_t pi, b, note;
+        assert(ENGINES[ENGI_GLITCH] == &ENG_GLITCH);
+        for (pi = 0; pi < ENG_GLITCH.npresets; pi++)
+            for (note = 36; note <= 96; note += 30) {
+                double e = 0;
+                reset();
+                song.playing = 0;
+                host_preset(&trk[0], ENGI_GLITCH, pi);
+                trk_note_on(&trk[0], note, 110);
+                for (b = 0; b < FS / 2u / CTL; b++) {
+                    mix_block(o, CTL);
+                    for (i = 0; i < CTL * 2u; i++) { e += (double)o[i] * o[i]; assert(o[i] >= -32768 && o[i] <= 32767); }
+                }
+                trk_note_off(&trk[0], note);
+                for (b = 0; b < FS * 2u / CTL; b++) mix_block(o, CTL);
+                assert(e > 1e6 && "it sounds");
+            }
+        printf("kglitch: GLITCH: the %u presets sound across the keyboard, bounded                     ok\n", ENG_GLITCH.npresets);
+    }
     printf("kglitch_test: passed\n");
     return 0;
 }

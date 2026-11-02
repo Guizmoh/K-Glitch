@@ -53,20 +53,39 @@ static const char *const KG_SHORT[PUNCH_NFX + 16u] = {
 
 static struct {
     volatile int8_t seq[KG_STEPS];    /* main writes (D-SEQ, MUTATE), ISR reads and records: PX_*, PUNCH_NFX + DD_*, or -1 */
+    volatile int8_t seq2[KG_STEPS];   /* the lane's second layer (MULTI: two effects recorded on a step) */
     volatile uint8_t sint[KG_STEPS];  /* each step's INTENSITY as recorded, + 1 (0: the effect's own) */
+    volatile uint8_t prob[KG_STEPS];  /* each step's probability, 0..100 % */
+    uint8_t pass;                     /* this 16th's step plays (its probability rolled) */
+    volatile uint8_t nfx;             /* ISR: how many effects play now (MULTI) */
+    volatile int8_t list[4];          /* .. the first four (the screen) */
+    uint32_t sent_cc;                 /* the CCs at 127 (bit: a key's, KG_CC) */
     volatile uint8_t step;            /* ISR: the step of the sequence playing (0..len-1), for the screen */
     volatile int8_t now;              /* ISR: the effect asked for now (key, sequencer or AUTO), -1 none */
     volatile uint8_t src;             /* ISR: who asked: 0 none, 1 a key / MIDI, 2 the sequencer, 3 AUTO */
     uint32_t last16;                  /* the 16th last seen (beats * 4 + quarter), ~0 stopped */
     int8_t auto_fx;                   /* AUTO's gesture, -1 none */
     uint8_t auto_left;                /* its 16ths still to go */
-    int8_t sent_fx;                   /* the effect whose CC is at 127, -1 none */
     uint8_t sent_ch;                  /* the channel it went out on (0..15) */
     int16_t sent_mac[4];              /* the macros (and INTENSITY) as last sent (-1: not yet) */
     uint32_t rnd;
-} kg = {.seq = {[0 ... KG_STEPS - 1] = -1},
-        .now = -1, .last16 = 0xFFFFFFFFu, .auto_fx = -1, .sent_fx = -1, .sent_mac = {-1, -1, -1, -1}, .rnd = 0x9E3779B9u};
+} kg = {.seq = {[0 ... KG_STEPS - 1] = -1}, .seq2 = {[0 ... KG_STEPS - 1] = -1}, .prob = {[0 ... KG_STEPS - 1] = 100},
+        .now = -1, .last16 = 0xFFFFFFFFu, .auto_fx = -1, .sent_mac = {-1, -1, -1, -1}, .rnd = 0x9E3779B9u};
 
+static volatile int8_t kg_held[4] = {-1, -1, -1, -1};   /* MULTI: the pads held (seq.c key_down / key_up) */
+static void kg_hold_add(int32_t fx)
+{
+    uint32_t i;
+    for (i = 0; i < 4u; i++) if (kg_held[i] == fx) return;
+    for (i = 0; i < 4u; i++) if (kg_held[i] < 0) { kg_held[i] = (int8_t)fx; return; }
+    kg_held[0] = kg_held[1], kg_held[1] = kg_held[2], kg_held[2] = kg_held[3], kg_held[3] = (int8_t)fx;   /* (the oldest goes) */
+}
+static void kg_hold_del(int32_t fx)
+{
+    uint32_t i;
+    for (i = 0; i < 4u; i++) if (kg_held[i] == fx) kg_held[i] = -1;
+}
+static void kg_hold_clear(void) { kg_held[0] = kg_held[1] = kg_held[2] = kg_held[3] = -1; }
 static volatile uint8_t kg_erase;                 /* UI: CLEAR (OCT- on the K-GLITCH pages) held: the steps passing are erased */
 static volatile uint8_t kg_recd;                  /* ISR: an effect was recorded (the screen: REC FX) */
 /* the effect sequence's length: SEQ OFF, 16, 32, 64 */
@@ -87,6 +106,7 @@ static uint32_t kg_pct(int32_t g) { return (uint32_t)(song.g[g] < 0 ? 0 : song.g
 #include "kg_dd.c"                              /* the DRUM DESTROYER bank: ids PUNCH_NFX .. KG_NFX - 1 */
 static void kg_mutate(uint32_t seed);
 #include "kg_rhythm.c"                          /* DRUMS (the generator) and CHOP (the rhythm's mutations) */
+#include "kg_loop.c"                            /* LOOP: a loop recorded from what plays, sliced, as grains */
 /* an effect's CC: its key's (DRUM DESTROYER n is on SLOOP's white key n: the same CC, the MPC maps keys) */
 static uint32_t kg_cc_of(int32_t fx) { return KG_CC[fx < (int32_t)PUNCH_NFX ? fx : fx - (int32_t)PUNCH_NFX]; }
 static const char *kg_name(int32_t fx) { return fx < (int32_t)PUNCH_NFX ? PUNCH_NAME[fx] : DD_NAME[fx - (int32_t)PUNCH_NFX]; }
@@ -146,6 +166,7 @@ static int32_t kg_route(int32_t key)
             uint32_t len = kg_seqlen();
             kg.last16 = s16;
             kg.step = (uint8_t)(s16 % (len ? len : 16u));
+            kg.pass = (uint8_t)(kg_rand(&kg.rnd) % 100u < kg.prob[kg.step]);   /* (the step's probability) */
             if (kg.auto_left)
                 kg.auto_left--;
             if (!kg.auto_left) {
@@ -161,46 +182,96 @@ static int32_t kg_route(int32_t key)
         kg.auto_fx = -1;
         kg.auto_left = 0;
     }
-    kg.src = fx >= 0 ? 1u : 0u;
-    kd_sint = 0;
-    if (song.playing && song.rec && fx >= 0 && !song.g[G_KSEQ])
-        song.g[G_KSEQ] = 1;                           /* (REC with the lane off: it records on 16 steps) */
-    if (song.playing && song.g[G_KSEQ]) {
-        if (kg_erase) {                               /* CLEAR held: the steps passing are erased (as the PO-33) */
-            kg.seq[kg.step] = -1;
-            kg.sint[kg.step] = 0;
-            if (fx < 0) fx = -2;                      /* (and nothing plays from the lane meanwhile) */
-        } else if (fx >= 0 && song.rec && fx < (int32_t)KG_NFX) {   /* REC: a pad's effect is written on its 16ths */
-            kg.seq[kg.step] = (int8_t)fx;
-            kg.sint[kg.step] = (uint8_t)(fx >= (int32_t)PUNCH_NFX ? kd_int[(fx - (int32_t)PUNCH_NFX) % DD_N] + 1u : 0u);
-            kg_recd = 1;
+    /* what plays now, first first: SOLO one effect (a key, else the lane, else AUTO); MULTI all of them stacked (the
+     * keys held, the lane's two layers, AUTO). SLOOP's effects: one at a time (punch.c); DRUM DESTROYER: KD_SLOTS */
+    {
+        int8_t lst[8], ssrc[8], sint[8];
+        uint32_t nl = 0, multi = song.g[G_KMULTI] != 0, k, s, used = 0, ccm = 0;
+        int32_t sloop = -1, A = -1, B = -1;
+        int8_t nw[KD_SLOTS];
+        uint8_t nsi[KD_SLOTS];
+#define KG_ADD(id, src_, si_) do { int32_t _i = (id); uint32_t _j; \
+            if (_i < 0 || _i >= (int32_t)KG_NFX || nl >= 8u) break; \
+            for (_j = 0; _j < nl && lst[_j] != _i; _j++) {} \
+            if (_j == nl) { lst[nl] = (int8_t)_i; ssrc[nl] = (int8_t)(src_); sint[nl] = (int8_t)(si_); nl++; } } while (0)
+        if (multi)
+            for (k = 0; k < 4u; k++) KG_ADD(kg_held[k], 1, 0);
+        KG_ADD(fx, 1, 0);
+        if (song.playing && song.rec && nl && !song.g[G_KSEQ])
+            song.g[G_KSEQ] = 1;                       /* (REC with the lane off: it records on 16 steps) */
+        if (song.playing && song.g[G_KSEQ]) {
+            if (kg_erase) {                           /* CLEAR held: the steps passing are erased (as the PO-33) */
+                kg.seq[kg.step] = kg.seq2[kg.step] = -1;
+                kg.sint[kg.step] = 0;
+                kg.prob[kg.step] = 100;
+            } else if (nl && song.rec) {              /* REC: the pads' effects written on their 16ths (two layers) */
+                kg.seq[kg.step] = lst[0];
+                kg.seq2[kg.step] = (int8_t)(multi && nl > 1u ? lst[1] : -1);
+                kg.sint[kg.step] = (uint8_t)(lst[0] >= (int32_t)PUNCH_NFX ? kd_int[(lst[0] - (int32_t)PUNCH_NFX) % DD_N] + 1u : 0u);
+                kg.prob[kg.step] = 100;
+                kg_recd = 1;
+            } else if (kg.pass) {                     /* the lane, if its probability let it */
+                A = kg.seq[kg.step];
+                B = kg.seq2[kg.step];
+            }
         }
+        if (!nl || multi) {
+            KG_ADD(A, 2, kg.sint[kg.step]);
+            if (multi) KG_ADD(B, 2, 0);
+        }
+        if ((!nl || multi) && !kg_erase)
+            KG_ADD(kg.auto_fx, 3, 0);
+#undef KG_ADD
+        kg.now = (int8_t)(nl ? lst[0] : -1);
+        kg.src = (uint8_t)(nl ? ssrc[0] : 0);
+        kg.nfx = (uint8_t)nl;
+        for (k = 0; k < 4u; k++) kg.list[k] = (int8_t)(k < nl ? lst[k] : -1);
+        /* SLOOP's effect: the first; DRUM DESTROYER's: a slot each (one already playing it keeps it) */
+        for (s = 0; s < KD_SLOTS; s++) nw[s] = -1, nsi[s] = 0;
+        for (k = 0; k < nl; k++) {
+            int32_t id = lst[k];
+            if (id < (int32_t)PUNCH_NFX) {
+                if (sloop < 0) sloop = id;
+                continue;
+            }
+            for (s = 0; s < KD_SLOTS; s++)
+                if (kd_slot[s].cur == id - (int32_t)PUNCH_NFX && nw[s] < 0) break;
+            if (s == KD_SLOTS)
+                for (s = 0; s < KD_SLOTS; s++)
+                    if (nw[s] < 0 && kd_slot[s].cur < 0) break;
+            if (s == KD_SLOTS)
+                for (s = 0; s < KD_SLOTS; s++)
+                    if (nw[s] < 0) break;
+            if (s == KD_SLOTS) continue;
+            nw[s] = (int8_t)(id - (int32_t)PUNCH_NFX);
+            nsi[s] = (uint8_t)sint[k];
+            used++;
+        }
+        /* the MPC: a CC at 127 for each effect playing (a key's CC), 0 when it stops; FM-1 or the channel OFF: none */
+        if (out != KG_OUT_FM1 && ch > 0)
+            for (k = 0; k < nl; k++) ccm |= 1u << (lst[k] < (int32_t)PUNCH_NFX ? lst[k] : lst[k] - (int32_t)PUNCH_NFX);
+        if (kg.sent_cc && (uint32_t)(ch - 1) != kg.sent_ch) {   /* (a new channel: the old one's let go first) */
+            for (k = 0; k < PUNCH_NFX; k++)
+                if (kg.sent_cc >> k & 1u) kg_cc(kg.sent_ch, KG_CC[k], 0);
+            kg.sent_cc = 0;
+        }
+        for (k = 0; k < PUNCH_NFX; k++)
+            if ((ccm ^ kg.sent_cc) >> k & 1u)
+                kg_cc((uint32_t)(ch > 0 ? ch - 1 : kg.sent_ch), KG_CC[k], ccm >> k & 1u ? 127u : 0u);
+        kg.sent_cc = ccm;
+        if (ccm) kg.sent_ch = (uint8_t)(ch - 1);
+        if (out == KG_OUT_MPC) {                      /* MPC: the FM-1's mix stays dry */
+            sloop = -1;
+            for (s = 0; s < KD_SLOTS; s++) nw[s] = -1;
+        }
+        for (s = 0; s < KD_SLOTS; s++) {
+            kd_wantv[s] = nw[s];
+            kd_sintv[s] = nsi[s];
+        }
+        (void)used;
+        fx = sloop;
     }
-    if (fx == -2)
-        fx = -1;
-    else if (fx < 0 && song.playing && song.g[G_KSEQ] && kg.seq[kg.step] >= 0 && kg.seq[kg.step] < (int8_t)KG_NFX) {
-        fx = kg.seq[kg.step];
-        kd_sint = kg.sint[kg.step];                   /* (its recorded INTENSITY) */
-        kg.src = 2;
-    }
-    if (fx < 0 && kg.auto_fx >= 0 && !kg_erase) {
-        fx = kg.auto_fx;
-        kg.src = 3;
-    }
-    kg.now = (int8_t)fx;
-    /* the MPC: one CC at 127 at a time; anything else (FM-1, the channel OFF or changed) lets it go first */
-    if (out == KG_OUT_FM1 || ch <= 0)
-        fx = -1, ch = 0;
-    if (kg.sent_fx >= 0 && (kg.now != kg.sent_fx || fx < 0 || (uint32_t)(ch - 1) != kg.sent_ch)) {
-        kg_cc(kg.sent_ch, kg_cc_of(kg.sent_fx), 0);
-        kg.sent_fx = -1;
-    }
-    if (fx >= 0 && kg.sent_fx < 0) {
-        kg.sent_ch = (uint8_t)(ch - 1);
-        kg.sent_fx = (int8_t)fx;
-        kg_cc(kg.sent_ch, kg_cc_of(fx), 127);
-    }
-    if (ch > 0)                                       /* the macros, when they change */
+    if (ch > 0 && out != KG_OUT_FM1)                  /* the macros, when they change (FM-1: no MIDI at all) */
         for (i = 0; i < 4u; i++) {
             int16_t v = (int16_t)(kg_pct(i < 3u ? (int32_t)(G_KCHAOS + i) : (int32_t)G_KINT) * 127u / 100u);
             if (v != kg.sent_mac[i]) {
@@ -210,7 +281,7 @@ static int32_t kg_route(int32_t key)
         }
     else
         kg.sent_mac[0] = kg.sent_mac[1] = kg.sent_mac[2] = kg.sent_mac[3] = -1;
-    return out == KG_OUT_MPC ? -1 : kg.now;           /* MPC: the FM-1's mix stays dry */
+    return fx;                                        /* SLOOP's effect, for punch.c (-1 none) */
 }
 
 /* MUTATE (main loop): a new effect sequence. DENSITY: how many steps; CHAOS: which effects, and how often a step
@@ -225,8 +296,11 @@ static void kg_mutate(uint32_t seed)
         song.g[G_KSEQ] = 1;
         len = 16;
     }
-    for (i = 0; i < KG_STEPS; i++)
+    for (i = 0; i < KG_STEPS; i++) {
         kg.sint[i] = 0;
+        kg.seq2[i] = -1;
+        kg.prob[i] = 100;
+    }
     for (i = 0; i < len; i++) {
         int8_t fx = -1;
         if ((i & 3u) == 0u && chaos <= 70u)
@@ -234,14 +308,17 @@ static void kg_mutate(uint32_t seed)
         else if (kg_rand(&s) % 100u < dens)
             fx = i && kg.seq[i - 1u] >= 0 && kg_rand(&s) % 100u < chaos / 2u ? kg.seq[i - 1u] : kg_pick(&s);
         kg.seq[i] = fx;
+        if (fx >= 0 && chaos > 50u && kg_rand(&s) % 100u < chaos - 50u)
+            kg.prob[i] = (uint8_t)(40u + kg_rand(&s) % 50u);   /* (CHAOS past 50 %: some steps only maybe) */
     }
 }
 static void kg_clear(void)
 {
     uint32_t i;
     for (i = 0; i < KG_STEPS; i++) {
-        kg.seq[i] = -1;
+        kg.seq[i] = kg.seq2[i] = -1;
         kg.sint[i] = 0;
+        kg.prob[i] = 100;
     }
 }
 /* CLEAR (FX > DESTROY, KNOB 4): back to the original sound. Every effect let go (a held one too), AUTO, the effect
@@ -250,6 +327,7 @@ static void kg_clear(void)
 static void kg_clean(void)
 {
     song.g[G_KHOLD] = song.g[G_KAUTO] = song.g[G_KEVERY] = song.g[G_KCMODE] = 0;
+    kg_hold_clear();
     song.g[G_KSEQ] = 0;                              /* (the automation stays: SEQ 16 / 32 / 64 plays it again) */
     punch.req = -1;
     punch.keybit = 0;

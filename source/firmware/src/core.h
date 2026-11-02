@@ -20,11 +20,12 @@ enum { V_POLY, V_MONO, V_LEGATO, V_UNISON };   /* P_VOICE */
 /* SLOOP 2.4: FM6 (eng_fm6.c) is engine 9 in every build; SLICE, when built, comes last (10). Projects and user
  * presets store the engine index as a byte, and no shipped SLOOP was built with SLICE, so its number is stored
  * nowhere: FM6 may take 9 and SLICE moves up (engines.c ENGINES[], params.c N_ENGNAME follow this order) */
-#define NENGINES (12 + FELUCCA_SLICE)
+#define NENGINES (13 + FELUCCA_SLICE)       /* (K-GLITCH: + GLITCH, 12) */
 #define ENGI_GRAIN 8u            /* GRAIN, PHYS, NOISE (SLOOP 2.5, appended after FM6: the stores keep the numbers) */
 #define ENGI_PHYS 10u
 #define ENGI_NOISE 11u
-#define ENGI_SLICE 12u           /* with FELUCCA_SLICE: after NOISE */
+#define ENGI_GLITCH 12u          /* K-GLITCH: eng_glitch.c */
+#define ENGI_SLICE 13u           /* with FELUCCA_SLICE: after GLITCH */
 #define ENGI_FM6 9u              /* the FM6 engine's index (eng_fm6.c, the stores: append-only) */
 #define UP_SLOTS 32u             /* user presets (upreset.c) */
 #define NELEM(a) (sizeof(a) / sizeof((a)[0]))
@@ -131,6 +132,20 @@ enum {                          /* global parameters */
     G_KCTGT,                    /* CHOP: what mutates: DRUMS, or ALL (the synth tracks' note lengths too) */
     G_KCMODE,                   /* CHAOS: CHAOS mode (OFF / ON) */
     G_KDICE,                    /* CHOP: DICE, a random recipe of transformations (GO) */
+    G_KLREC,                    /* LOOP: REC, a loop of what plays from the next bar (GO; kg_loop.c) */
+    G_KLBARS,                   /* LOOP: its length, 1, 2, 4 bars (as many as fit) */
+    G_KLMODE,                   /* LOOP: OFF (the loop let go), LOOP, SLICE, GRAIN */
+    G_KLSRC,                    /* LOOP: SOURCE, the tracks MUTE while it plays, or MIX */
+    G_KLSL,                     /* SLICE: the slice edited, 1..16 */
+    G_KLPLAY,                   /* SLICE: the slice of the loop it plays, 1..16 */
+    G_KLREV,                    /* SLICE: backwards (OFF / ON) */
+    G_KLRET,                    /* SLICE: retriggered x1, x2, x3, x4, x8 */
+    G_KGPOS,                    /* GRAIN: POSITION 0..100 % */
+    G_KGSIZE,                   /* GRAIN: SIZE 0..100 % (10..250 ms) */
+    G_KGDENS,                   /* GRAIN: DENSITY 0..100 % */
+    G_KGPIT,                    /* GRAIN: PITCH -12..+12 */
+    G_KPROB,                    /* SEQ: the step's probability, 0..100 % */
+    G_KMULTI,                   /* BANK: SOLO (a new effect replaces the last) or MULTI (they stack) */
     G_COUNT
 };
 

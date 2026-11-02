@@ -36,6 +36,7 @@ static uint32_t uni_turns(uint32_t r, int32_t p16, int32_t d16)
 #include "eng_fm6.c"            /* FM6: 6-operator FM, msfa ported (fm6_core.c, Apache-2.0); SLOOP 2.4 */
 #include "eng_phys.c"           /* PHYS: physical models, from Felucca 1.0 (DaisySP, Rings: MIT); SLOOP 2.5 */
 #include "eng_noise.c"          /* NOISE: from Felucca 1.0; SLOOP 2.5 */
+#include "eng_glitch.c"         /* GLITCH: K-GLITCH's digital accidents */
 
 typedef union {
     gr_part_t grain;
@@ -93,12 +94,13 @@ static const engine_t *const ENGINES[NENGINES] = {&ENG_ANALOG, &ENG_DIGITAL, &EN
                                                     &ENG_GRAIN,
                                                     &ENG_FM6,    /* 9 (ENGI_FM6): always; SLICE after it (core.h) */
                                                     &ENG_PHYS, &ENG_NOISE,
+                                                    &ENG_GLITCH,   /* 12 (ENGI_GLITCH): K-GLITCH */
 #if FELUCCA_SLICE
                                                     &ENG_SLICE,
 #endif
 };
 _Static_assert(ENGI_FM6 == 9u, "ENGINES[ENGI_FM6] is FM6");
-_Static_assert(ENGI_GRAIN == 8u && ENGI_PHYS == 10u && ENGI_NOISE == 11u && ENGI_SLICE == 12u, "ENGINES[] order");
+_Static_assert(ENGI_GRAIN == 8u && ENGI_PHYS == 10u && ENGI_NOISE == 11u && ENGI_GLITCH == 12u && ENGI_SLICE == 13u, "ENGINES[] order");
 
 /* every factory sound as loud as the others: a level trim per preset, 1/2 dB, measured on a phrase
  * that fits the sound (tools/level_presets.py writes preset_trim.h); a track keeps it in P_ED_FX */

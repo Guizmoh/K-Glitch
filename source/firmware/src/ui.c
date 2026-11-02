@@ -524,10 +524,10 @@ UI_SMALL static int page_walk(int32_t s)
     const page_t *pg = cur_page();
     uint32_t i, fam = pg->fam, n = 0;
     int32_t cur = -1, to;
-    uint8_t idx[16];                               /* (2.7: GLO has 9 pages with MIDI 3) */
+    uint8_t idx[24];                               /* (2.7: GLO has 9 pages with MIDI 3; K-GLITCH: FX has 17) */
     if (ui.home || pg->scope == SC_SONG || pg->scope == SC_DRUM)
         return 0;
-    for (i = 0; i < NPAGES && n < 16u; i++) {
+    for (i = 0; i < NPAGES && n < 24u; i++) {
         if (PAGES[i].fam != fam || PAGES[i].scope == SC_SONG || PAGES[i].scope == SC_DRUM || !page_shown(&PAGES[i]))
             continue;
         if (i == ui.page)
@@ -710,8 +710,8 @@ UI_SMALL static void select_engine(uint32_t e)
 /* the factory presets as one list by kind (basses, keys, organs, pads, leads, plucks and bells, stabs,
  * the rest), then the used user presets: the PRESETS knob and the PRESETS page browse it. By name: an
  * engine's preset table may change order; tests/ui_pages_test.c checks every preset is here once */
-enum { BK_BASS, BK_KEYS, BK_ORGAN, BK_PAD, BK_LEAD, BK_PLUCK, BK_STAB, BK_FX };
-static const char *const BANK_KIND[] = {"BASS", "KEYS", "ORGN", "PAD", "LEAD", "PLCK", "STAB", "FX"};
+enum { BK_BASS, BK_KEYS, BK_ORGAN, BK_PAD, BK_LEAD, BK_PLUCK, BK_STAB, BK_FX, BK_GLITCH };
+static const char *const BANK_KIND[] = {"BASS", "KEYS", "ORGN", "PAD", "LEAD", "PLCK", "STAB", "FX", "GLCH"};
 static const struct { uint8_t kind, e; const char *name; } BANK[] = {
     {BK_BASS, 0, "808 BOOM"}, {BK_BASS, 0, "808 DIRTY"}, {BK_BASS, 0, "808 SLIDE"}, {BK_BASS, 0, "SUB BASS"},
     {BK_BASS, 0, "PLUGG BASS"}, {BK_BASS, 0, "REESE"}, {BK_BASS, 0, "WOBBLE"}, {BK_BASS, 0, "ACID 303"},
@@ -758,6 +758,11 @@ static const struct { uint8_t kind, e; const char *name; } BANK[] = {
     {BK_FX, ENGI_NOISE, "VINYL"}, {BK_FX, ENGI_NOISE, "HISS"}, {BK_FX, ENGI_NOISE, "RISER"},
     {BK_FX, ENGI_NOISE, "NZ SNARE"}, {BK_FX, ENGI_NOISE, "BITCRUSH"}, {BK_FX, ENGI_NOISE, "RADIO"},
     {BK_FX, 3, "CHIP NOISE"},
+    /* K-GLITCH: the GLITCH engine (eng_glitch.c) */
+    {BK_GLITCH, ENGI_GLITCH, "BYTEBEAT"}, {BK_GLITCH, ENGI_GLITCH, "BYTE CRUSH"}, {BK_GLITCH, ENGI_GLITCH, "BIT SNAP"},
+    {BK_GLITCH, ENGI_GLITCH, "BLIP RAIN"}, {BK_GLITCH, ENGI_GLITCH, "ZAP GUN"}, {BK_GLITCH, ENGI_GLITCH, "DATA DUST"},
+    {BK_GLITCH, ENGI_GLITCH, "DATA LOOP"}, {BK_GLITCH, ENGI_GLITCH, "BENT SAW"}, {BK_GLITCH, ENGI_GLITCH, "ROBOT"},
+    {BK_GLITCH, ENGI_GLITCH, "CRASH BUG"},
 #if FELUCCA_SLICE
     {BK_FX, ENGI_SLICE, "BREAK 16"}, {BK_FX, ENGI_SLICE, "CHOP 8"}, {BK_FX, ENGI_SLICE, "REVERSE"},
     {BK_FX, ENGI_SLICE, "USR SLICE"},
