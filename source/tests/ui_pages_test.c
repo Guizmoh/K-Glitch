@@ -442,24 +442,24 @@ int main(int argc, char **argv)
         }
         for (j = 0; j < 40u && kg.now < 0; j++) frame();
         ui.force = 1; frame(); ppm("page-k-seq");
-        go_title("BANK", FAM_FX);
-        check(!strcmp(cur_page()->title, "BANK"), "K-GLITCH: SELECT: BANK (BANK, INTENSITY, HOLD, MULTI)");
+        go_title("MODES 2", FAM_ARP);
+        check(!strcmp(cur_page()->title, "MODES 2"), "K-GLITCH: ARP > MODES 2 (SOLO / MULTI, INTENSITY, CLEAR)");
         {   /* MULTI: three pads held: three effects at once (the DRUM DESTROYER slots); SOLO: the last one only */
             uint32_t s2, busy = 0;
-            encs[panel.enc[EN_K4]] = 1; frame();
+            encs[panel.enc[EN_K1]] = 1; frame();
             fm1_in.notes = 1u << key_of_white(1) | 1u << key_of_white(6) | 1u << key_of_white(12); frames(3);
             for (s2 = 0; s2 < KD_SLOTS; s2++) busy += kd_wantv[s2] >= 0;
             check(song.g[G_KMULTI] && kg.nfx >= 3u && busy == 3u, "K-GLITCH MULTI: three pads held (and the lane), three effects stacked");
             ui.force = 1; frame(); ppm("page-k-bank");
             fm1_in.notes = 0; frames(2);
-            encs[panel.enc[EN_K4]] = -1; frame();
+            encs[panel.enc[EN_K1]] = -1; frame();
             fm1_in.notes = 1u << key_of_white(1); frame(); fm1_in.notes |= 1u << key_of_white(6); frames(3);
             for (s2 = busy = 0; s2 < KD_SLOTS; s2++) busy += kd_wantv[s2] >= 0;
             check(!song.g[G_KMULTI] && kg.nfx == 1u && busy == 1u, "K-GLITCH SOLO: the last pad only");
             fm1_in.notes = 0; frames(2);
         }
-        go_title("CHAOS", FAM_ARP);
-        check(!strcmp(cur_page()->title, "CHAOS"), "K-GLITCH: SELECT: CHAOS");
+        go_title("MODES", FAM_ARP);
+        check(!strcmp(cur_page()->title, "MODES"), "K-GLITCH: ARP > MODES (CHAOS mode, AUTO, LFO, HOLD)");
         encs[panel.enc[EN_K1]] = 1; frame();
         sig0 = kr.out_sig;
         for (j = 0; j < 400u; j++) frame();
@@ -471,11 +471,10 @@ int main(int argc, char **argv)
         check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH SETUP: KNOB 1: OUT MPC");
         ui.force = 1; frame(); ppm("page-k-setup");
         encs[panel.enc[EN_K1]] = -1; frame();
-        go_title("PADS", FAM_FX);
-        check(!strcmp(cur_page()->title, "PADS"), "K-GLITCH: back to DESTROY");
+        go_title("MODES 2", FAM_ARP);
         song.g[G_KHOLD] = 1; punch.req = (int8_t)(PUNCH_NFX + DD_FUZZ);
-        encs[panel.enc[EN_K4]] = 1; frame();
-        encs[panel.enc[EN_K4]] = 1; frame();
+        encs[panel.enc[EN_K3]] = 1; frame();
+        encs[panel.enc[EN_K3]] = 1; frame();
         check(punch.req == -1 && !song.g[G_KHOLD] && !song.g[G_KCMODE] && !kr.mutated,
               "K-GLITCH DESTROY: CLEAR (twice): every effect off, CHAOS off, the rhythm its ORIGINAL");
         tap(B_PLAY); frames(2);
@@ -1527,7 +1526,7 @@ int main(int argc, char **argv)
         check(!strcmp(PT(), "LFO 2"), "SELECT left: the page before");
         SEL(-1);
         check(!strcmp(PT(), "LFO"), "SELECT left: LFO");
-        go_title("BANK", FAM_FX); SEL(1);                  /* (K-GLITCH: FX: PADS, FX SEQ, BANK, then FILTER) */
+        go_title("FX SEQ", FAM_FX); SEL(1);                /* (K-GLITCH: FX: PADS, FX SEQ, then FILTER) */
         check(!strcmp(PT(), "FILTER"), "SELECT on FX: next page, the track FILTER");
         TSEL->p[P_TFLT] = -32; ui.force = 1; frames(2); ppm("page-filter");
         check(!strcmp(ui.big_l[0], "FILT") && !strcmp(ui.big_v[0], "LP50") && !ui.big_l[1][0],

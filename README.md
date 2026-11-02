@@ -18,9 +18,9 @@ Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 e
 
 Les pages K-GLITCH sont rangées par bouton (0.9) :
 
-- **FX** (un appui : les **16 PADS**, un autre appui : la page suivante) : PADS, FX SEQ, BANK, puis le FILTER de piste, le SLICER et l'INSERT de SLOOP.
+- **FX** (un appui : les **16 PADS**, un autre appui : la page suivante) : PADS (banque + macros), FX SEQ, puis le FILTER de piste, le SLICER et l'INSERT de SLOOP.
 - **LFO** : … puis les envois **SENDS** (DIST, CHO, DLY, REV de la piste), **DLY** et **REV/CHO**.
-- **ARP** : … puis les modes **CHAOS**, **GEN** (générateur DRUMS) et **CHOP** (mutation).
+- **ARP** : … puis **MODES** (mode CHAOS, AUTO, LFO, HOLD), **MODES 2** (SOLO / MULTI, INTENSITÉ, CLEAR), **GEN** (générateur DRUMS) et **CHOP** (mutation).
 - **SEL** : le **FILTER** créatif et le sampler **LOOP**, **SLICE**, **GRAIN** (les anciennes pages SEL de gamme sont à la fin d'**EDIT** : SCALE, SCALE 2).
 - **GLO** : … et **MPC** (sortie MIDI vers la MPC).
 - **SAVE** (un appui, même depuis HOME) : les pages SAVE ; l'écran SONG : SAVE maintenu + 16e touche blanche.
@@ -30,7 +30,7 @@ Les pages K-GLITCH sont rangées par bouton (0.9) :
 
 | Page | Rôle | K1 | K2 | K3 | K4 |
 | --- | --- | --- | --- | --- | --- |
-| **PADS** (FX) | écran principal : les 16 pads | CHAOS | DENSITY | MOVEMENT | CLEAR (retour au son original) |
+| **PADS** (FX) | écran principal : les 16 pads | BANK : SLOOP / DESTROY / BEAT | CHAOS | DENSITY | MOVEMENT |
 | **FILTER** (SEL) | filtre créatif sur tout le mix | TYPE | FREQ (une note) | RESO | MOVE (LFO) |
 | **GEN** (ARP) | mode 1 : génération de percussions | STYLE | VARIATION | SWING | GO |
 | **CHOP** (ARP) | mode 2 : découpage / mutation du rythme | DICE | MUTATE | RESTORE | EVERY (auto) |
@@ -38,8 +38,8 @@ Les pages K-GLITCH sont rangées par bouton (0.9) :
 | **SLICE** (SEL) | les 16 slices de la boucle | la slice | laquelle elle joue | à l'envers | RETRIG x1 … x8 |
 | **GRAIN** (SEL) | la boucle en granulaire | POSITION | SIZE | DENSITY | PITCH |
 | **FX SEQ** (FX) | séquenceur / automation d'effets | le pas | son effet | sa probabilité | longueur OFF / 16 / 32 / 64 |
-| **BANK** (FX) | les pads | banque SLOOP / DESTROY / BEAT | INTENSITÉ | HOLD | FX : SOLO / MULTI |
-| **CHAOS** (ARP) | mode 3 : performance imprévisible | MODE | AUTO | LFO | CHAOS |
+| **MODES 2** (ARP) | les pads | FX : SOLO / MULTI | INTENSITÉ | CLEAR (retour au son original) | |
+| **MODES** (ARP) | mode 3 : performance imprévisible | MODE CHAOS | AUTO | LFO | HOLD |
 | **MPC** (GLO) | sortie vers la MPC | OUT : FM-1 / MPC / BOTH | canal MIDI | effacer la séquence | CHOP : DRUMS / ALL |
 
 ### Jouer en direct

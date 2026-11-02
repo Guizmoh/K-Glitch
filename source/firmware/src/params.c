@@ -513,9 +513,8 @@ static const page_t PAGES[] = {
     {"REV/CHO", FAM_LFO, SC_GLOBAL, GR_NONE, {G_RSIZE, G_RDAMP, G_CRATE, G_CDEPTH}},
     /* K-GLITCH (kg_ui.c draws them whole): DESTROY the main screen (ALGORITHM: the effect, PRESETS: its INTENSITY, the
      * white keys: the pads), then its three modes DRUMS, CHOP, CHAOS, and the effect sequencer, the bank, the setup */
-    {"PADS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
+    {"PADS", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KCHAOS, G_KDENS, G_KMOVE}},   /* (the bank and the macros; PRESETS: INTENSITY) */
     {"FX SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KPROB, G_KSEQ}},   /* (OCT+: DICE) */
-    {"BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KMULTI}},
     {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},   /* drum track too */
     {"INSERT", FAM_FX, SC_TRACK, GR_INS, {P_ITYPE, P_IA, P_IB, P_IC}},   /* 2.6 (Felucca 1.5): the track's INSERT (fx.c), */
@@ -561,7 +560,8 @@ static const page_t PAGES[] = {
     {"ARP", FAM_ARP, SC_TRACK, GR_NONE, {P_AMODE, P_ARATE, P_AOCT, P_AGATE}},   /* (2.7.2: its values large, as ARP 2:
                                                        * GR_ARP was never drawn, the middle stayed empty) */
     {"ARP 2", FAM_ARP, SC_TRACK, GR_NONE, {P_ASWING, P_APROB, P_AHOLD, P_AORDER}},
-    {"CHAOS", FAM_ARP, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
+    {"MODES", FAM_ARP, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KHOLD}},   /* (K-GLITCH: CHAOS mode, AUTO, LFO, HOLD) */
+    {"MODES 2", FAM_ARP, SC_GLOBAL, GR_KG, {G_KMULTI, G_KINT, G_KCLEAR, 0xFF}},   /* (SOLO / MULTI, INTENSITY, CLEAR) */
     {"GEN", FAM_ARP, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
     {"CHOP", FAM_ARP, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
     {"NOTES", FAM_SEQ, SC_STEP, GR_ROLL, {0, 1, 2, 3}},   /* (2.7.2: the NOTES editor; "STEP" before) */

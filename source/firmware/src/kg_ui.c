@@ -91,7 +91,7 @@ static void kg_u2a(char *b, uint32_t v)            /* an unsigned number, writte
 enum { KP_DESTROY, KP_FILTER, KP_DRUMS, KP_CHOP, KP_LOOP, KP_SLICE, KP_GRAIN, KP_SEQ, KP_BANK, KP_CHAOS, KP_SETUP };
 UI_SMALL static uint32_t kg_pageno(void)
 {
-    static const uint8_t ID[KG_NPG] = {G_KCHAOS, G_KFTYPE, G_KSTYLE, G_KDICE, G_KLREC, G_KLSL, G_KGPOS, G_KSTEP, G_KBANK, G_KCMODE,
+    static const uint8_t ID[KG_NPG] = {G_KBANK, G_KFTYPE, G_KSTYLE, G_KDICE, G_KLREC, G_KLSL, G_KGPOS, G_KSTEP, G_KMULTI, G_KCMODE,
                                        G_KTGT};
     uint32_t id = cur_page()->id[0], i;
     for (i = 0; i < KG_NPG; i++)
@@ -274,13 +274,13 @@ UI_SMALL static void kg_filterview(void)
 UI_SMALL static void kg_paint(void)
 {
     static const char *const TITLE[KG_NPG] = {"DRUM DESTROYER", "FILTER", "DRUMS", "CHOP / MUTATE", "LOOP SAMPLER", "SLICES",
-                                              "GRAINS", "EFFECT SEQUENCE", "THE 16 PADS", "CHAOS", "SETUP / MPC"};
+                                              "GRAINS", "EFFECT SEQUENCE", "PAD MODES", "MODES", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
     static const char *const HINT[KG_NPG] = {"ALGO FX / PRESETS INTENS / OCT+ DICE", "KEYS TUNE / REC: AUTOMATION",
                                              "K4 GENERATE / KEYS PLAY THE DRUMS",
                                              "K1 DICE / K2 MUTATE / K3 RESTORE", "K1 REC: NEXT BAR / KEYS: SLICES",
                                              "KEYS: SLICES / OCT+ DICE / OCT- ORDER", "KEYS: POSITION / CHAOS: SPRAY",
-                                             "KEY STEP / OCT+ DICE / OCT- CLEAR", "KEYS PADS / FX: SOLO OR MULTI",
+                                             "KEY STEP / OCT+ DICE / OCT- CLEAR", "K1 SOLO OR MULTI / K3 CLEAN: ORIGINAL",
                                              "AUTO + LFO + MUTATIONS ON THE BAR", "OUT: FM-1, MPC, BOTH / CH: THE MPC'S"};
     static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
     const page_t *pg = cur_page();
