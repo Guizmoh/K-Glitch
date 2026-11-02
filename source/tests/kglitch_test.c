@@ -13,6 +13,7 @@
 #undef main
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 #define BEAT (FS / 2u)                                /* 120 BPM */
 #define S16 (BEAT / 4u)
 #define NS (FS * 4u)
@@ -52,6 +53,7 @@ static void reset(void)
     song.g[G_KMULTI] = 0;
     kg.sent_cc = 0;
     kl.st = KLS_EMPTY, song.g[G_KLMODE] = 0;
+    song.g[G_KFTYPE] = 0, kf.cur = KF_OFF;
     clk_beat = 0, clk_pos = 0;
     song.playing = 1;
     usb.config = 1;
@@ -88,6 +90,13 @@ static int same(const int32_t *a, const int32_t *b, uint32_t s, uint32_t e)
     for (i = s; i < e; i++)
         if (a[i] != b[i]) return 0;
     return 1;
+}
+static double tone_pow(const int32_t *x, uint32_t a, uint32_t b, double hz)   /* Goertzel */
+{
+    double w = 2 * 3.14159265358979 * hz / FS, c = 2 * cos(w), s1 = 0, s2 = 0, s0;
+    uint32_t i;
+    for (i = a; i < b; i++) s0 = x[i] + c * s1 - s2, s2 = s1, s1 = s0;
+    return s1 * s1 + s2 * s2 - c * s1 * s2;
 }
 static int in_pool(int32_t fx, uint32_t chaos)
 {
@@ -495,6 +504,42 @@ int main(int argc, char **argv)
         kd_int[3] = 50, kl.map[2] = 2, kl.rev[5] = 0, kl.ret[7] = 1;
     }
     printf("kglitch: the state for flash: back exactly, a damaged record refused                     ok\n");
+    /* 19. FILTER: every type changes the mix and stays bounded; OFF gives the dry mix back, to the sample, after its fade;
+     * COMB+ on noise rings at its note (A3, 220 Hz: far more there than half a semitone off); RESON too */
+    {
+        static int32_t xl[FS], xr[FS], yl[FS], yr[FS];
+        uint32_t t, b, j;
+        int32_t seed = 12345;
+        for (j = 0; j < FS; j++) xl[j] = xr[j] = (int32_t)(noise32(&seed) >> 19) - 4096;
+        for (t = 1; t < KF_N; t++) {
+            reset();
+            song.g[G_KFTYPE] = (int16_t)t, song.g[G_KFCUT] = 57, song.g[G_KFRES] = 100, song.g[G_KFMOD] = t == KF_PHASER ? 60 : 0;
+            for (b = 0; b < FS / CTL; b++) {
+                int32_t l2[CTL], r2[CTL];
+                for (j = 0; j < CTL; j++) l2[j] = xl[b * CTL + j], r2[j] = xr[b * CTL + j];
+                kf_process(l2, r2, CTL);
+                for (j = 0; j < CTL; j++) {
+                    assert(l2[j] > -(1 << 21) && l2[j] < (1 << 21) && r2[j] > -(1 << 21) && r2[j] < (1 << 21));
+                    yl[b * CTL + j] = l2[j], yr[b * CTL + j] = r2[j];
+                }
+            }
+            assert(!same(yl, xl, FS / 4u, FS / CTL * CTL) && "the filter changes the mix");
+            if (t == KF_COMBP || t == KF_RESON) {
+                double on = tone_pow(yl, FS / 4u, FS, 220.0), off = tone_pow(yl, FS / 4u, FS, 275.0);   /* (between the note and its octave) */
+                if (getenv("KGDBG")) printf("type %u: %.3g vs %.3g\n", t, on, off);
+                assert(on > 3.0 * off && "in tune");
+            }
+            song.g[G_KFTYPE] = KF_OFF;                  /* off: a fade, then the dry mix exactly */
+            for (b = 0; b < 8u; b++) {
+                int32_t l2[CTL], r2[CTL];
+                for (j = 0; j < CTL; j++) l2[j] = xl[j], r2[j] = xr[j];
+                kf_process(l2, r2, CTL);
+                if (b >= 4u) for (j = 0; j < CTL; j++) assert(l2[j] == xl[j] && r2[j] == xr[j]);
+            }
+            assert(kf.cur == KF_OFF);
+        }
+    }
+    printf("kglitch: FILTER: the 11 types change the mix, bounded; COMB+ and RESON in tune; OFF exact ok\n");
     printf("kglitch_test: passed\n");
     return 0;
 }

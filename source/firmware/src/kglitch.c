@@ -19,7 +19,7 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.5"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.6"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */
@@ -107,6 +107,7 @@ static uint32_t kg_pct(int32_t g) { return (uint32_t)(song.g[g] < 0 ? 0 : song.g
 static void kg_mutate(uint32_t seed);
 #include "kg_rhythm.c"                          /* DRUMS (the generator) and CHOP (the rhythm's mutations) */
 #include "kg_loop.c"                            /* LOOP: a loop recorded from what plays, sliced, as grains */
+#include "kg_filter.c"                          /* FILTER: LP HP BP NOTCH DRIVE COMB METAL VOWEL PHASER RESONATOR */
 /* an effect's CC: its key's (DRUM DESTROYER n is on SLOOP's white key n: the same CC, the MPC maps keys) */
 static uint32_t kg_cc_of(int32_t fx) { return KG_CC[fx < (int32_t)PUNCH_NFX ? fx : fx - (int32_t)PUNCH_NFX]; }
 static const char *kg_name(int32_t fx) { return fx < (int32_t)PUNCH_NFX ? PUNCH_NAME[fx] : DD_NAME[fx - (int32_t)PUNCH_NFX]; }
@@ -155,6 +156,7 @@ static int32_t kg_route(int32_t key)
         } else
             ph = free_ph += (0xFFFFFFFFu / ((uint32_t)FS / CTL * 2u)) / nb;   /* (stopped: as at 120 BPM) */
         kd_lfo = (int8_t)(song.g[G_KLFO] || song.g[G_KCMODE] ? sine_i(ph) * (int32_t)(mv / 2u) / 32767 : 0);
+        kg_lfo_ph = ph;                               /* (the FILTER's MOVE rides the same LFO) */
     }
     if (song.playing)
         kr_bar();                                     /* CHOP EVERY, CHAOS mode: the rhythm mutates on the bar */

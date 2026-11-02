@@ -146,6 +146,10 @@ enum {                          /* global parameters */
     G_KGPIT,                    /* GRAIN: PITCH -12..+12 */
     G_KPROB,                    /* SEQ: the step's probability, 0..100 % */
     G_KMULTI,                   /* BANK: SOLO (a new effect replaces the last) or MULTI (they stack) */
+    G_KFTYPE,                   /* FILTER: OFF, LP, HP, BP, NOTCH, DRIVE, COMB+, COMB-, METAL, VOWEL, PHASER, RESON */
+    G_KFCUT,                    /* FILTER: FREQ, a MIDI note (the tonal types in tune) */
+    G_KFRES,                    /* FILTER: RESO 0..127 */
+    G_KFMOD,                    /* FILTER: MOVE, the LFO on FREQ 0..100 % (+-3 octaves) */
     G_COUNT
 };
 

@@ -2,7 +2,7 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.5**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.6**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
 ## Essayer : l'émulateur
 
@@ -12,11 +12,12 @@ Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cib
 
 ## Ce que K-GLITCH ajoute à SLOOP
 
-Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : dix pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre).
+Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : onze pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre).
 
 | Page | Rôle | K1 | K2 | K3 | K4 |
 | --- | --- | --- | --- | --- | --- |
 | **DESTROY** | écran principal : les 16 pads | CHAOS | DENSITY | MOVEMENT | CLEAR (retour au son original) |
+| **FILTER** | filtre créatif sur tout le mix | TYPE | FREQ (une note) | RESO | MOVE (LFO) |
 | **DRUMS** | mode 1 : génération de percussions | STYLE | VARIATION | SWING | GO |
 | **CHOP** | mode 2 : découpage / mutation du rythme | DICE | MUTATE | RESTORE | EVERY (auto) |
 | **LOOP** | sampler : enregistre ce qui joue | REC | BARS 1 / 2 / 4 | MODE OFF / LOOP / SLICE / GRAIN | SOURCE : pistes MUTE / MIX |
@@ -37,6 +38,18 @@ Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 e
 
 ### La banque DRUM DESTROYER (16 pads)
 LOOP DESTROY, STUTTER X, GLITCH, SCRATCH, REVERSE X, PITCH MAD, GATE X, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUTTER, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS. L'intensité change leur comportement (ex. LOOP : de 1/2 à 1/32 de mesure ; STUTTER : 2x, 3x, 4x, 8x ; PITCH : escalier, sauts, plongée). Les touches noires gardent les effets de SLOOP.
+
+### Le filtre (FILTER)
+Un filtre sur tout le mix (boucle du sampler comprise, avant son enregistrement), 11 types :
+- **LP, HP, BP, NOTCH** : filtre à variable d'état résonant ;
+- **DRIVE** : saturation puis passe-bas résonant (acide) ;
+- **COMB+ / COMB−** : filtre en peigne accordé sur la note (résonance = réinjection) : anneau aigu ou son creux et nasal ;
+- **METAL** : quatre peignes à rapports inharmoniques, en stéréo : cloches, gongs, tôle ;
+- **VOWEL** : deux formants qui passent de A à E, I, O, U quand la fréquence monte : un filtre qui parle ;
+- **PHASER** : quatre étages déphaseurs avec réinjection, à faire bouger avec MOVE ;
+- **RESONATOR** : trois passe-bandes très étroits sur la note, son octave et sa quinte : le mix sonne en accord.
+
+FREQ se règle en notes (les types accordés restent justes) ; sur la page FILTER, **les touches accordent le filtre** sur leur note (OCT± décale). MOVE fait bouger la fréquence jusqu'à ±3 octaves au rythme du LFO (vitesse = MOVEMENT). L'écran dessine la forme du filtre. Mémoire : 4 Ko pour les peignes.
 
 ### Boutons OCT- / OCT+ sur les pages K-GLITCH
 - **OCT+ = DICE** : sur SEQ, une séquence d'effets ; sur LOOP / SLICE / GRAIN, les slices réorganisées ; ailleurs, le rythme.
@@ -78,6 +91,7 @@ L'état K-GLITCH (la séquence d'effets avec ses deux couches, intensités et pr
 - `source/firmware/src/kg_dd.c` : la banque DRUM DESTROYER (16 effets).
 - `source/firmware/src/kg_rhythm.c` : DRUMS (générateur par style) et CHOP (mutations du rythme).
 - `source/firmware/src/kg_loop.c` : le sampler (LOOP, SLICE, GRAIN).
+- `source/firmware/src/kg_filter.c` : le filtre créatif.
 - `source/firmware/src/eng_glitch.c` : le moteur GLITCH.
 - `source/firmware/src/kg_ui.c` + `kg_font5.h` : les écrans K-GLITCH.
 - `source/firmware/host/emulator.c`, `source/web/emulator.html`, `source/tools/build_emulator.py` : l'émulateur.

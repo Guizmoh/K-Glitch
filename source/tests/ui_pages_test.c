@@ -223,6 +223,28 @@ int main(int argc, char **argv)
         fm1_in.notes = 0; frame();
         check(punch.req == -1, "K-GLITCH DESTROY: the pad up: the mix comes back");
         encs[panel.enc[EN_SELECT]] = 1; frame();
+        check(!strcmp(cur_page()->title, "D-FILTER"), "K-GLITCH: SELECT: FILTER (TYPE, FREQ, RESO, MOVE)");
+        {   /* FILTER: TYPE through the eleven, a key tunes FREQ, a screen of each type */
+            static const char *const FN[12] = {"off", "lp", "hp", "bp", "notch", "drive", "combp", "combn", "metal", "vowel",
+                                               "phaser", "reson"};
+            char nm[32];
+            uint32_t t;
+            fm1_in.notes = 1u << 7; frame();           /* (C4's key: MIDI 60) */
+            fm1_in.notes = 0; frame();
+            check(song.g[G_KFCUT] == 60 && punch.req == -1, "K-GLITCH FILTER: a key tunes FREQ to its note (no effect, no note)");
+            song.g[G_KFRES] = 90, song.g[G_KFMOD] = 40;
+            for (t = 1; t < KF_N; t++) {
+                encs[panel.enc[EN_K1]] = 1; frame();
+                frames(4);
+                snprintf(nm, sizeof nm, "page-k-filter-%s", FN[t]);
+                ui.force = 1; frame(); ppm(nm);
+            }
+            check(song.g[G_KFTYPE] == KF_RESON && kf.cur >= 0, "K-GLITCH FILTER: KNOB 1 through the eleven types");
+            encs[panel.enc[EN_K1]] = -20; frames(6);
+            check(song.g[G_KFTYPE] == KF_OFF && kf.cur == KF_OFF, "K-GLITCH FILTER: OFF: back to the dry mix");
+            song.g[G_KFMOD] = 0;
+        }
+        encs[panel.enc[EN_SELECT]] = 1; frame();
         check(!strcmp(cur_page()->title, "D-DRUMS"), "K-GLITCH: SELECT: DRUMS");
         sig0 = kr_sig();
         song.g[G_KSTYLE] = KS_DRILL;
@@ -359,7 +381,7 @@ int main(int argc, char **argv)
         check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH SETUP: KNOB 1: OUT MPC");
         ui.force = 1; frame(); ppm("page-k-setup");
         encs[panel.enc[EN_K1]] = -1; frame();
-        encs[panel.enc[EN_SELECT]] = -9; frame();
+        encs[panel.enc[EN_SELECT]] = -10; frame();
         check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: back to DESTROY");
         song.g[G_KHOLD] = 1; punch.req = (int8_t)(PUNCH_NFX + DD_FUZZ);
         encs[panel.enc[EN_K4]] = 1; frame();
@@ -1896,7 +1918,7 @@ int main(int argc, char **argv)
         check(mlu.on == 1u && !mlu.pick, "GLO + F#3: MIDI LEARN on");
         open_family(FAM_FX); frame();
         for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */
-        for (j = 0; j < 10u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 10): KNOB 1 = DIST */
+        for (j = 0; j < 11u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 11): KNOB 1 = DIST */
         frames(16);
         ui.force = 1; frame(); ppm("header-learn");
         K(EN_K1, 1);

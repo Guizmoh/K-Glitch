@@ -71,6 +71,8 @@ static const char *const N_KLMODE[] = {"OFF", "LOOP", "SLICE", "GRAIN"};
 static const char *const N_KLSRC[] = {"MUTE", "MIX"};
 static const char *const N_KLRET[] = {"X1", "X2", "X3", "X4", "X8"};
 static const char *const N_KMULTI[] = {"SOLO", "MULTI"};
+static const char *const N_KFTYPE[] = {"OFF", "LP", "HP", "BP", "NOTCH", "DRIVE", "COMB+", "COMB-", "METAL", "VOWEL",
+                                       "PHASR", "RESON"};   /* (kg_filter.c) */
 static const char *const N_KFX[] = {"--", "LOOP4", "LOOP8", "LOOP16", "LOOP32", "STUTT", "REV", "STOP", "HALF", "LOW",
                                     "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBL", "K LOW", "K MID", "K HI",
                                     "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE",
@@ -260,6 +262,10 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KGPIT] = PD("PITCH", F_INT, -12, 12, 0),
     [G_KPROB] = {"PROB", F_INT, 0, 100, 100, 0, "%"},
     [G_KMULTI] = PE("FX", N_KMULTI, 0),
+    [G_KFTYPE] = PE("TYPE", N_KFTYPE, 0),
+    [G_KFCUT] = PD("FREQ", F_NOTE, 24, 120, 84),
+    [G_KFRES] = PD("RESO", F_PCT, 0, 127, 64),
+    [G_KFMOD] = {"MOVE", F_INT, 0, 100, 0, 0, "%"},
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -459,6 +465,7 @@ static const page_t PAGES[] = {
     /* K-GLITCH (kg_ui.c draws them whole): DESTROY the main screen (ALGORITHM: the effect, PRESETS: its INTENSITY, the
      * white keys: the pads), then its three modes DRUMS, CHOP, CHAOS, and the effect sequencer, the bank, the setup */
     {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
+    {"D-FILTER", FAM_FX, SC_GLOBAL, GR_KG, {G_KFTYPE, G_KFCUT, G_KFRES, G_KFMOD}},   /* (kg_filter.c; the keys: FREQ) */
     {"D-DRUMS", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
     {"D-CHOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
     {"D-LOOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */

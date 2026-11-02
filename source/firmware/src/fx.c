@@ -1233,6 +1233,7 @@ static void mix_block(int32_t *out, uint32_t n)
     kl_play(mix_l, mix_r, n);                           /* K-GLITCH LOOP: the loop in, to be destroyed (kg_loop.c) */
     punch_process(mix_l, mix_r, n);
     kd_process(mix_l, mix_r, n);                        /* K-GLITCH: the DRUM DESTROYER bank (kg_dd.c) */
+    kf_process(mix_l, mix_r, n);                        /* K-GLITCH FILTER (kg_filter.c) */
     kl_capture(mix_l, mix_r, n);                        /* K-GLITCH LOOP: what plays, recorded */
     djf_process(mix_l, mix_r, n);
     m1 = (int32_t)song.master_q12;

@@ -2208,6 +2208,10 @@ static void key_down(uint32_t k)
             return;
         }
     }
+    if (layer == LY_PLAY && kg_pads == 4u) {          /* K-GLITCH FILTER: a key tunes FREQ to its note */
+        kg_keynote = (uint8_t)(53u + k + 12u * (uint32_t)(song.octave + 3) - 36u + 1u);
+        return;
+    }
     if (layer == LY_PLAY && kg_pads == 3u) {          /* K-GLITCH LOOP, SLICE, GRAIN: a white key plays a slice */
         int32_t w = punch_key(k);
         if (w >= 0 && w < 16) {
