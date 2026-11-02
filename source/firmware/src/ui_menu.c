@@ -155,7 +155,7 @@ UI_SMALL static void draw_menu(void)
             cv_text(236 - text_w(&FONT_S, cpu1_label()), 119, &FONT_S, cpu1_label(), C_AMB);   /* 2 CORES / 1 CORE (cpu1.c) */
 #endif
             cv_text(4, 132, &FONT_S, "GITHUB.COM/ISOD89/SLOOP-FM1", C_AMB);   /* (the source of this firmware) */
-            cv_text(4, 146, &FONT_S, "FONT: INTER (OFL)", C_DIM);
+            cv_text(4, 146, &FONT_S, "FONT: AFTER CARLITO (OFL)", C_DIM);
             cv_text(4, 159, &FONT_S, "SAMPLES: VERSILIAN (CC0)", C_DIM);
             cv_text(4, 172, &FONT_S, "+ SONIC PI (CC0)", C_DIM);
             cv_text(4, 185, &FONT_S, "PHASE: CRISPYZEBRA (GPL)", C_DIM);

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* The screen fonts (gfx.c cv_text, tools/gen_font.py). K-GLITCH: anti-aliased, from Inter SemiBold, proportional with
- * tabular figures, on SLOOP's rows: S 16 high (the figures 8 wide, as Terminus's), L 32 (figures 16), T 11 (figures 6;
+/* The screen fonts (gfx.c cv_text, tools/gen_font.py). K-GLITCH: anti-aliased, from Carlito Bold (2 bits a pixel), proportional with
+ * tabular figures, on SLOOP's rows: S 16 high (the figures 8 wide, as Terminus's), L 32 (figures 15), T 11 (figures 6;
  * K-GLITCH's small labels). Checked: the cells, the figures' advances (values do not jitter), every advance within
  * reason; every printable character draws something (the
  * space nothing), inside its cell's rows; the anti-aliasing blends with what is under it (white text on orange: no
@@ -22,7 +22,7 @@ static uint32_t lum(uint16_t c) { return ((c >> 11) & 31u) * 2u + ((c >> 5) & 63
 int main(void)
 {
     const felucca_font_t *F[3] = {&FONT_S, &FONT_L, &FONT_T};
-    static const uint32_t H[3] = {16, 32, 11}, ADV[3] = {8, 16, 6};
+    static const uint32_t H[3] = {16, 32, 11}, ADV[3] = {8, 15, 6};
     uint32_t f, c, x, y, okc, oka, okd;
     for (f = 0; f < 3u; f++) {
         const felucca_font_t *ft = F[f];

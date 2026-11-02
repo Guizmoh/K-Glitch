@@ -25,19 +25,20 @@ FONTS = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 # anti-aliasing at their design size and enlarged by an integer factor
 # SLOOP 2.6: Terminus Bold (the same 8 x 16 cell and advances as the regular one: no layout moves), drawn in
 # capitals only (gfx.c glyph); the regular ter-u16n.bdf stays for the web editor's font (gen_webfont.py)
-# K-GLITCH: anti-aliased, from Inter SemiBold (SIL OFL 1.1, assets/fonts/Inter-LICENSE.txt), proportional with
-# tabular figures (values do not jitter), on SLOOP's rows: S 16 high (capitals' baseline at row 12), L 32 drawn at its
-# own size (not S enlarged: no staircase), T 11 (K-GLITCH's small labels, kg_ui.c). KG_FONT=terminus: SLOOP's
-# Terminus again (the flash: S + L + T anti-aliased take about 35 KB, Terminus 5 KB)
+# K-GLITCH: from Carlito Bold (SIL OFL 1.1, assets/fonts/Carlito-LICENSE.txt; rendered to bitmaps: a Modified Version,
+# without the Reserved Font Name), proportional with tabular figures (values do not jitter), on SLOOP's rows: S 16
+# high, L 32 drawn at its own size (no staircase), T 11 (K-GLITCH's small labels, kg_ui.c). Economical: only 32..95
+# (everything is drawn in capitals: gfx.c glyph), 2 bits a pixel (4 levels of anti-aliasing, gfx.c cv_text): about
+# 12 KB for the three. KG_FONT=terminus: SLOOP's Terminus again (5 KB, and T)
 import os
 if os.environ.get("KG_FONT", "").lower() == "terminus":
     SIZES = [("S", "ter-u16b.bdf", 16, 1, True, 32, 255, 0, 0),   # Latin-1 (Hügelton needs the umlaut)
              ("L", "ter-u16b.bdf", 16, 2, True, 32, 95, 0, 0),    # values / titles: digits, signs, capitals
-             ("T", "Inter-SemiBold.otf", 10, 1, False, 32, 126, 11, 8)]   # (K-GLITCH's small labels)
+             ("T", "Carlito-Bold.ttf", 12, 1, False, 32, 95, 11, 9)]   # (K-GLITCH's small labels)
 else:
-    SIZES = [("S", "Inter-SemiBold.otf", 12, 1, False, 32, 126, 16, 12),
-             ("L", "Inter-SemiBold.otf", 24, 1, False, 32, 95, 32, 25),
-             ("T", "Inter-SemiBold.otf", 10, 1, False, 32, 126, 11, 8)]
+    SIZES = [("S", "Carlito-Bold.ttf", 15, 1, False, 32, 95, 16, 13),
+             ("L", "Carlito-Bold.ttf", 29, 1, False, 32, 95, 32, 26),
+             ("T", "Carlito-Bold.ttf", 12, 1, False, 32, 95, 11, 9)]
 PAD = 2
 
 
@@ -174,10 +175,10 @@ def main(out):
                 unp = [15 if data[offs[-1] + i // 8] >> (7 - i % 8) & 1 else 0 for i in range(len(g))]
                 assert unp == g, "1-bit packing must give the glyph back"
                 continue
-            for y in range(h):
-                row = g[y * bw:(y + 1) * bw] + [0]
-                for x in range(0, bw, 2):
-                    data.append((row[x] << 4) | row[x + 1])
+            for y in range(h):                     # (K-GLITCH) 2 bits a pixel: alpha 0..3, 4 pixels a byte, high first
+                row = [(v * 3 + 7) // 15 for v in g[y * bw:(y + 1) * bw]] + [0, 0, 0]
+                for x in range(0, bw, 4):
+                    data.append(row[x] << 6 | row[x + 1] << 4 | row[x + 2] << 2 | row[x + 3])
         assert len(data) < 65536
         lines.append(f"static const uint8_t FONT_{name}_DATA[{len(data)}] = {{")
         for i in range(0, len(data), 24):
@@ -189,7 +190,7 @@ def main(out):
         lines.append(f"static const uint8_t FONT_{name}_BW[{len(glyphs)}] = {{" +
                      ", ".join(str(b) for _, b, _ in glyphs) + "};")
         lines.append(f"static const felucca_font_t FONT_{name} = {{ {h}, {PAD * scale}, {first}, {last}, 0, "
-                     f"FONT_{name}_ADV, FONT_{name}_BW, FONT_{name}_OFF, FONT_{name}_DATA, {1 if one else 0} }};")
+                     f"FONT_{name}_ADV, FONT_{name}_BW, FONT_{name}_OFF, FONT_{name}_DATA, {1 if one else 2} }};")
         lines.append("")
         if scale == 1:
             base = (name, first, h, glyphs, one)

@@ -297,6 +297,17 @@ static int32_t cv_text(int32_t x, int32_t y, const felucca_font_t *f, const char
             x += f->adv[gi];
             continue;
         }
+        if (f->bits == 2u) {                           /* (K-GLITCH) 2 bits a pixel, 4 a byte: alpha 0, 5, 10, 15 */
+            uint32_t b4 = ((w >> f->sh) + 3u) / 4u;
+            for (gy = 0; gy < f->h; gy++)
+                for (gx = 0; gx < w; gx++) {
+                    uint32_t sx = gx >> f->sh, v = (gd[(gy >> f->sh) * b4 + sx / 4u] >> (6u - 2u * (sx & 3u))) & 3u;
+                    if (v)
+                        cv_pblend(x - f->pad + (int32_t)gx, y + (int32_t)gy, c, v * 5u);
+                }
+            x += f->adv[gi];
+            continue;
+        }
         bpr = ((w >> f->sh) + 1u) / 2u;
         for (gy = 0; gy < f->h; gy++)
             for (gx = 0; gx < w; gx++) {

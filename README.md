@@ -55,7 +55,7 @@ Page BANK, K4. **SOLO** : un nouvel effet remplace le précédent. **MULTI** : l
 Nouveau moteur **GLITCH** pour les pistes synthé (PRESETS, famille GLCH) : 6 modes (BYTE = bytebeat, BITS, BLIP, ZAP, DATA, BEND), retrigger interne, sauts de pitch aléatoires reproductibles (SEED), crush, tone. 10 presets : BYTEBEAT, BYTE CRUSH, BIT SNAP, BLIP RAIN, ZAP GUN, DATA DUST, DATA LOOP, BENT SAW, ROBOT, CRASH BUG.
 
 ### Police et écran
-Police lissée **Inter SemiBold** (licence OFL), proportionnelle avec des chiffres de largeur fixe (les valeurs ne sautent pas), sur les mêmes lignes que SLOOP ; elle se fond dans le fond de chaque case (pas de liseré sombre). Elle prend environ 33 Ko de flash au lieu de 5 Ko : à surveiller sur le FM-1 (`KG_FONT=terminus` remet la police d'origine). Dans l'émulateur, l'écran est agrandi en lissé ; le bouton **PIXELS** montre les vrais pixels du FM-1.
+Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec des chiffres de largeur fixe, sur les mêmes lignes que SLOOP. Économe : seuls les caractères affichés (tout est en capitales) et 4 niveaux de lissage (2 bits par pixel) : environ **15 Ko** de flash pour les trois tailles (SLOOP : 5 Ko ; `KG_FONT=terminus` remet sa police). Dans l'émulateur, l'écran est agrandi en lissé ; le bouton **PIXELS** montre les vrais pixels du FM-1.
 
 ### Les trois modes
 - **DRUMS** : écrit 2 mesures dans un style (JUNGLE 170, BREAKCORE 190, DNB 174, DRILL 142, IDM 128, GLITCH 120, HALFTIME 160, FOOTWORK 160) avec son tempo et un kit adapté ; VARIATION le varie aussitôt. Ce motif devient l'**original**.

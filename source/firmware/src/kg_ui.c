@@ -231,11 +231,11 @@ UI_SMALL static void kg_paint(void)
     static const char *const TITLE[KG_NPG] = {"DRUM DESTROYER", "DRUMS", "CHOP / MUTATE", "LOOP SAMPLER", "SLICES",
                                               "GRAINS", "EFFECT SEQUENCE", "THE 16 PADS", "CHAOS", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
-    static const char *const HINT[KG_NPG] = {"ALGO FX | PRESETS INTENS | OCT+ DICE", "K4 GENERATE | KEYS PLAY THE DRUMS",
-                                             "K1 DICE | K2 MUTATE | K3 RESTORE", "K1 REC: NEXT BAR | KEYS: SLICES",
-                                             "KEYS: SLICES | OCT+ DICE | OCT- ORDER", "KEYS: POSITION | CHAOS: SPRAY",
-                                             "KEY STEP | OCT+ DICE | OCT- CLEAR", "KEYS PADS | FX: SOLO OR MULTI",
-                                             "AUTO + LFO + MUTATIONS ON THE BAR", "OUT: FM-1, MPC, BOTH | CH: THE MPC'S"};
+    static const char *const HINT[KG_NPG] = {"ALGO FX / PRESETS INTENS / OCT+ DICE", "K4 GENERATE / KEYS PLAY THE DRUMS",
+                                             "K1 DICE / K2 MUTATE / K3 RESTORE", "K1 REC: NEXT BAR / KEYS: SLICES",
+                                             "KEYS: SLICES / OCT+ DICE / OCT- ORDER", "KEYS: POSITION / CHAOS: SPRAY",
+                                             "KEY STEP / OCT+ DICE / OCT- CLEAR", "KEYS PADS / FX: SOLO OR MULTI",
+                                             "AUTO + LFO + MUTATIONS ON THE BAR", "OUT: FM-1, MPC, BOTH / CH: THE MPC'S"};
     static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
     const page_t *pg = cur_page();
     uint32_t pn = kg_pageno(), i, out = (uint32_t)song.g[G_KTGT] % 3u;
@@ -269,13 +269,13 @@ UI_SMALL static void kg_paint(void)
     else switch (pn) {
     case KP_DESTROY:
         str_cpy(s, DD_NAME[kg_sel % DD_N], sizeof s);
-        str_cpy(s + str_len(s), " | INTENS ", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " / INTENS ", sizeof s - str_len(s));
         kg_u2a(s + str_len(s), kd_int[kg_sel % DD_N]);
         str_cpy(s + str_len(s), "%", sizeof s - str_len(s));
         break;
     case KP_DRUMS:
         str_cpy(s, N_KSTYLE_P[song.g[G_KSTYLE] % KS_N], sizeof s);
-        str_cpy(s + str_len(s), " | KIT ", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " / KIT ", sizeof s - str_len(s));
         str_cpy(s + str_len(s), DRUM_KIT_NAMES[drum_kit()], sizeof s - str_len(s));
         break;
     case KP_CHOP:
@@ -283,7 +283,7 @@ UI_SMALL static void kg_paint(void)
             str_cpy(s, "DICE: ", sizeof s);
             str_cpy(s + str_len(s), kr.recipe, sizeof s - str_len(s));
         } else if (kr.mutated) {
-            str_cpy(s, "MUTATED | ", sizeof s);
+            str_cpy(s, "MUTATED / ", sizeof s);
             kg_u2a(s + str_len(s), kr.changed);
             str_cpy(s + str_len(s), " CHANGES", sizeof s - str_len(s));
         } else
@@ -292,7 +292,7 @@ UI_SMALL static void kg_paint(void)
     case KP_LOOP:
     case KP_SLICE:
     case KP_GRAIN:
-        if (kl.st == KLS_EMPTY) str_cpy(s, "EMPTY | K1 REC: RECORD WHAT PLAYS", sizeof s);
+        if (kl.st == KLS_EMPTY) str_cpy(s, "EMPTY / K1 REC: RECORD WHAT PLAYS", sizeof s);
         else if (kl.st == KLS_ARMED) str_cpy(s, "REC ARMED: ON THE NEXT BAR", sizeof s);
         else if (kl.st == KLS_REC) {
             str_cpy(s, "RECORDING ", sizeof s);
@@ -301,9 +301,9 @@ UI_SMALL static void kg_paint(void)
         } else {
             static const char *const M[4] = {"OFF", "LOOP", "SLICE", "GRAIN"};
             kg_u2a(s, kl.bars);
-            str_cpy(s + str_len(s), kl.bars > 1u ? " BARS | " : " BAR | ", sizeof s - str_len(s));
+            str_cpy(s + str_len(s), kl.bars > 1u ? " BARS / " : " BAR / ", sizeof s - str_len(s));
             str_cpy(s + str_len(s), M[(uint32_t)song.g[G_KLMODE] & 3u], sizeof s - str_len(s));
-            str_cpy(s + str_len(s), song.g[G_KLSRC] ? " | MIX" : " | TRACKS MUTED", sizeof s - str_len(s));
+            str_cpy(s + str_len(s), song.g[G_KLSRC] ? " / MIX" : " / TRACKS MUTED", sizeof s - str_len(s));
         }
         break;
     case KP_SEQ: {
@@ -318,9 +318,9 @@ UI_SMALL static void kg_paint(void)
         kg_u2a(s + str_len(s), kg_seqpage() + 1u);
         str_cpy(s + str_len(s), "/", sizeof s - str_len(s));
         kg_u2a(s + str_len(s), len / 16u);
-        str_cpy(s + str_len(s), " | ", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " / ", sizeof s - str_len(s));
         kg_u2a(s + str_len(s), n);
-        str_cpy(s + str_len(s), " FX | INT ", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " FX / INT ", sizeof s - str_len(s));
         {
             uint32_t si = kg.sint[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS];
             if (si) { kg_u2a(s + str_len(s), si - 1u); str_cpy(s + str_len(s), "%", sizeof s - str_len(s)); }
@@ -329,18 +329,18 @@ UI_SMALL static void kg_paint(void)
         break;
     }
     case KP_BANK:
-        str_cpy(s, song.g[G_KBANK] ? "DRUM DESTROYER | " : "SLOOP FX | ", sizeof s);
+        str_cpy(s, song.g[G_KBANK] ? "DRUM DESTROYER / " : "SLOOP FX / ", sizeof s);
         str_cpy(s + str_len(s), DD_NAME[kg_sel % DD_N], sizeof s - str_len(s));
         break;
     case KP_CHAOS:
-        str_cpy(s, song.g[G_KCMODE] ? "CHAOS MODE ON | " : "CHAOS MODE OFF | ", sizeof s);
+        str_cpy(s, song.g[G_KCMODE] ? "CHAOS MODE ON / " : "CHAOS MODE OFF / ", sizeof s);
         kg_u2a(s + str_len(s), (uint32_t)song.g[G_KCHAOS]);
         str_cpy(s + str_len(s), "%", sizeof s - str_len(s));
         break;
     default:
         str_cpy(s, "OUT ", sizeof s);
         str_cpy(s + str_len(s), OUT[out], sizeof s - str_len(s));
-        str_cpy(s + str_len(s), " | MPC CH ", sizeof s - str_len(s));
+        str_cpy(s + str_len(s), " / MPC CH ", sizeof s - str_len(s));
         if (song.g[G_KCCCH]) kg_u2a(s + str_len(s), (uint32_t)song.g[G_KCCCH]);
         else str_cpy(s + str_len(s), "OFF", sizeof s - str_len(s));
         break;
@@ -433,7 +433,7 @@ UI_SMALL static void kg_paint(void)
                 const param_desc_t *d = page_desc(pg, i, &vp);
                 char t[4] = {'K', (char)('1' + i), ' ', 0};
                 if (!d) continue;
-                if (k[0]) str_cpy(k + str_len(k), form < 2u ? " | " : " ", sizeof k - str_len(k));
+                if (k[0]) str_cpy(k + str_len(k), form < 2u ? " / " : " ", sizeof k - str_len(k));
                 str_cpy(k + str_len(k), form ? t + 1 : t, sizeof k - str_len(k));
                 str_cpy(k + str_len(k), d->label, sizeof k - str_len(k));
             }
