@@ -177,17 +177,39 @@ fun GradientButton(text: String, modifier: Modifier = Modifier, brush: Brush = S
     ) { Text(text.trim(), color = textColor, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.sp) }
 }
 
-/** Bloc d'accueil : l'agent éveillé et le bouton « Commencer la nuit ». */
+/** Bulle de dialogue (pointe vers le haut, vers l'agent). */
 @Composable
-fun BigRoundButton(title: String, subtitle: String, onClick: () -> Unit) {
+fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
+    val cream = Color(0xFFF6EEDC)
+    Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Canvas(Modifier.size(width = 22.dp, height = 11.dp)) {
+            val p = androidx.compose.ui.graphics.Path().apply {
+                moveTo(size.width / 2, 0f); lineTo(size.width, size.height); lineTo(0f, size.height); close()
+            }
+            drawPath(p, cream)
+        }
+        Text(
+            text,
+            Modifier.clip(RoundedCornerShape(18.dp)).background(cream).padding(horizontal = 18.dp, vertical = 12.dp),
+            color = Color(0xFF1E2A55),
+            style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+    }
+}
+
+/** Bloc d'accueil : l'agent éveillé, sa bulle et le bouton « Commencer la nuit ». */
+@Composable
+fun BigRoundButton(title: String, subtitle: String, bubble: String? = null, onClick: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().padding(vertical = 8.dp).tintedGlass().padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PoliceLogo(132.dp, awake = true)
-        Spacer(Modifier.height(14.dp))
-        Text("L'agent est prêt pour la ronde de nuit.", color = TextSoft, style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(6.dp))
+        if (bubble != null) SpeechBubble(bubble)
+        else Text("L'agent est prêt pour la ronde de nuit.", color = TextSoft, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(18.dp))
         GradientButton("$title $subtitle", onClick = onClick)
     }
 }

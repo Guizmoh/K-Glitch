@@ -82,6 +82,9 @@ fun TonightScreen(vm: SomniaViewModel, openSession: (Long) -> Unit) {
     }
     LaunchedEffect(live?.sessionId) { live?.sessionId?.let { vm.applyPendingTags(it) } }
 
+    // L'heure est relue toutes les 30 s pour que la bulle change toute seule.
+    var hour by remember { mutableStateOf(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) }
+    LaunchedEffect(Unit) { while (true) { delay(30_000); hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) } }
     val l = live
     if (l == null) {
         TonightIdle(
@@ -95,6 +98,7 @@ fun TonightScreen(vm: SomniaViewModel, openSession: (Long) -> Unit) {
                 permLauncher.launch(perms.toTypedArray())
             },
             onOpen = openSession,
+            hour = hour,
         )
     } else {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -124,7 +128,7 @@ fun TonightIdle(
         val hello = when (hour) { in 5..11 -> "Bonjour"; in 12..17 -> "Bon après-midi"; else -> "Bonsoir" }
         ScreenHeader("Police du Dodo", "$hello ! On surveille votre nuit ?")
 
-        BigRoundButton("Commencer", "la nuit", onClick = onStart)
+        BigRoundButton("Commencer", "la nuit", bubble = com.somnia.app.ui.AgentLines.forHour(hour), onClick = onStart)
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), modifier = Modifier.fillMaxWidth()) {
             Pill("🎙️ ${CapturePreset.of(settings)?.label ?: "Personnalisé"}", Moon, Modifier.padding(bottom = 6.dp))

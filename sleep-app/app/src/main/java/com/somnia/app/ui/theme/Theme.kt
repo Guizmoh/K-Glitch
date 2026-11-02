@@ -101,7 +101,13 @@ private val shapes = Shapes(
 fun SomniaTheme(content: @Composable () -> Unit) =
     MaterialTheme(colorScheme = scheme, typography = typography, shapes = shapes) {
         // Texte clair par défaut, même hors d'une Surface (fonds dégradés).
-        CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
+        // Texte agrandi d'environ 12 % (en plus du réglage de taille du téléphone).
+        val d = androidx.compose.ui.platform.LocalDensity.current
+        CompositionLocalProvider(
+            LocalContentColor provides scheme.onBackground,
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale * 1.12f),
+            content = content,
+        )
     }
 
 fun SoundType.icon(): androidx.compose.ui.graphics.vector.ImageVector = when (this) {

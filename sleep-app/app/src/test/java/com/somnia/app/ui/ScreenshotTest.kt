@@ -93,4 +93,14 @@ class ScreenshotTest {
             }
         }
     }
+
+    private fun idleAt(h: Int) = shot {
+        TonightIdle(
+            settings = Settings(smartAlarmEnabled = true, alarmHour = 7, alarmMinute = 15),
+            lastNight = null, tags = emptySet(), onToggleTag = {}, onStart = {}, onOpen = {}, hour = h,
+        )
+    }
+    @Test fun bubble01h() = idleAt(1)
+    @Test fun bubble03h() = idleAt(3)
+    @Test fun bubble09h() = idleAt(9)
 }
