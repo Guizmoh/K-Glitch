@@ -2,7 +2,7 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.7**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.8**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
 ## Essayer : l'émulateur
 
@@ -14,7 +14,7 @@ Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cib
 
 ## Ce que K-GLITCH ajoute à SLOOP
 
-Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : onze pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre).
+Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : onze pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre). Ce thème (ardoise, valeurs cyan, accent orange) est aussi celui de **tout le logiciel** : c'est la palette **RIBBON**, par défaut (MENU > COLOR garde les autres).
 
 | Page | Rôle | K1 | K2 | K3 | K4 |
 | --- | --- | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 e
 | **SLICE** | les 16 slices de la boucle | la slice | laquelle elle joue | à l'envers | RETRIG x1 … x8 |
 | **GRAIN** | la boucle en granulaire | POSITION | SIZE | DENSITY | PITCH |
 | **SEQ** | séquenceur / automation d'effets | le pas | son effet | sa probabilité | longueur OFF / 16 / 32 / 64 |
-| **BANK** | les pads | banque DESTROY / SLOOP | INTENSITÉ | HOLD | FX : SOLO / MULTI |
+| **BANK** | les pads | banque SLOOP / DESTROY / BEAT | INTENSITÉ | HOLD | FX : SOLO / MULTI |
 | **CHAOS** | mode 3 : performance imprévisible | MODE | AUTO | LFO | CHAOS |
 | **SETUP** | MPC | OUT : FM-1 / MPC / BOTH | canal MIDI | effacer la séquence | CHOP : DRUMS / ALL |
 
@@ -38,8 +38,43 @@ Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 e
 - **HOLD** verrouille un effet ; **CLEAR** coupe tout (effets, AUTO, CHAOS, séquence) et rend le rythme original.
 - **LFO** : module l'intensité des effets ; **MOVEMENT** règle sa vitesse (4 mesures à 1 temps) et sa profondeur.
 
-### La banque DRUM DESTROYER (16 pads)
-LOOP DESTROY, STUTTER X, GLITCH, SCRATCH, REVERSE X, PITCH MAD, GATE X, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUTTER, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS. L'intensité change leur comportement (ex. LOOP : de 1/2 à 1/32 de mesure ; STUTTER : 2x, 3x, 4x, 8x ; PITCH : escalier, sauts, plongée). Les touches noires gardent les effets de SLOOP.
+### Trois banques d'effets (FX > BANK, K1)
+Les 16 touches blanches jouent l'une des trois banques ; les touches noires gardent toujours les effets de SLOOP.
+
+- **SLOOP** : les effets d'origine (LOOP 1/4, 1/8, 1/16, 1/32, STUTTER, REVERSE, STOP, HALF, filtres, CRUSH, GATE, ECHO…).
+- **DESTROY** (DRUM DESTROYER) : LOOP DESTROY, STUTTER X, GLITCH, SCRATCH, REVERSE X, PITCH MAD, GATE X, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUTTER, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS. L'intensité change leur comportement (ex. LOOP : de 1/2 à 1/32 de mesure ; STUTTER : 2x, 3x, 4x, 8x ; PITCH : escalier, sauts, plongée).
+- **BEAT** (inspirée des effets de déstructuration sur une mesure entière, type Flex Beat) : chaque effet est un **programme sur la mesure**, calé sur le transport, tiré au hasard à chaque mesure pour les randomiseurs :
+  - **RND STUTTER** : stutters (32es, triolets, 64es) sur des croches au hasard ; **RND BAR** : chaque double-croche répétée, rejouée, à l'envers, coupée, ralentie ou pitchée ; **RND FILL** : la fin de la mesure devient un break au hasard ;
+  - **ROLL UP** : le premier temps répété en noires, croches, doubles, triples (+ pitch qui monte) ;
+  - **SKIP 8TH** (contretemps sautés ou doublés), **STAMMER** (3-3-2 : les coups gardés, le reste bégaie) ;
+  - **GATE 8**, **GATE 16**, **GATE 3-3-2**, **GATE RAMP** (de plus en plus rapide) : un gate différent par touche ;
+  - **REV BEAT** (des temps entiers à l'envers), **REV OFFBEAT** (les contretemps à l'envers) ;
+  - **SCRATCH BAR** : un temps de silence, trois scratchs courts du premier temps, puis le premier temps à l'envers ; **SCRATCH CUT** : temps 2 et 4 scratchés au crossfader ;
+  - **TAPE STOP** (la fin de la mesure ralentit jusqu'à l'arrêt), **HALF TIME**.
+
+Toutes s'enregistrent en automation, partent en CC MIDI (le CC de la touche) et sont tirées par AUTO / DICE.
+
+### SCRATCH réaliste
+Le SCRATCH de DESTROY (et ceux de BEAT) imitent une main sur un disque : des gestes qui accélèrent, s'arrêtent et repartent en arrière (baby scratch, chirp, tear, transformer, scribble, drag, scratch arrière selon l'intensité), sous un crossfader, avec une lecture interpolée cubique. Le son suit la vitesse du disque comme une cellule : plus sourd et plus faible quand il ralentit, muet à l'arrêt. Le « disque » est la dernière attaque trouvée dans ce qui vient de jouer (ou le premier temps pour SCRATCH BAR).
+
+### Batteries FM et C64 (piste batterie > EDIT)
+Deux kits synthétisés propres à K-GLITCH, choisis dans la liste des kits (**FM DRUM**, **C64 DRUM**) ou sur la page **KIT**. Piste batterie sélectionnée, **EDIT** ouvre l'édition du son joué en dernier (ou choisi avec SND) :
+
+| Page | K1 | K2 | K3 | K4 |
+| --- | --- | --- | --- | --- |
+| **KIT** | KIT (FM / C64) | SND (le son) | LEVEL | INIT (son d'usine) |
+| **FM TONE** | PITCH | RATIO (0.5 … 11.2) | INDEX | I.DEC (chute de l'index) |
+| **FM BODY** | FDBK | BEND | BTIM | DEC |
+| **FM NOISE** | NOIS | N.DEC | TONE (sombre … brillant) | SND |
+| **C64 WAVE** | ATTK (onde d'attaque) | FRMS (sa durée en trames) | BODY (onde du corps) | PITCH |
+| **C64 MOVE** | SWP (pitch par trame) | PW | PWM | DEC (taux du SID) |
+| **C64 FILT** | FILT (LP / BP / HP) | CUT | RES | SND |
+| **DRUM FX** | SAT : OFF / SOFT / HARD / FOLD | DRIVE | DLY (envoi delay) | REV (envoi reverb) |
+
+- **FM** : une sinusoïde modulée en phase par une autre à RATIO (avec feedback), un index qui retombe (attaque brillante, corps rond), une chute de pitch, du bruit coloré.
+- **C64** : une voix façon SID en trames de 50 Hz, comme les routines de batterie du C64 : une onde d'attaque (bruit, pulse…) pendant quelques trames, puis l'onde du corps qui glisse en pitch et en largeur d'impulsion, les taux de decay du SID, son filtre, des ondes 12 bits et son bruit 23 bits.
+- **Par instrument** : saturation (3 types) + drive, envoi delay et envoi reverb propres à chaque son (ils remplacent les envois globaux de la piste pour ces kits).
+- Chaque réglage s'entend aussitôt (à l'arrêt) ; les deux kits sont sauvegardés en flash avec le reste de K-GLITCH.
 
 ### Le filtre (FILTER)
 Un filtre sur tout le mix (boucle du sampler comprise, avant son enregistrement), 11 types :
@@ -87,19 +122,20 @@ Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec
 Priorité : pad > séquenceur > AUTO.
 
 ### Sauvegarde
-L'état K-GLITCH (la séquence d'effets avec ses deux couches, intensités et probabilités, l'intensité de chaque effet, la carte des slices et tous les réglages K-GLITCH) est **enregistré automatiquement** dans la flash, 3 s après un changement, transport arrêté (jamais pendant la lecture : la flash bloque le code), et **revient au démarrage**. Il est rangé à la fin du secteur des réglages de SLOOP (copies A / B : une coupure pendant l'écriture ne perd rien ; un SLOOP d'origine l'ignore). Le son de la boucle du sampler, lui, reste en RAM. Dans l'émulateur, l'état est gardé dans le navigateur.
+L'état K-GLITCH (la séquence d'effets avec ses deux couches, intensités et probabilités, l'intensité de chaque effet, la carte des slices, les kits FM et C64 et tous les réglages K-GLITCH) est **enregistré automatiquement** dans la flash, 3 s après un changement, transport arrêté (jamais pendant la lecture : la flash bloque le code), et **revient au démarrage**. Il est rangé à la fin du secteur des réglages de SLOOP (copies A / B : une coupure pendant l'écriture ne perd rien ; un SLOOP d'origine l'ignore). Le son de la boucle du sampler, lui, reste en RAM. Dans l'émulateur, l'état est gardé dans le navigateur.
 
 ## Code
 
 - `source/firmware/src/kglitch.c` : le moteur (séquenceur d'effets, AUTO, MUTATE, sortie MPC, break de démo).
-- `source/firmware/src/kg_dd.c` : la banque DRUM DESTROYER (16 effets).
+- `source/firmware/src/kg_dd.c` : la banque DRUM DESTROYER (16 effets) ; `kg_beat.c` : la banque BEAT et le SCRATCH.
+- `source/firmware/src/kg_drum.c` : les kits FM DRUM et C64 DRUM.
 - `source/firmware/src/kg_rhythm.c` : DRUMS (générateur par style) et CHOP (mutations du rythme).
 - `source/firmware/src/kg_loop.c` : le sampler (LOOP, SLICE, GRAIN).
 - `source/firmware/src/kg_filter.c` : le filtre créatif.
 - `source/firmware/src/eng_glitch.c` : le moteur GLITCH.
 - `source/firmware/src/kg_ui.c` + `kg_font5.h` : les écrans K-GLITCH.
 - `source/firmware/host/emulator.c`, `source/web/emulator.html`, `source/tools/build_emulator.py` : l'émulateur.
-- Tests : `source/tests/kglitch_test.c`, et `source/tests/ui_pages_test.c` (captures des écrans).
+- Tests : `source/tests/kglitch_test.c`, `source/tests/kgdrum_test.c`, et `source/tests/ui_pages_test.c` (captures des écrans).
 
 Voir aussi [docs/ROADMAP.md](docs/ROADMAP.md). Les crédits et licences de SLOOP / Felucca sont dans `source/LICENSING.md` et `source/LICENSES/` ; les icônes et l'image du panneau de Felucca restent sous leurs propres conditions (voir `source/LICENSING.md`).
 

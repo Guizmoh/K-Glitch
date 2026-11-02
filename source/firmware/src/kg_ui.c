@@ -618,3 +618,63 @@ UI_SMALL static void kg_screen_draw(void)
     if ((ui.frame & 1u) && !(pn >= KP_LOOP && pn <= KP_GRAIN) && pn != KP_FILTER)   /* (their own views) */
         kg_scope();
 }
+
+/* ---- K-GLITCH DRUMS (kg_drum.c): EDIT on the drum track. Its values are the sound's (the lane last played, SOUND):
+ * shown each frame (kgd_ui_sync), written back when a knob turns (kgd_ui_set, ui_input.c), heard at once (stopped) */
+static const uint8_t KGD_GID[KGD_NK][KGD_NP] = {
+    {G_KMPIT, G_KMRAT, G_KMIDX, G_KMIDEC, G_KMFB, G_KMBEND, G_KMBT, G_KMDEC, G_KMNZ, G_KMNDEC, G_KMNCOL, G_KDLVL},
+    {G_K6PIT, G_K6W1, G_K6FR, G_K6W2, G_K6SWP, G_K6PW, G_K6PWM, G_K6DEC, G_K6FLT, G_K6CUT, G_K6RES, G_KDLVL}};
+static int32_t kgd_model(void)                      /* the drum track's K-GLITCH kit (KGD_*), -1 another kit */
+{
+    int32_t k = TDRUM->p[P_E0] - (int32_t)DRUM_KGFM;
+    return k >= 0 && k < (int32_t)KGD_NK ? k : -1;
+}
+static int32_t kgd_bias(uint32_t m, uint32_t k) { return m == KGD_C64 && (k == C6_SWP || k == C6_PWM) ? 64 : 0; }
+UI_SMALL static void kgd_ui_sync(void)
+{
+    int32_t m = kgd_model();
+    uint32_t k;
+    song.g[G_KDKIT] = (int16_t)(m + 1);
+    song.g[G_KDSND] = (int16_t)(pen_lane & 15u);
+    if (m < 0)
+        return;
+    {
+        const kgd_snd_t *d = kgd_snd((uint32_t)m, pen_lane);
+        for (k = 0; k < KGD_NP; k++)
+            song.g[KGD_GID[m][k]] = (int16_t)(d->p[k] - kgd_bias((uint32_t)m, k));
+        song.g[G_KXSAT] = d->sat, song.g[G_KXDRV] = d->drv, song.g[G_KXDLY] = d->dly, song.g[G_KXREV] = d->rev;
+    }
+}
+UI_SMALL static void kgd_ui_set(uint32_t id, int32_t v)
+{
+    int32_t m = kgd_model();
+    uint32_t k;
+    kgd_snd_t *d;
+    if (id == G_KDKIT) {                              /* the drum track's kit: FM DRUM, C64 DRUM, or back to the 808 */
+        if (v > 0 || m >= 0)
+            TDRUM->p[P_E0] = (int16_t)(v > 0 ? DRUM_KGFM + (uint32_t)v - 1u : DRUM_DEFAULT_KIT);
+        ui.force = 1;
+        return;
+    }
+    if (id == G_KDSND) {
+        pen_lane = (uint8_t)(v & 15);
+        kgd_aud_lane = pen_lane, kgd_aud_vel = 100;   /* (heard: the sound picked) */
+        return;
+    }
+    if (m < 0)
+        return;
+    d = kgd_snd((uint32_t)m, pen_lane);
+    for (k = 0; k < KGD_NP; k++)
+        if (KGD_GID[m][k] == id)
+            d->p[k] = (uint8_t)clamp(v + kgd_bias((uint32_t)m, k), KGD_MIN[m][k], KGD_MAX[m][k]);
+    if (id == G_KXSAT) d->sat = (uint8_t)(v & 3);
+    if (id == G_KXDRV) d->drv = (uint8_t)(v & 127);
+    if (id == G_KXDLY) d->dly = (uint8_t)(v & 127);
+    if (id == G_KXREV) d->rev = (uint8_t)(v & 127);
+    if (id == G_KDINIT) {
+        *d = KGD_DEF[m][pen_lane & 15u];
+        ui_say("INIT ", N_KDSND[pen_lane & 15u]);
+    }
+    if (!song.playing)
+        kgd_aud_lane = pen_lane, kgd_aud_vel = 100;   /* (heard at once) */
+}

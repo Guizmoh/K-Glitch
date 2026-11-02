@@ -457,7 +457,7 @@ static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
         if (kd.g < target) kd.g = kd.g + 512 > target ? target : kd.g + 512;
         else if (kd.g > target) kd.g = kd.g - 512 < target ? target : kd.g - 512;
         if (kd.sub == DD_GATE || kd.sub == DD_BSKIP || dd_isop(kd.sub)) {   /* the gate's gain glides (64 samples) */
-            int32_t open = kd.sub == DD_GATE ? (kd.mask >> kd.i32 & 1u) : dd_isop(kd.sub) ? kd.open : kd.mode != 1u;
+            int32_t open = kd.sub == DD_GATE ? (kd.i32 < 32u && (kd.mask >> kd.i32 & 1u)) : dd_isop(kd.sub) ? kd.open : kd.mode != 1u;
             int32_t gt = open ? 32767 : 0;
             kd.gg += gt > kd.gg ? (gt - kd.gg > 512 ? 512 : gt - kd.gg) : -(kd.gg - gt > 512 ? 512 : kd.gg - gt);
         }

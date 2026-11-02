@@ -17,6 +17,7 @@
 #define DRUM_VOICE_GR(k, g) (g)
 #endif
 #include "drum_synth.c"       /* synthesised kits (DS_KITS) */
+#include "kg_drum.c"          /* K-GLITCH: the FM DRUM and C64 DRUM kits, edited on the device */
 /* P_E0 was unused on the drum track: it holds the kit. 0..4: the GM sample kit and its four
  * treatments (as before: old projects keep their kit), 5..: the synthesised kits, then (2.4) USR1..USR4:
  * a user sample slot as a kit (the web editor's DRUM KIT: a sound per lane, zone lo..hi = the lane's note),
@@ -25,13 +26,15 @@
 #define DRUM_USR (DRUM_SAMPLED + DS_NKITS)
 #define DRUM_PAIR (DRUM_USR + SMP_USER_SLOTS)   /* USR3+4: one kit in two slots (the editor splits it), ~15 s */
 #define DRUM_SYN (DRUM_PAIR + 1u)                /* SLOOP 2.5: SYN1..SYN4, your synthesised kits (drum_synth.c dsu) */
-#define DRUM_KITS (DRUM_SYN + DSU_N)
+#define DRUM_KGFM (DRUM_SYN + DSU_N)              /* K-GLITCH: FM DRUM, C64 DRUM (kg_drum.c) */
+#define DRUM_KITS (DRUM_KGFM + KGD_NK)
 static const char *const DRUM_KIT_NAMES[] = {"ACOUSTIC", "DEEP", "TIGHT", "BRIGHT", "DUST", DS_KIT_NAME_LIST,
                                              "USR1", "USR2", "USR3", "USR4", "USR3+4",
-                                             "SYN1", "SYN2", "SYN3", "SYN4"};
+                                             "SYN1", "SYN2", "SYN3", "SYN4", "FM DRUM", "C64 DRUM"};
 static const char *const DRUM_KIT_STYLES[] = {"STUDIO", "SOFT", "PUNCHY", "BRIGHT", "DUSTY", DS_KIT_STYLE_LIST,
                                               "YOUR KIT", "YOUR KIT", "YOUR KIT", "YOUR KIT", "BIG KIT",
-                                              "YOUR SYNTH", "YOUR SYNTH", "YOUR SYNTH", "YOUR SYNTH"};
+                                              "YOUR SYNTH", "YOUR SYNTH", "YOUR SYNTH", "YOUR SYNTH", "K-GLITCH FM",
+                                              "K-GLITCH SID"};
 _Static_assert(sizeof(DRUM_KIT_NAMES) / sizeof(DRUM_KIT_NAMES[0]) == DRUM_KITS, "a name per kit");
 static uint32_t drum_kit(void) { return (uint32_t)clamp(TDRUM->p[P_E0], 0, DRUM_KITS - 1); }
 #define DRUM_DEFAULT_KIT DRUM_SAMPLED   /* power-on: 808 */
@@ -45,8 +48,11 @@ static struct {
     uint8_t kit[NDRUM];
     int32_t filter[NDRUM], env[NDRUM], denv[NDRUM];   /* denv (2.7): the DECAY's fade, Q15 */
     uint16_t dk[NDRUM];          /* (2.7) its factor a sample (DECAY_K), 0: none */
-    uint8_t synth[NDRUM];        /* the voice plays a synthesised kit (ds[]) */
-    dsv_t ds[NDRUM];
+    uint8_t synth[NDRUM];        /* the voice plays a synthesised kit (ds[]); 2: a K-GLITCH kit (kgv[]) */
+    union {
+        dsv_t ds[NDRUM];
+        union { dsv_t sz; kgb_t v; } kgv[NDRUM];   /* (K-GLITCH: the same memory, voice by voice) */
+    };
     volatile uint16_t hits;      /* bit per lane hit since the UI last looked (pads, key LEDs) */
     volatile uint8_t kick;       /* a kick was hit (fx.c DUCK) */
     int32_t a0, a1;              /* the drum track's mute / solo attenuation over this block (fx.c), Q15, 0 = heard */
@@ -272,11 +278,45 @@ static void __attribute__((noinline)) drum_synth_on(uint32_t note, uint32_t vel,
         ds_on(&drums.ds[i], snd, crush, note, vel, tweak ? drum_tune[ln] * 16 : 0, tweak ? (uint32_t)(drum_dec[ln] + 4) : 4u);
     }
 }
+/* K-GLITCH: a hit on FM DRUM or C64 DRUM (kg_drum.c), as drum_synth_on */
+static void __attribute__((noinline)) drum_kg_on(uint32_t note, uint32_t vel, uint32_t kit)
+{
+    voice_t *v;
+    uint32_t i, ln = lane_of_note(note);
+    if (DRUM_CLICK(note))
+        return;                                     /* (the click's wood block: not a lane) */
+    note = LANE_NOTE[ln];                           /* (its lane's note: the hi-hat choke, the voice its own) */
+    if (note == 42u || note == 44u)
+        for (i = 0; i < NDRUM; i++)
+            if (drums.v[i].active && drums.v[i].note == 46u) {
+                drums.v[i].active = 0;
+                drums.tail += drums.v[i].s[7];
+            }
+    v = drum_pick(note);
+    if (v->active)
+        drums.tail += v->s[7];
+    i = (uint32_t)(v - drums.v);
+    v->note = (uint8_t)note;
+    v->vel = (uint8_t)vel;
+    v->active = 1;
+    v->s[7] = 0;
+    v->age = ++drums.age;
+    drums.synth[i] = 2;
+    drums.kit[i] = (uint8_t)kit;
+    kgd_on(&drums.kgv[i].v, kit - DRUM_KGFM, ln, vel, drum_tune[ln] * 16);
+}
 /* the editor's audition (editor_dsyn.c DSYN_PLAY): queued, played by the audio ISR (drum_audition_poll) */
 static volatile uint8_t dsu_aud_k, dsu_aud_lane, dsu_aud_vel;
+static volatile uint8_t kgd_aud_lane, kgd_aud_vel;   /* K-GLITCH DRUMS: EDIT's sound heard (kg_ui.c kgd_ui_set) */
 static void drum_audition_poll(void)
 {
     uint32_t vel = dsu_aud_vel;
+    if (kgd_aud_vel) {
+        uint32_t kit = drum_kit();
+        if (kit >= DRUM_KGFM)
+            drum_kg_on(LANE_NOTE[kgd_aud_lane & 15u], kgd_aud_vel, kit);
+        kgd_aud_vel = 0;
+    }
     if (!vel)
         return;
     dsu_aud_vel = 0;
@@ -297,6 +337,10 @@ static void drum_on(uint32_t note, uint32_t vel)
         drums.hits |= (uint16_t)(1u << lane_of_note(note));
     if (note == 35u || note == 36u)
         drums.kick = 1;                             /* (DUCK) */
+    if (kit >= DRUM_KGFM) {                         /* K-GLITCH: FM DRUM, C64 DRUM */
+        drum_kg_on(note, vel, kit);
+        return;
+    }
     if (kit >= DRUM_SYN) {                          /* SYN1..SYN4: your synthesised kit */
         const dsu_kit_t *u = dsu_kit(kit - DRUM_SYN);
         drum_synth_on(note, vel, kit, u->s, u->crush, 1);
@@ -398,7 +442,13 @@ static inline void drums_mix(int32_t *ml, int32_t *mr, int32_t *rev, int32_t *dl
         uint32_t m = n < CTL ? n : CTL;             /* (the mix runs in blocks of CTL) */
         if (!v->active || !drums.synth[k])
             continue;
-        if (!ds_render(&drums.ds[k], ds_buf, m))
+        int32_t ks = 0, kd = 0;                     /* (K-GLITCH: the sound's own sends) */
+        if (drums.synth[k] == 2u) {
+            const kgd_snd_t *kq = drums.kgv[k].v.d;
+            ks = send_thr(kq->rev * 258, thr_rev), kd = send_thr(kq->dly * 258, thr_dly);
+            if (!kgd_render(&drums.kgv[k].v, ds_buf, m))
+                v->active = 0;
+        } else if (!ds_render(&drums.ds[k], ds_buf, m))
             v->active = 0;
         for (i = 0; i < m; i++) {
             int32_t s = mulq15(ds_buf[i], mulq15(lvl, 32767 - drums.a0 - (((drums.a1 - drums.a0) * (int32_t)i) >> CTL_LOG2)));
@@ -412,6 +462,11 @@ static inline void drums_mix(int32_t *ml, int32_t *mr, int32_t *rev, int32_t *dl
             }
             ml[i] += (s * DRUM_VOICE_GL(k, gl)) >> 12;
             mr[i] += (s * DRUM_VOICE_GR(k, gr)) >> 12;
+            if (drums.synth[k] == 2u) {             /* (K-GLITCH: the sound's sends, not the track's) */
+                if (ks) rev[i] += mulq15(s, ks);
+                if (kd) dly[i] += mulq15(s, kd);
+                continue;
+            }
             if (send)
                 rev[i] += mulq15(s, send);
             if (dsend)

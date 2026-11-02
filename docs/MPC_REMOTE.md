@@ -17,7 +17,7 @@ Pour que la MPC reçoive aussi le **rythme** (généré par DRUMS, muté par CHO
 - USB-MIDI, canal réglable dans **SETUP > CH** (16 par défaut, OFF : rien n'est envoyé).
 - **127** quand l'effet commence, **0** quand il s'arrête ; un seul effet à la fois. Quitter MPC/BOTH, changer de canal ou STOP remet à 0 ce qui était levé.
 - **CHAOS, DENSITY, MOVEMENT, INTENSITÉ** : CC **85, 86, 87, 89** (0..127) quand ils bougent.
-- Un CC par **touche** : avec la banque DRUM DESTROYER, la touche blanche n envoie le même CC que l'effet SLOOP de cette touche (ex. touche 3 = CC 22, que ce soit ALIAS... ou GLITCH). Sur la MPC, chaque touche du FM-1 = une fonction.
+- Un CC par **touche** : quelle que soit la banque (SLOOP, DESTROY ou BEAT), la touche blanche n envoie le même CC (ex. touche 3 = CC 22, que ce soit LOOP 16, GLITCH ou RND FILL). Sur la MPC, chaque touche du FM-1 = une fonction.
 - Sur la MPC : MIDI Learn de chaque CC vers ce qu'il doit piloter (filtre, pitch, effet, mute…).
 
 ## Table des CC

@@ -80,6 +80,8 @@ $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/punch_test" tests/punch_test.c -l
 run "punch-in FX: 27 effects (11 on the black keys), bounded, dry after release, FX-held keys" "$OUT/punch_test" "$OUT/punch-fx.wav"
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/kglitch_test" tests/kglitch_test.c -lm
 run "K-GLITCH: effect sequencer, AUTO, MUTATE, OUT FM-1 / MPC / BOTH (MIDI CC), no stuck CC" "$OUT/kglitch_test" "$OUT/kglitch.wav"
+$CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/kgdrum_test" tests/kgdrum_test.c -lm
+run "K-GLITCH DRUMS: FM DRUM and C64 DRUM, SAT, the sounds' own sends, values in range, flash record" "$OUT/kgdrum_test" "$OUT/kg-drums.wav"
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/fx251_test" tests/fx251_test.c -lm
 run "after Felucca 1.4 / 1.5: INSERT, filter TYPE, ENV SYNC, LFO 2, drum mutes, MIDI LEARN" "$OUT/fx251_test"
 

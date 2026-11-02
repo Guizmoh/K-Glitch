@@ -1042,7 +1042,7 @@ static void kg_store_poll(void)
 {
 #if FELUCCA_FLASH
     static uint32_t saved_h, t0, booted;
-    kg_blob_t b;
+    static kg_blob_t b;                             /* (2 KB: not on the main loop's stack) */
     uint32_t h;
     if (!flash_ok)
         return;

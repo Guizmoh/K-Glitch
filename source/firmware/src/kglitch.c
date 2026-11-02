@@ -380,8 +380,8 @@ static void kg_clean(void)
 /* ---- the K-GLITCH state kept in flash (storage.c's tail record of the settings object; project.c saves it 3 s after a
  * change, stopped, and takes it back at power-on): the effect lane (both layers, intensities, probabilities), each
  * effect's INTENSITY, the slices' map, and K-GLITCH's settings. The loop's sound itself is RAM only */
-#define ST_TAIL_MAX_KG 1024u                     /* (storage.c ST_TAIL_MAX) */
-#define KG_BLOB_MAGIC 0x334C474Bu                 /* "KGL3" (0.8: the BEAT bank's intensities) */
+#define ST_TAIL_MAX_KG 2048u                     /* (storage.c ST_TAIL_MAX) */
+#define KG_BLOB_MAGIC 0x344C474Bu                 /* "KGL4" (0.8: the BEAT bank's intensities, the drum kits) */
 typedef struct {
     uint32_t magic;
     uint16_t ng, ver;
@@ -389,6 +389,7 @@ typedef struct {
     uint8_t sint[KG_STEPS], prob[KG_STEPS], fnote[KG_STEPS], fmode[KG_STEPS];
     uint8_t dint[DD_N], map[KL_NS], rev[KL_NS], ret[KL_NS];
     int16_t g[G_COUNT - G_KCHAOS];
+    kgd_snd_t kit[KGD_NK][DRUM_LANES];          /* the K-GLITCH drum kits (kg_drum.c) */
     uint32_t sum;
 } kg_blob_t;
 _Static_assert(sizeof(kg_blob_t) <= ST_TAIL_MAX_KG, "the tail record holds it");
@@ -413,6 +414,8 @@ static void kg_pack(kg_blob_t *b)                 /* (main loop) */
     for (i = 0; i < DD_N; i++) b->dint[i] = kd_int[i];
     for (i = 0; i < KL_NS; i++) b->map[i] = kl.map[i], b->rev[i] = kl.rev[i], b->ret[i] = kl.ret[i];
     for (i = 0; i < (uint32_t)(G_COUNT - G_KCHAOS); i++) b->g[i] = song.g[G_KCHAOS + i];
+    (void)kgd_snd(0, 0);                              /* (set up) */
+    memcpy(b->kit, kgd_kit, sizeof b->kit);
     b->sum = kg_blob_sum(b);
 }
 static int kg_unpack(const kg_blob_t *b)          /* 0: taken, -1: not one (nothing changed) */
@@ -440,5 +443,9 @@ static int kg_unpack(const kg_blob_t *b)          /* 0: taken, -1: not one (noth
         if (id == G_KLMODE) continue;              /* (no loop at power-on: its sound is RAM only) */
         song.g[id] = (int16_t)clamp(b->g[i], GP[id].min, GP[id].max);
     }
+    memcpy(kgd_kit, b->kit, sizeof kgd_kit);
+    kgd_ready = 1;
+    for (i = 0; i < KGD_NK * DRUM_LANES; i++)
+        kgd_fix(&kgd_kit[i / DRUM_LANES][i % DRUM_LANES], i / DRUM_LANES);
     return 0;
 }

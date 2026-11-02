@@ -61,7 +61,17 @@ static const char *const N_DASH[] = {"--"};
 static const char *const N_SYNC[] = {"INT", "USB", "TRS"};   /* G_SYNC: the tempo and PLAY / STOP from (seq.c mclk) */
 static const char *const N_GO[] = {"--", "GO"};
 static const char *const N_KOUT[] = {"FM-1", "MPC", "BOTH"};   /* K-GLITCH: where the effects play */
-static const char *const N_KBANK[] = {"SLOOP", "DESTR", "BEAT"};          /* K-GLITCH: the white keys' effects */
+static const char *const N_KBANK[] = {"SLOOP", "DESTR", "BEAT"};
+/* K-GLITCH DRUMS (kg_drum.c) */
+static const char *const N_KDKIT[] = {"OTHER", "FM", "C64"};
+static const char *const N_KDSND[] = {"KICK", "KICK2", "SNARE", "CLAP", "HAT", "OPEN", "PEDAL", "RIM", "SNR 2", "TOM L",
+                                      "TOM H", "CRASH", "RIDE", "SHAKE", "CONGA", "BELL"};
+static const char *const N_KRAT[] = {"0.5", "1", "1.41", "1.5", "2", "2.5", "2.76", "3", "3.5", "4", "5", "5.4", "6", "7",
+                                     "8", "11.2"};
+static const char *const N_KW1[] = {"NOISE", "PULSE", "SAW", "TRI", "OFF"};
+static const char *const N_KW2[] = {"NOISE", "PULSE", "SAW", "TRI"};
+static const char *const N_KFLT6[] = {"OFF", "LP", "BP", "HP"};
+static const char *const N_KSAT[] = {"OFF", "SOFT", "HARD", "FOLD"};          /* K-GLITCH: the white keys' effects */
 static const char *const N_KSTYLE_P[] = {"JUNGLE", "BRKCORE", "DNB", "DRILL", "IDM", "GLITCH", "HALFTM", "FTWORK"};   /* (kg_rhythm.c) */
 static const char *const N_KEVERY[] = {"OFF", "1 BAR", "2 BAR", "4 BAR", "8 BAR"};
 static const char *const N_KCTGT[] = {"DRUMS", "ALL"};
@@ -266,6 +276,36 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KFCUT] = PD("FREQ", F_KNOTE, 24, 120, 84),
     [G_KFRES] = PD("RESO", F_PCT, 0, 127, 64),
     [G_KFMOD] = {"MOVE", F_INT, 0, 100, 0, 0, "%"},
+    [G_KDKIT] = PE("KIT", N_KDKIT, 0),
+    [G_KDSND] = PE("SND", N_KDSND, 0),
+    [G_KDLVL] = PD("LEVEL", F_INT, 0, 127, 100),
+    [G_KDINIT] = PE("INIT", N_GO, 0),
+    [G_KMPIT] = PD("PITCH", F_KNOTE, 24, 108, 36),
+    [G_KMRAT] = PE("RATIO", N_KRAT, 1),
+    [G_KMIDX] = PD("INDEX", F_INT, 0, 127, 40),
+    [G_KMIDEC] = PD("I.DEC", F_INT, 0, 127, 30),
+    [G_KMFB] = PD("FDBK", F_INT, 0, 127, 0),
+    [G_KMBEND] = {"BEND", F_INT, 0, 48, 12, 0, "st"},
+    [G_KMBT] = PD("BTIM", F_INT, 0, 127, 30),
+    [G_KMDEC] = PD("DEC", F_INT, 0, 127, 70),
+    [G_KMNZ] = PD("NOIS", F_INT, 0, 127, 0),
+    [G_KMNDEC] = PD("N.DEC", F_INT, 0, 127, 30),
+    [G_KMNCOL] = PD("TONE", F_INT, 0, 127, 64),
+    [G_K6PIT] = PD("PITCH", F_KNOTE, 24, 120, 60),
+    [G_K6W1] = PE("ATTK", N_KW1, 0),
+    [G_K6FR] = PD("FRMS", F_INT, 0, 15, 1),
+    [G_K6W2] = PE("BODY", N_KW2, 1),
+    [G_K6SWP] = {"SWP", F_INT, -64, 63, 0, 0, 0},
+    [G_K6PW] = PD("PW", F_INT, 0, 127, 64),
+    [G_K6PWM] = {"PWM", F_INT, -64, 63, 0, 0, 0},
+    [G_K6DEC] = PD("DEC", F_INT, 0, 15, 7),
+    [G_K6FLT] = PE("FILT", N_KFLT6, 0),
+    [G_K6CUT] = PD("CUT", F_CUTOFF, 0, 127, 100),
+    [G_K6RES] = PD("RES", F_INT, 0, 15, 0),
+    [G_KXSAT] = PE("SAT", N_KSAT, 0),
+    [G_KXDRV] = PD("DRIVE", F_INT, 0, 127, 0),
+    [G_KXDLY] = PD("DLY", F_INT, 0, 127, 0),
+    [G_KXREV] = PD("REV", F_INT, 0, 127, 0),
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -494,6 +534,15 @@ static const page_t PAGES[] = {
                                                                           * RES KTR (page_shown) */
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
+    /* K-GLITCH DRUMS (kg_drum.c): EDIT on the drum track; the model's pages with its kit (page_shown) */
+    {"KIT", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KDKIT, G_KDSND, G_KDLVL, G_KDINIT}},
+    {"FM TONE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KMPIT, G_KMRAT, G_KMIDX, G_KMIDEC}},
+    {"FM BODY", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KMFB, G_KMBEND, G_KMBT, G_KMDEC}},
+    {"FM NOISE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KMNZ, G_KMNDEC, G_KMNCOL, G_KDSND}},
+    {"C64 WAVE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_K6W1, G_K6FR, G_K6W2, G_K6PIT}},
+    {"C64 MOVE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_K6SWP, G_K6PW, G_K6PWM, G_K6DEC}},
+    {"C64 FILT", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_K6FLT, G_K6CUT, G_K6RES, G_KDSND}},
+    {"DRUM FX", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KXSAT, G_KXDRV, G_KXDLY, G_KXREV}},
     {"GLOBAL", FAM_GLO, SC_GLOBAL, GR_NONE, {G_BPM, G_SWING, G_CLOCK, G_TUNE}},
     {"MASTER", FAM_GLO, SC_GLOBAL, GR_NONE, {G_DUST, G_DUCK, G_FILT, G_ROLL}},
     {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_SYNC, G_ROUTE, G_INFO}},
@@ -537,7 +586,22 @@ static int page_for_drum(const page_t *pg)
 /* a page the buttons and SELECT reach on the selected track: EDIT > FILTER (TYPE) on ANALOG only */
 static int page_shown(const page_t *pg)
 {
-    return pg->id[0] != P_FTYPE || (!is_drum(TSEL) && TSEL->eng_req % NENGINES == 0u);
+    uint32_t id = pg->id[0];
+    if (pg->scope == SC_GLOBAL && id >= G_KDKIT && id <= G_KXREV) {   /* K-GLITCH DRUMS: the drum track, its kit's pages */
+        int32_t kit = TDRUM->p[P_E0] - (int32_t)DRUM_KGFM;
+        if (!is_drum(TSEL))
+            return 0;
+        if (id == G_KDKIT)
+            return 1;
+        if (id >= G_KMPIT && id <= G_KMNCOL)
+            return kit == KGD_FM;
+        if (id >= G_K6PIT && id <= G_K6RES)
+            return kit == KGD_C64;
+        return kit == KGD_FM || kit == KGD_C64;
+    }
+    if (pg->fam == FAM_EDIT && is_drum(TSEL))        /* (K-GLITCH: EDIT on the drum track: its kit, not "DRUM TRACK") */
+        return 0;
+    return id != P_FTYPE || (!is_drum(TSEL) && TSEL->eng_req % NENGINES == 0u);
 }
 
 static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **valp)

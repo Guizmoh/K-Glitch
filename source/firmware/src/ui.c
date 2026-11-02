@@ -100,13 +100,17 @@ static void layer_screen_draw(void);                            /* ui_layers.c *
 static void hold_screen_draw(void);
 static uint8_t layer_shown;
 
-UI_SMALL static uint32_t page_first(uint32_t fam)
+UI_SMALL static uint32_t page_first(uint32_t fam)   /* (K-GLITCH: the first the selected track has: EDIT on the drums) */
 {
-    uint32_t i;
+    uint32_t i, f = NPAGES;
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == fam)
-            return i;
-    return 0;
+        if (PAGES[i].fam == fam) {
+            if (page_shown(&PAGES[i]))
+                return i;
+            if (f == NPAGES)
+                f = i;
+        }
+    return f < NPAGES ? f : 0;
 }
 
 /* transient message in the top bar: a + b */

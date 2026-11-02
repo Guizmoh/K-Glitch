@@ -1141,6 +1141,7 @@ UI_SMALL static void ui_draw(void)
         ui.force = 0;
         return;
     }
+    kgd_ui_sync();                                      /* (K-GLITCH DRUMS: EDIT's values, the sound's) */
     if (!ui.home && cur_page()->graph == GR_KG) {      /* K-GLITCH: its own screen (kg_ui.c) */
         kg_screen_draw();
         ui_timers();

@@ -206,6 +206,7 @@ void emu_enc(uint32_t e, int32_t steps)            /* e: EN_SELECT .. EN_K4 (pan
 void emu_master(uint32_t q12) { song.master_q12 = (uint16_t)(q12 > 8192u ? 8192u : q12); }
 uint32_t emu_led(uint32_t c) { return c < 16u ? (uint32_t)fm1_led[c] | (uint32_t)fm1_led_dim[c] << 8 : 0u; }
 uint32_t emu_playing(void) { return song.playing; }
+uint32_t emu_bank(void) { return (uint32_t)song.g[G_KBANK]; }   /* FX > BANK: the white keys' names */
 void emu_keys(uint32_t mask) { fm1_in.notes = mask & 0x7FFFFFFu; }   /* the 27 keys held, bit k = key k */
 void emu_midi_in(uint32_t st, uint32_t d1, uint32_t d2)   /* a MIDI message from the page (Web MIDI: the MPC's clock) */
 {

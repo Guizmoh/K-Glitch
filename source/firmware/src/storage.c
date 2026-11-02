@@ -173,11 +173,11 @@ UI_SMALL static int st_side_load(uint32_t obj, void *dst, uint32_t n)
 }
 
 /* K-GLITCH: a tail record at the end of a copy's sector (ST_TAIL_OFF..), past any payload this firmware writes there
- * (the settings object's ends at 1.85 KB: project.c checks it): programmed with the payload, before the header, so it is committed with
+ * (the settings object's ends at 1.85 KB, before 2 KB: project.c checks it): programmed with the payload, before the header, so it is committed with
  * its copy (A / B, as the side record). It checks itself (kglitch.c kg_unpack: a magic and a checksum); an older SLOOP
  * never reads it, and its save leaves it erased */
-#define ST_TAIL_OFF (ST_SECTOR - 1024u)
-#define ST_TAIL_MAX 1024u
+#define ST_TAIL_OFF (ST_SECTOR - 2048u)             /* (0.8: 2 KB, with the K-GLITCH drum kits) */
+#define ST_TAIL_MAX 2048u
 static const void *st_tail;                         /* the next save's tail record (0: none) */
 static uint32_t st_tail_len;
 UI_SMALL static int st_tail_load(uint32_t obj, void *dst, uint32_t n)

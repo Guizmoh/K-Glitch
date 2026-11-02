@@ -204,6 +204,53 @@ int main(int argc, char **argv)
         TDRUM->p[P_TFLT] = f0; song.sel = (uint8_t)sel; ui.lock_par = lp; go_home(); frame();
     }
     open_family(FAM_EDIT); ui.force = 1; frame(); ppm("page-edit");
+    {   /* K-GLITCH DRUMS: EDIT on the drum track: KIT, then the kit's pages (FM, C64), DRUM FX; a knob writes the sound */
+        uint32_t sel = song.sel, j, n;
+        int16_t kit0 = TDRUM->p[P_E0];
+        uint8_t lane0 = pen_lane;
+        song.sel = TRK_DRUM; go_home(); frame();
+        open_family(FAM_EDIT); ui.force = 1; frame();
+        check(!strcmp(cur_page()->title, "KIT"), "K-GLITCH DRUMS: EDIT on the drum track opens KIT (not DRUM TRACK)");
+        pen_lane = 2;
+        encs[panel.enc[EN_K1]] = 1; frames(2);
+        check(TDRUM->p[P_E0] == (int16_t)DRUM_KGFM && song.g[G_KDKIT] == 1 && song.g[G_KDSND] == 2,
+              "K-GLITCH DRUMS: KIT FM: the drum track plays FM DRUM; SOUND the lane last played");
+        ui.force = 1; frame(); ppm("page-kg-kit");
+        for (n = 0; n < 6u; n++) { encs[panel.enc[EN_SELECT]] = 1; frames(2); }
+        check(!strcmp(cur_page()->title, "DRUM FX"), "K-GLITCH DRUMS: SELECT: FM TONE, FM BODY, FM NOISE, DRUM FX (no C64 page)");
+        encs[panel.enc[EN_K1]] = 2; frames(2);
+        check(kgd_kit[KGD_FM][2].sat == KS_HARD && song.g[G_KXSAT] == KS_HARD, "K-GLITCH DRUMS: DRUM FX SAT writes the sound's");
+        ui.force = 1; frame(); ppm("page-kg-fx");
+        encs[panel.enc[EN_SELECT]] = -3; frames(2);
+        check(!strcmp(cur_page()->title, "FM TONE"), "K-GLITCH DRUMS: back to FM TONE");
+        encs[panel.enc[EN_K3]] = 9; frames(2);
+        check(kgd_kit[KGD_FM][2].p[FM_IDX] == KGD_DEF[KGD_FM][2].p[FM_IDX] + 9, "K-GLITCH DRUMS: FM TONE INDEX writes the sound's");
+        ui.force = 1; frame(); ppm("page-kg-fm");
+        pen_lane = 0; frames(2);
+        check(song.g[G_KMIDX] == KGD_DEF[KGD_FM][0].p[FM_IDX], "K-GLITCH DRUMS: another lane: its own values shown");
+        pen_lane = 2;
+        for (j = 0; j < NPAGES && strcmp(PAGES[j].title, "KIT"); j++) {}
+        ui.page = (uint8_t)j; ui.force = 1; frame();
+        encs[panel.enc[EN_K4]] = 1; frames(2);
+        check(!memcmp(&kgd_kit[KGD_FM][2], &KGD_DEF[KGD_FM][2], sizeof(kgd_snd_t)), "K-GLITCH DRUMS: INIT: the factory sound back");
+        encs[panel.enc[EN_K1]] = 1; frames(2);
+        check(TDRUM->p[P_E0] == (int16_t)(DRUM_KGFM + 1u), "K-GLITCH DRUMS: KIT C64");
+        encs[panel.enc[EN_SELECT]] = 1; frames(2);
+        check(!strcmp(cur_page()->title, "C64 WAVE"), "K-GLITCH DRUMS: the C64's pages with its kit");
+        encs[panel.enc[EN_K1]] = 2; frames(2);
+        check(kgd_kit[KGD_C64][2].p[C6_W1] == KGD_DEF[KGD_C64][2].p[C6_W1] + 2, "K-GLITCH DRUMS: C64 WAVE 1 writes the sound's");
+        ui.force = 1; frame(); ppm("page-kg-c64");
+        encs[panel.enc[EN_SELECT]] = 1; frames(2);
+        encs[panel.enc[EN_K1]] = -10; frames(2);
+        check(song.g[G_K6SWP] == (int16_t)KGD_DEF[KGD_C64][2].p[C6_SWP] - 64 - 10 &&
+              kgd_kit[KGD_C64][2].p[C6_SWP] == KGD_DEF[KGD_C64][2].p[C6_SWP] - 10, "K-GLITCH DRUMS: C64 MOVE SWEEP (signed)");
+        ui.force = 1; frame(); ppm("page-kg-c64move");
+        kgd_defaults();
+        song.sel = 0; go_home(); frame();
+        open_family(FAM_EDIT); frame();
+        check(strcmp(cur_page()->title, "KIT") && strcmp(cur_page()->title, "FM TONE"), "K-GLITCH DRUMS: a synth track's EDIT: no KIT page");
+        TDRUM->p[P_E0] = kit0; pen_lane = lane0; song.sel = (uint8_t)sel; go_home(); frame();
+    }
     open_family(FAM_FX); ui.force = 1; frame(); ppm("page-destroy");   /* K-GLITCH: FX opens on DESTROY */
     check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: FX opens on DESTROY (CHAOS DENS MOVE CLEAR)");
     {   /* K-GLITCH: the main screen (pads, ALGORITHM, PRESETS), DRUMS, CHOP, SEQ, BANK, CHAOS, SETUP, CLEAR */

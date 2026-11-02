@@ -151,6 +151,13 @@ enum {                          /* global parameters */
     G_KFCUT,                    /* FILTER: FREQ, a MIDI note (the tonal types in tune) */
     G_KFRES,                    /* FILTER: RESO 0..127 */
     G_KFMOD,                    /* FILTER: MOVE, the LFO on FREQ 0..100 % (+-3 octaves) */
+    /* K-GLITCH DRUMS (kg_drum.c): EDIT on the drum track. KIT the drum track's kit (FM DRUM, C64 DRUM), SOUND the lane
+     * edited (pen_lane: the last played), its LEVEL, INIT (back to the factory sound); then the model's values and
+     * DRUM FX, all mirrors of the sound's (kg_ui.c kgd_ui_sync / kgd_ui_set) */
+    G_KDKIT, G_KDSND, G_KDLVL, G_KDINIT,
+    G_KMPIT, G_KMRAT, G_KMIDX, G_KMIDEC, G_KMFB, G_KMBEND, G_KMBT, G_KMDEC, G_KMNZ, G_KMNDEC, G_KMNCOL,   /* FM */
+    G_K6PIT, G_K6W1, G_K6FR, G_K6W2, G_K6SWP, G_K6PW, G_K6PWM, G_K6DEC, G_K6FLT, G_K6CUT, G_K6RES,       /* C64 */
+    G_KXSAT, G_KXDRV, G_KXDLY, G_KXREV,                                                                    /* DRUM FX */
     G_COUNT
 };
 
