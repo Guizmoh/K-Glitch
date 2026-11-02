@@ -12,6 +12,8 @@ import com.somnia.app.ui.screens.TonightIdle
 import com.somnia.app.ui.screens.TonightLive
 import com.somnia.app.ui.theme.SomniaTheme
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
@@ -127,6 +129,37 @@ class ScreenshotTest {
                     androidx.compose.foundation.layout.Row {
                         for (f in listOf(0, 1, 2)) androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1) {
                             com.somnia.app.ui.components.PoliceLogoFrame(120.dp, 0f, 0.4f, sleepFrame = f)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun waveform() = paparazzi.snapshot {
+        val f = java.io.File.createTempFile("wave", ".wav")
+        val pcm = ShortArray(16000 * 6) { i ->
+            val t = i / 16000.0
+            val env = if (t in 2.0..3.2) 0.6 else if (t in 4.5..4.8) 0.9 else 0.05
+            (kotlin.math.sin(i * 0.07) * env * 20000 * (0.6 + 0.4 * kotlin.math.sin(t * 9))).toInt().toShort()
+        }
+        com.somnia.app.audio.WavFile.write(f, pcm)
+        val peaks = com.somnia.app.ui.components.wavePeaks(f.absolutePath)
+        SomniaTheme {
+            NightBackground {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(20.dp)) {
+                    com.somnia.app.ui.components.GlassCard(title = "Paroles · 02:14", icon = "🗣️") {
+                        androidx.compose.foundation.Canvas(androidx.compose.ui.Modifier.fillMaxWidth().height(64.dp)) {
+                            val n = peaks.size; val slot = size.width / n
+                            for (i in 0 until n) {
+                                val h = peaks[i] * size.height * 0.92f
+                                drawRoundRect(
+                                    if (i < n * 0.45f) androidx.compose.ui.graphics.Color(0xFF8DB8E0) else androidx.compose.ui.graphics.Color(0x528DB8E0),
+                                    androidx.compose.ui.geometry.Offset(i * slot, size.height / 2 - h / 2),
+                                    androidx.compose.ui.geometry.Size(slot * 0.62f, h),
+                                    androidx.compose.ui.geometry.CornerRadius(slot * 0.31f),
+                                )
+                            }
                         }
                     }
                 }

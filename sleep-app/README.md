@@ -120,3 +120,4 @@ app/src/main/java/com/somnia/app/
 ## Crédits
 - Police du titre et du gros bouton : **Fredoka** (Google Fonts), licence SIL Open Font License 1.1.
 - Modèle de reconnaissance des sons : **YAMNet** (Google), licence Apache 2.0.
+- Police du gros bouton : **Quicksand** (Google Fonts), licence SIL Open Font License 1.1.

@@ -25,6 +25,11 @@ val CozyFont = androidx.compose.ui.text.font.FontFamily(
     androidx.compose.ui.text.font.Font(com.somnia.app.R.font.fredoka_bold, FontWeight.Bold),
 )
 
+/** Police du gros bouton (Quicksand, licence OFL), différente de celle du titre. */
+val ButtonFont = androidx.compose.ui.text.font.FontFamily(
+    androidx.compose.ui.text.font.Font(com.somnia.app.R.font.quicksand_bold, FontWeight.Bold),
+)
+
 // Palette « Police du Dodo » : bleu nuit, bleu police, or de l'insigne.
 val Night = Color(0xFF213268)
 val NightMid = Color(0xFF283C7A)

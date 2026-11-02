@@ -56,6 +56,14 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             }
             Spacer(Modifier.height(10.dp))
             Text(preset?.description ?: "Réglage personnalisé (voir « Réglage fin » ci-dessous).", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+            var testing2 by remember { androidx.compose.runtime.mutableStateOf(false) }
+            OutlinedButton(onClick = { testing2 = true }, enabled = live == null, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Text("Tester : qu'est-ce qui déclenche ?")
+            }
+            if (testing2) MicTestDialog(
+                s, com.somnia.app.audio.MicChoice.label(ctx, s.micSource),
+                onSensitivity = { v -> vm.updateSettings { it.copy(micSensitivity = v) } },
+            ) { testing2 = false }
         }
 
         GlassCard(title = "Micro utilisé", icon = "🎙️") {
@@ -77,8 +85,11 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             OutlinedButton(
                 onClick = { testing = true }, enabled = live == null,
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            ) { Text(if (live == null) "Tester ce micro" else "Test impossible pendant la nuit") }
-            if (testing) MicTestDialog(s.micSource, com.somnia.app.audio.MicChoice.label(ctx, s.micSource)) { testing = false }
+            ) { Text(if (live == null) "Tester le micro et la détection" else "Test impossible pendant la nuit") }
+            if (testing) MicTestDialog(
+                s, com.somnia.app.audio.MicChoice.label(ctx, s.micSource),
+                onSensitivity = { v -> vm.updateSettings { it.copy(micSensitivity = v) } },
+            ) { testing = false }
             Text(
                 "Branchez un micro externe (casque, USB) puis revenez ici pour le voir apparaître. Selon le téléphone, certains choix utilisent le micro le plus proche disponible.",
                 style = MaterialTheme.typography.bodySmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp),

@@ -74,6 +74,8 @@ import com.somnia.app.ui.theme.TextSoft
 import com.somnia.app.ui.theme.color
 import com.somnia.app.ui.theme.icon
 import androidx.compose.material.icons.rounded.SentimentDissatisfied
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SentimentNeutral
 import androidx.compose.material.icons.rounded.SentimentSatisfied
 import androidx.compose.material.icons.rounded.SentimentVeryDissatisfied
@@ -264,17 +266,52 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
                 )
             }
         }
-        val playing = AudioPlayer.playingPath
-        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            e.audioPath?.let { p -> PlayButton(if (playing == p) "Stop" else "▶ Écouter", playing == p, t.color()) { AudioPlayer.toggle(p) } }
-            e.enhancedPath?.let { p -> PlayButton(if (playing == p) "Stop" else "Voix isolée", playing == p, t.color()) { AudioPlayer.toggle(p) } }
-            if (e.audioPath == null) Text("Audio non conservé", style = MaterialTheme.typography.labelSmall, color = TextSoft)
-            Spacer(Modifier.weight(1f))
+        // Choix de la version écoutée : original ou voix isolée
+        var useEnhanced by remember(e.id) { mutableStateOf(false) }
+        val path = if (useEnhanced) e.enhancedPath ?: e.audioPath else e.audioPath
+        if (path != null) {
+            val current = AudioPlayer.playingPath == path
+            val progress = if (current && AudioPlayer.durationMs > 0) AudioPlayer.positionMs / AudioPlayer.durationMs.toFloat() else 0f
+            com.somnia.app.ui.components.Waveform(
+                path, progress, t.color(),
+                onSeek = { f ->
+                    val total = if (current) AudioPlayer.durationMs else e.durationMs.toInt()
+                    AudioPlayer.play(path, (f * total).toInt())
+                },
+                modifier = Modifier.padding(top = 12.dp),
+            )
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(44.dp).clip(CircleShape).background(t.color()).clickable { AudioPlayer.toggle(path) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (current && AudioPlayer.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        if (current && AudioPlayer.isPlaying) "Pause" else "Écouter", tint = Color(0xFF13305F),
+                    )
+                }
+                Text(
+                    "  " + fmtMs(if (current) AudioPlayer.positionMs else 0) + " / " + fmtMs(if (current && AudioPlayer.durationMs > 0) AudioPlayer.durationMs else e.durationMs.toInt()),
+                    style = MaterialTheme.typography.labelLarge, color = TextSoft,
+                )
+                Spacer(Modifier.weight(1f))
+                if (e.enhancedPath != null) {
+                    ToggleChip(if (useEnhanced) "Voix isolée" else "Original", useEnhanced) {
+                        AudioPlayer.stop(); useEnhanced = !useEnhanced
+                    }
+                }
+            }
+        } else {
+            Text("Audio non conservé", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             (e.enhancedPath ?: e.audioPath)?.let { p -> IconButton(onClick = { onShare(p) }) { Icon(Icons.Filled.Share, "Partager", tint = TextSoft) } }
             IconButton(onClick = { vm.deleteEvent(e) }) { Icon(Icons.Filled.Delete, "Supprimer", tint = TextSoft) }
         }
     }
 }
+
+private fun fmtMs(ms: Int): String = "%d:%02d".format(ms / 60_000, (ms / 1000) % 60)
 
 @Composable
 private fun PlayButton(text: String, active: Boolean, color: Color, onClick: () -> Unit) {

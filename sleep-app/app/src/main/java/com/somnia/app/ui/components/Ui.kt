@@ -218,7 +218,7 @@ fun BigRoundButton(title: String, subtitle: String, bubble: String? = null, onCl
     }
 }
 
-/** Gros bouton « en relief » rose bleuté : tranche foncée dessous, reflet dessus, s'enfonce quand on appuie. */
+/** Gros bouton « en relief » bleu ciel : tranche foncée dessous, reflet dessus, s'enfonce quand on appuie. */
 @Composable
 fun Button3D(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -228,13 +228,13 @@ fun Button3D(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(modifier.fillMaxWidth().height(80.dp)) {
         // ombre portée + tranche du bouton
         Box(Modifier.fillMaxWidth().height(73.dp).align(Alignment.BottomCenter)
-            .androidxShadow(shape).clip(shape).background(Color(0xFF8A6FB5)))
+            .androidxShadow(shape).clip(shape).background(Color(0xFF4C79BF)))
         // face du bouton
         Box(
             Modifier.fillMaxWidth().height(73.dp).padding(bottom = 0.dp)
                 .androidxOffset(7.dp - depth)
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFFF0C4E6), Color(0xFFC9AEEE))))
+                .background(Brush.verticalGradient(listOf(Color(0xFFB9DDF8), Color(0xFF86B8EC))))
                 .border(1.5.dp, Brush.verticalGradient(listOf(Color(0xCCFFFFFF), Color(0x00FFFFFF))), shape)
                 .clickable(src, indication = null, onClick = onClick),
             contentAlignment = Alignment.Center,
@@ -242,7 +242,7 @@ fun Button3D(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
             // reflet en haut
             Box(Modifier.align(Alignment.TopCenter).padding(horizontal = 18.dp, vertical = 6.dp).fillMaxWidth().height(18.dp)
                 .clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF)))))
-            Text(text, color = Color(0xFF2B2050), fontSize = 27.sp, fontFamily = com.somnia.app.ui.theme.CozyFont, fontWeight = FontWeight.Bold)
+            Text(text, color = Color(0xFF13305F), fontSize = 27.sp, fontFamily = com.somnia.app.ui.theme.ButtonFont, fontWeight = FontWeight.Bold)
         }
     }
 }

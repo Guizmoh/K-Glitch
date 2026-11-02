@@ -12,7 +12,7 @@ data class Settings(
     /** Personnage : 0 = l'agent moustachu, 1 = le gros agent au nez rouge. */
     val agent: Int = 0,
     /** Sensibilité globale du micro 1..10 (écart nécessaire avec le bruit de fond). */
-    val micSensitivity: Int = 6,
+    val micSensitivity: Int = 4,
     /** Intensité de captation par catégorie 1..10 (10 = capte les moindres signes). */
     val typeSensitivity: Map<SoundType, Int> = defaultTypeSensitivity(),
     /** Catégories dont on conserve l'enregistrement audio. */
@@ -43,22 +43,22 @@ data class Settings(
 
     companion object {
         fun defaultTypeSensitivity(): Map<SoundType, Int> = mapOf(
-            SoundType.SPEECH to 7,
-            SoundType.NIGHT_TERROR to 7,
-            SoundType.SNORING to 7,
-            SoundType.LAUGHTER to 7,
-            SoundType.CRYING to 7,
-            SoundType.COUGH to 5,
-            SoundType.BREATHING to 5,
+            SoundType.SPEECH to 6,
+            SoundType.NIGHT_TERROR to 6,
+            SoundType.SNORING to 6,
+            SoundType.LAUGHTER to 6,
+            SoundType.CRYING to 6,
+            SoundType.COUGH to 4,
+            SoundType.BREATHING to 4,
         )
     }
 }
 
 /** Modes de captation prêts à l'emploi (réglage simple). */
 enum class CapturePreset(val label: String, val description: String, val mic: Int, val types: Int) {
-    DISCREET("Discret", "Seulement les sons forts et nets : cris, paroles distinctes, gros ronflements.", 4, 4),
-    NORMAL("Normal", "Le bon équilibre pour la plupart des chambres.", 6, 7),
-    ALL("Tout capter", "Chuchotements, petits rires, légers sanglots… plus de fausses alertes.", 9, 9);
+    DISCREET("Discret", "Seulement les sons forts et nets : cris, paroles distinctes, gros ronflements.", 2, 4),
+    NORMAL("Normal", "Le bon équilibre : ignore les draps qui bougent et les petits bruits.", 4, 6),
+    ALL("Tout capter", "Chuchotements, petits rires, légers sanglots… plus de fausses alertes.", 8, 9);
 
     fun apply(s: Settings) = s.copy(
         micSensitivity = mic,
