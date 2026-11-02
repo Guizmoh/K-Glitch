@@ -27,3 +27,7 @@ This project is not affiliated with or endorsed by M-VAVE or Hügelton Instrumen
 - [Upstream KAWA licensing and credits](LICENSING.md)
 - FM-1 CPU, free RAM, interrupt headroom, package identity and physical controls still need confirmation.
 - AUTO GLITCH is implemented in source but has not been compiled for the FM-1 or validated on hardware.
+
+## Somnia (Android sleep tracking app)
+
+The [`sleep-app/`](sleep-app/README.md) directory contains a separate Android sleep tracking app. It records the sounds that stand out from the background noise, recognises speech, screams, snoring, laughter and crying, and can isolate the voice from ambient noise. It is independent of the K-GLITCH firmware.
