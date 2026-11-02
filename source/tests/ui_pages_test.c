@@ -179,8 +179,8 @@ int main(int argc, char **argv)
     }
     panel = PANEL_DEFAULT;
     layers_init();
-    settings.palette = 4;
-    palette_set(4);
+    settings.palette = PAL_RIBBON;                     /* (K-GLITCH's default look) */
+    palette_set(PAL_RIBBON);
     host_tracks_init();
     song.g[G_KBANK] = 0;                               /* (K-GLITCH: SLOOP's punch tests run on SLOOP's bank) */
     for (i = 0; i < NPART; i++) { set_engine_of(&trk[i], TRK_DEF[i][0]); apply_preset_to(&trk[i], TRK_DEF[i][1]); trk[i].engine = trk[i].eng_req; }
@@ -1078,13 +1078,13 @@ int main(int argc, char **argv)
             check(ok, "theme (2.7): checked (CRC, the strongest step and the accent standing out from the background, a "
                       "printable name); a first-beta THM1 taken with an accent");
             ui.menu = 1; ui.menu_sel = MI_COLOR; ui.force = 1; frame();
-            settings.palette = 4; theme_on = 0; palette_set(4);
-            encs[panel.enc[EN_K1]] = 1; frame();      /* no theme: MONO -> GREEN, as ever */
+            settings.palette = NPALETTES - 1u; theme_on = 0; palette_set(NPALETTES - 1u);
+            encs[panel.enc[EN_K1]] = 1; frame();      /* no theme: the last (RIBBON) -> GREEN, as ever */
             ok = settings.palette == 0u && !theme_on;
-            settings.palette = 4; palette_set(4);
+            settings.palette = NPALETTES - 1u; palette_set(NPALETTES - 1u);
             theme = th; theme_valid = 1;
-            encs[panel.enc[EN_K1]] = 1; frame();      /* MONO -> SUNSET */
-            ok &= theme_on && settings.palette == 4u && pal[0] == th.c[0] && pal[4] == th.c[4] && C_BLACK == th.bg &&
+            encs[panel.enc[EN_K1]] = 1; frame();      /* RIBBON -> SUNSET */
+            ok &= theme_on && settings.palette == NPALETTES - 1u && pal[0] == th.c[0] && pal[4] == th.c[4] && C_BLACK == th.bg &&
                   TE_COL[0] == th.trk[0] && TE_COL[3] == th.trk[3] && TE_MID[1] == rgb565_scale(th.trk[1], 2, 3) &&
                   (lights_word() >> 30 & 1u) && !strcmp(mi_value(MI_COLOR, &(uint16_t){0}), "SUNSET") && C_WHITE == th.hi;
             ui.force = 1; frame(); ppm("menu-theme");

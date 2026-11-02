@@ -42,6 +42,8 @@ static uint16_t pal_hi = 0xFFFFu;        /* the accent: white unless a theme say
 typedef struct {
     const char *name;
     uint16_t c[5];
+    uint16_t bg, hi;                         /* K-GLITCH: a background and an accent (0, 0: black and white, as SLOOP's) */
+    uint16_t trk[4];                         /* .. the tracks' colours (0: SLOOP's) */
 } palette_t;
 static const palette_t PALETTES[] = {
     {"GREEN", {RGB(0, 40, 12), RGB(0, 84, 30), RGB(16, 140, 54), RGB(56, 200, 92), RGB(120, 255, 146)}},
@@ -49,7 +51,11 @@ static const palette_t PALETTES[] = {
     {"CYAN", {RGB(0, 30, 50), RGB(0, 62, 96), RGB(16, 112, 160), RGB(56, 172, 222), RGB(140, 222, 255)}},
     {"RED", {RGB(52, 8, 8), RGB(100, 18, 14), RGB(170, 36, 26), RGB(226, 64, 48), RGB(255, 112, 92)}},
     {"MONO", {RGB(40, 40, 40), RGB(80, 80, 80), RGB(130, 130, 130), RGB(186, 186, 186), RGB(226, 226, 226)}},
+    /* K-GLITCH (the default): K-WASUB's "ribbon classic", as its FX pages: slate, cyan values, an orange accent */
+    {"RIBBON", {RGB(52, 66, 82), RGB(78, 94, 112), RGB(138, 150, 164), RGB(206, 214, 222), RGB(84, 200, 240)},
+     RGB(20, 27, 35), RGB(255, 136, 56), {RGB(84, 168, 255), RGB(72, 214, 140), RGB(255, 196, 48), RGB(255, 108, 64)}},
 };
+#define PAL_RIBBON 5u
 #define NPALETTES (sizeof(PALETTES) / sizeof(PALETTES[0]))
 static uint16_t pal[5];
 #define C_LINE pal[0]                /* 1 rules, separators */
@@ -168,14 +174,15 @@ static void palette_set(uint32_t i)              /* built-in palette i, or the t
     int cu = theme_shown();
     for (k = 0; k < 5u; k++)
         pal[k] = cu ? theme.c[k] : PALETTES[i % NPALETTES].c[k];
-    pal_bg = cu ? theme.bg : 0u;
-    pal_hi = cu ? theme.hi : 0xFFFFu;
+    pal_bg = cu ? theme.bg : PALETTES[i % NPALETTES].bg;
+    pal_hi = cu ? theme.hi : PALETTES[i % NPALETTES].hi ? PALETTES[i % NPALETTES].hi : 0xFFFFu;
     for (k = 0; k < 4u; k++)
         te_g[k] = te_gray(TE_G_DEF[k]);
     for (k = 0; k < 4u; k++) {
-        TE_COL[k] = cu ? theme.trk[k] : TE_COL_DEF[k];
-        TE_MID[k] = cu ? rgb565_scale(theme.trk[k], 2u, 3u) : TE_MID_DEF[k];
-        TE_DIM[k] = cu ? rgb565_scale(theme.trk[k], 1u, 3u) : TE_DIM_DEF[k];
+        uint16_t pt = PALETTES[i % NPALETTES].trk[k];
+        TE_COL[k] = cu ? theme.trk[k] : pt ? pt : TE_COL_DEF[k];
+        TE_MID[k] = cu ? rgb565_scale(theme.trk[k], 2u, 3u) : pt ? rgb565_scale(pt, 2u, 3u) : TE_MID_DEF[k];
+        TE_DIM[k] = cu ? rgb565_scale(theme.trk[k], 1u, 3u) : pt ? rgb565_scale(pt, 1u, 3u) : TE_DIM_DEF[k];
     }
 }
 

@@ -146,7 +146,7 @@ UI_SMALL static void settings_init(void)
 {
     if (settings.magic != SETTINGS_MAGIC || settings.palette >= NPALETTES) {
         settings.magic = SETTINGS_MAGIC;
-        settings.palette = 4;                  /* MONO (default) */
+        settings.palette = PAL_RIBBON;         /* K-GLITCH: RIBBON (default; SLOOP's: MONO) */
         settings.lowcut = 0;
         settings.zoom = 0;                     /* large readout of the touched value: off */
     }
