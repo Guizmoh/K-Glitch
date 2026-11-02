@@ -43,6 +43,9 @@ class AlarmActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SomniaTheme {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.somnia.app.ui.LocalAgent provides com.somnia.app.data.SettingsRepository.get(this).settings.value.agent,
+                ) {
                 AlarmScreen(
                     onStop = {
                         AlarmScheduler.stopRinging(this)
@@ -54,6 +57,7 @@ class AlarmActivity : ComponentActivity() {
                         finish()
                     },
                 )
+                }
             }
         }
     }

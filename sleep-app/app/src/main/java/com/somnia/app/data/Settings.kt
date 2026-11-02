@@ -7,6 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 data class Settings(
+    /** Micro utilisé (voir MicChoice) : auto, bottom, back, all, dev:ID. */
+    val micSource: String = "auto",
+    /** Personnage : 0 = l'agent moustachu, 1 = le gros agent au nez rouge. */
+    val agent: Int = 0,
     /** Sensibilité globale du micro 1..10 (écart nécessaire avec le bruit de fond). */
     val micSensitivity: Int = 6,
     /** Intensité de captation par catégorie 1..10 (10 = capte les moindres signes). */
@@ -84,6 +88,8 @@ class SettingsRepository private constructor(context: Context) {
         val d = Settings()
         return Settings(
             micSensitivity = prefs.getInt("mic", d.micSensitivity),
+            micSource = prefs.getString("mic_source", d.micSource) ?: "auto",
+            agent = prefs.getInt("agent", d.agent),
             typeSensitivity = SoundType.entries.filter { it != SoundType.NOISE }.associateWith {
                 prefs.getInt("sens_${it.name}", d.typeSensitivity[it] ?: 5)
             },
@@ -106,6 +112,8 @@ class SettingsRepository private constructor(context: Context) {
     private fun save(s: Settings) {
         prefs.edit().apply {
             putInt("mic", s.micSensitivity)
+            putString("mic_source", s.micSource)
+            putInt("agent", s.agent)
             s.typeSensitivity.forEach { (t, v) -> putInt("sens_${t.name}", v) }
             putStringSet("record", s.recordTypes.map { it.name }.toSet())
             putBoolean("enhance", s.enhanceVoice)

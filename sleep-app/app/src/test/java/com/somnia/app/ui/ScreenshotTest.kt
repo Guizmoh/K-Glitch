@@ -103,4 +103,23 @@ class ScreenshotTest {
     @Test fun bubble01h() = idleAt(1)
     @Test fun bubble03h() = idleAt(3)
     @Test fun bubble09h() = idleAt(9)
+
+    @Test fun agent2() = paparazzi.snapshot {
+        SomniaTheme {
+            androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1) {
+                NightBackground {
+                    TonightIdle(
+                        settings = Settings(), lastNight = null, tags = emptySet(), onToggleTag = {}, onStart = {}, onOpen = {}, hour = 15,
+                    )
+                }
+            }
+        }
+    }
+    @Test fun agent2Asleep() = paparazzi.snapshot {
+        SomniaTheme {
+            androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1) {
+                NightBackground { com.somnia.app.ui.components.PoliceLogoFrame(300.dp, 0f, 0.4f) }
+            }
+        }
+    }
 }

@@ -71,9 +71,29 @@ Image.open(os.path.join(ROOT, "art/affiche.webp")).convert("RGB").save(
     os.path.join(OUT, "splash_poster.webp"), "WEBP", quality=82)
 print("images générées")
 
+# Agent n°2 (le gros au nez rouge). La tête éveillée est devant la tête endormie :
+# on les sépare par une frontière qui dépend de la hauteur, puis on retire les « ! » et les « Zzz ».
+bound = np.select([yy < 300, yy < 345, yy < 370, yy < 460], [771, 773, 787, 800], 806)
+a2 = rgba.copy()
+a2[..., 3] = np.where((xx >= 516) & (xx < bound) & ~((xx > 750) & (yy < 262)), a2[..., 3], 0)
+save_square(keep_largest(a2), os.path.join(OUT, "agent2_awake.png"))
+s2 = rgba.copy()
+rgb = s2[..., :3].astype(int)
+bright = rgb.min(axis=2) > 140
+dark = rgb.max(axis=2) < 70
+zone = (xx > 935) & (yy < 258)
+zzz = zone & (bright | dark | (yy < 222))
+right = np.where(yy < 330, 1038, 1046)
+s2[..., 3] = np.where((xx >= bound) & (xx < right) & ~((yy < 262) & (xx < 835)) & ~zzz, s2[..., 3], 0)
+save_square(keep_largest(s2), os.path.join(OUT, "agent2_asleep.png"))
+
 # Icône de l'appli (premier plan adaptatif 432 px, tête dans la zone sûre)
 head = Image.open(os.path.join(OUT, "agent_awake.png"))
 fg = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
 h = head.resize((300, 300), Image.LANCZOS)
 fg.alpha_composite(h, (66, 70))
 fg.save(os.path.join(OUT, "ic_launcher_agent.png"), optimize=True)
+head = Image.open(os.path.join(OUT, "agent2_awake.png"))
+fg = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
+fg.alpha_composite(head.resize((300, 300), Image.LANCZOS), (66, 70))
+fg.save(os.path.join(OUT, "ic_launcher_agent2.png"), optimize=True)

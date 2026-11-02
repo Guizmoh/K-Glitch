@@ -157,29 +157,28 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
     @SuppressLint("MissingPermission")
     private fun startAudio() {
         audioJob = lifecycleScope.launch(Dispatchers.IO) {
-            val sr = AudioMath.SAMPLE_RATE
-            val minBuf = AudioRecord.getMinBufferSize(sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-            val bufSize = maxOf(minBuf, AudioMath.FRAME * 8)
-            // VOICE_RECOGNITION : flux « brut » sans réduction de bruit automatique,
-            // indispensable pour entendre ronflements et chuchotements.
-            val record = runCatching {
-                AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize)
-            }.getOrNull()?.takeIf { it.state == AudioRecord.STATE_INITIALIZED }
-                ?: AudioRecord(MediaRecorder.AudioSource.MIC, sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize)
+            val rec = com.somnia.app.audio.MicChoice.open(this@SleepTrackingService, settings.micSource)
+            val record = rec.record
+            val raw = ShortArray(AudioMath.FRAME * rec.channels)
             val detector = SoundEventDetector().apply { setSensitivity(settings.micSensitivity) }
             val delayUntil = startTime + settings.startDelayMin * 60_000L
             record.startRecording()
             var uiTick = 0
             try {
                 while (isActive && !stopping) {
-                    val frame = ShortArray(AudioMath.FRAME)
                     var read = 0
-                    while (read < frame.size && isActive) {
-                        val r = record.read(frame, read, frame.size - read)
+                    while (read < raw.size && isActive) {
+                        val r = record.read(raw, read, raw.size - read)
                         if (r < 0) break
                         read += r
                     }
-                    if (read < frame.size) continue
+                    if (read < raw.size) continue
+                    // « Tous les micros » : on mélange les canaux en un seul
+                    val frame = if (rec.channels == 1) raw.copyOf() else ShortArray(AudioMath.FRAME) { i ->
+                        var sum = 0
+                        for (c in 0 until rec.channels) sum += raw[i * rec.channels + c]
+                        (sum / rec.channels).toShort()
+                    }
                     val ev = detector.process(frame)
                     synchronized(lock) {
                         minuteDbSum += detector.lastDb; minuteDbCount++

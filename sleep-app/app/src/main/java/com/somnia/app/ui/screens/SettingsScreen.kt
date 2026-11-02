@@ -18,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +55,27 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             }
             Spacer(Modifier.height(10.dp))
             Text(preset?.description ?: "Réglage personnalisé (voir « Réglage fin » ci-dessous).", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+        }
+
+        GlassCard(title = "Micro utilisé", icon = "🎙️") {
+            val options = remember { com.somnia.app.audio.MicChoice.BUILT_IN + com.somnia.app.audio.MicChoice.externalOptions(ctx) }
+            options.forEach { o ->
+                Row(
+                    Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clickable { vm.updateSettings { it.copy(micSource = o.key) } }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.material3.RadioButton(s.micSource == o.key, { vm.updateSettings { it.copy(micSource = o.key) } })
+                    Column {
+                        Text(o.label, style = MaterialTheme.typography.titleSmall)
+                        Text(o.detail, style = MaterialTheme.typography.bodySmall, color = TextSoft)
+                    }
+                }
+            }
+            Text(
+                "Branchez un micro externe (casque, USB) puis revenez ici pour le voir apparaître. Selon le téléphone, certains choix utilisent le micro le plus proche disponible.",
+                style = MaterialTheme.typography.bodySmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp),
+            )
         }
 
         ExpandableCard("Réglage fin par type de son", "🎛️", "Sensibilité du micro et intensité pour rires, pleurs, cris…") {
@@ -112,6 +136,7 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
 
         GlassCard(title = "Aide", icon = "👮", onClick = onTutorial) {
             Text("Revoir le tuto de l'agent du Dodo", color = TextSoft)
+            Text("Astuce : touchez la tête du policier pour changer de personnage (aussi sur l'icône du téléphone).", color = TextSoft, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
         }
 
         GlassCard(title = "Mes données", icon = "🔒") {

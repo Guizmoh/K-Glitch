@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -66,6 +67,11 @@ class MainActivity : ComponentActivity() {
                 )
                 val prefs = remember { getSharedPreferences("app", MODE_PRIVATE) }
                 var showTuto by remember { mutableStateOf(!prefs.getBoolean("tuto_done", false)) }
+                val settingsNow by vm.settings.collectAsState()
+                androidx.compose.runtime.CompositionLocalProvider(
+                    LocalAgent provides settingsNow.agent,
+                    LocalAgentToggle provides { Agent.next(this@MainActivity) },
+                ) {
                 var showSplash by remember { mutableStateOf(savedInstanceState == null) }
                 androidx.compose.animation.AnimatedVisibility(
                     showSplash, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut(),
@@ -118,7 +124,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
+                            }
+}
         }
     }
 

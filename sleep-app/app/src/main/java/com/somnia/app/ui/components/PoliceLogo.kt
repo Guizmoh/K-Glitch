@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
@@ -58,7 +59,9 @@ fun PoliceLogo(size: Dp = 56.dp, awake: Boolean = true, animated: Boolean = true
 @Composable
 fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Float? = null) {
     val awake = open > 0.5f
-    Box(Modifier.size(size)) {
+    val agent = com.somnia.app.ui.LocalAgent.current
+    val toggle = com.somnia.app.ui.LocalAgentToggle.current
+    Box(Modifier.size(size).then(if (toggle != null) Modifier.clip(CircleShape).clickable(onClickLabel = "Changer de policier") { toggle() } else Modifier)) {
         Box(
             Modifier.size(size).clip(CircleShape)
                 .background(Brush.radialGradient(listOf(Color(0xFF4A62C2), Color(0xFF1C2A5E))))
@@ -66,7 +69,14 @@ fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Fl
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painterResource(if (awake) R.drawable.agent_awake else R.drawable.agent_asleep),
+                painterResource(
+                    when {
+                        agent == 1 && awake -> R.drawable.agent2_awake
+                        agent == 1 -> R.drawable.agent2_asleep
+                        awake -> R.drawable.agent_awake
+                        else -> R.drawable.agent_asleep
+                    },
+                ),
                 if (awake) "L'agent du Dodo, éveillé" else "L'agent du Dodo endormi",
                 Modifier.size(size).scale(1.18f).offset(y = size * 0.06f)
                     .rotate(awakeBob?.let { sin(it * 2 * Math.PI).toFloat() * 2f } ?: 0f),
