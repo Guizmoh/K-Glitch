@@ -126,7 +126,7 @@ fun TonightIdle(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val hello = when (hour) { in 5..11 -> "Bonjour"; in 12..17 -> "Bon après-midi"; else -> "Bonsoir" }
-        ScreenHeader("Police du Dodo", "$hello ! On surveille votre nuit ?")
+        com.somnia.app.ui.components.AppTitle("$hello ! On surveille votre nuit ?")
 
         BigRoundButton("Commencer", "la nuit", bubble = com.somnia.app.ui.AgentLines.forHour(hour), onClick = onStart)
 

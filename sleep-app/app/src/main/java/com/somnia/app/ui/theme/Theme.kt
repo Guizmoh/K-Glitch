@@ -19,6 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.somnia.app.audio.SoundType
 
+/** Police ronde et chaleureuse (Fredoka, licence OFL) pour le titre et le gros bouton. */
+val CozyFont = androidx.compose.ui.text.font.FontFamily(
+    androidx.compose.ui.text.font.Font(com.somnia.app.R.font.fredoka_semibold, FontWeight.SemiBold),
+    androidx.compose.ui.text.font.Font(com.somnia.app.R.font.fredoka_bold, FontWeight.Bold),
+)
+
 // Palette « Police du Dodo » : bleu nuit, bleu police, or de l'insigne.
 val Night = Color(0xFF213268)
 val NightMid = Color(0xFF283C7A)

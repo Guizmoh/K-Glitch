@@ -116,3 +116,7 @@ app/src/main/java/com/somnia/app/
 └── ui/         écrans Compose (Ce soir, Mes nuits, rapport, Tendances, Réglages),
                 thème « nuit » et composants (cartes, orbe, logo du policier)
 ```
+
+## Crédits
+- Police du titre et du gros bouton : **Fredoka** (Google Fonts), licence SIL Open Font License 1.1.
+- Modèle de reconnaissance des sons : **YAMNet** (Google), licence Apache 2.0.

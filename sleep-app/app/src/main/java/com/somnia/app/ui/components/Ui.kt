@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -181,7 +184,7 @@ fun GradientButton(text: String, modifier: Modifier = Modifier, brush: Brush = S
 @Composable
 fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
     // Bleu clair à 50 % d'opacité : se fond dans le décor, reste lisible
-    val cream = Color(0xFFC9D8F7).copy(alpha = 0.5f)
+    val cream = Color(0xFFD9E4FA).copy(alpha = 0.66f)
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Canvas(Modifier.size(width = 22.dp, height = 11.dp)) {
             val p = androidx.compose.ui.graphics.Path().apply {
@@ -211,7 +214,54 @@ fun BigRoundButton(title: String, subtitle: String, bubble: String? = null, onCl
         if (bubble != null) SpeechBubble(bubble)
         else Text("L'agent est prêt pour la ronde de nuit.", color = TextSoft, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(18.dp))
-        GradientButton("$title $subtitle", onClick = onClick)
+        Button3D("$title $subtitle", onClick = onClick)
+    }
+}
+
+/** Gros bouton « en relief » rose bleuté : tranche foncée dessous, reflet dessus, s'enfonce quand on appuie. */
+@Composable
+fun Button3D(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by src.collectIsPressedAsState()
+    val depth = if (pressed) 2.dp else 7.dp
+    val shape = RoundedCornerShape(22.dp)
+    Box(modifier.fillMaxWidth().height(80.dp)) {
+        // ombre portée + tranche du bouton
+        Box(Modifier.fillMaxWidth().height(73.dp).align(Alignment.BottomCenter)
+            .androidxShadow(shape).clip(shape).background(Color(0xFF8A6FB5)))
+        // face du bouton
+        Box(
+            Modifier.fillMaxWidth().height(73.dp).padding(bottom = 0.dp)
+                .androidxOffset(7.dp - depth)
+                .clip(shape)
+                .background(Brush.verticalGradient(listOf(Color(0xFFF0C4E6), Color(0xFFC9AEEE))))
+                .border(1.5.dp, Brush.verticalGradient(listOf(Color(0xCCFFFFFF), Color(0x00FFFFFF))), shape)
+                .clickable(src, indication = null, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            // reflet en haut
+            Box(Modifier.align(Alignment.TopCenter).padding(horizontal = 18.dp, vertical = 6.dp).fillMaxWidth().height(18.dp)
+                .clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF)))))
+            Text(text, color = Color(0xFF2B2050), fontSize = 27.sp, fontFamily = com.somnia.app.ui.theme.CozyFont, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+private fun Modifier.androidxOffset(y: Dp) = this.then(Modifier.padding(top = 0.dp)).then(androidx.compose.ui.Modifier.offset(y = y))
+private fun Modifier.androidxShadow(shape: androidx.compose.ui.graphics.Shape) =
+    this.then(androidx.compose.ui.Modifier.shadow(10.dp, shape, ambientColor = Color(0xFF0A1030), spotColor = Color(0xFF0A1030)))
+
+/** Grand titre de l'appli, police ronde et chaleureuse. */
+@Composable
+fun AppTitle(subtitle: String? = null) {
+    Column(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "Police du Dodo",
+            fontFamily = com.somnia.app.ui.theme.CozyFont, fontWeight = FontWeight.Bold, fontSize = 38.sp,
+            color = Color(0xFFF8EFDC),
+            style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color(0x660A1030), Offset(0f, 4f), 8f)),
+        )
+        if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = TextSoft)
     }
 }
 
