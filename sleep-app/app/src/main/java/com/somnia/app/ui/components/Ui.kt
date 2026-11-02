@@ -70,24 +70,11 @@ fun NightBackground(content: @Composable BoxScope.() -> Unit) {
     }
 }
 
-/** Logo : le policier du sommeil dans un médaillon. */
-@Composable
-fun PoliceLogo(size: Dp = 56.dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape)
-            .background(Brush.linearGradient(listOf(Color(0xFF3B4FC4), Color(0xFF141A4A))))
-            .border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(painterResource(R.drawable.ic_launcher_foreground), "Police du Dodo", Modifier.size(size * 1.75f).offset(y = size * 0.04f))
-    }
-}
-
 /** En-tête de page : logo optionnel, titre et sous-titre. */
 @Composable
-fun ScreenHeader(title: String, subtitle: String? = null, logo: Boolean = false, trailing: @Composable RowScope.() -> Unit = {}) {
+fun ScreenHeader(title: String, subtitle: String? = null, logo: Boolean = false, logoAwake: Boolean = true, trailing: @Composable RowScope.() -> Unit = {}) {
     Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (logo) { PoliceLogo(48.dp); Spacer(Modifier.width(12.dp)) }
+        if (logo) { PoliceLogo(52.dp, awake = logoAwake); Spacer(Modifier.width(12.dp)) }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.headlineSmall)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = TextSoft)
@@ -194,7 +181,8 @@ fun BigRoundButton(title: String, subtitle: String, onClick: () -> Unit) {
             Modifier.size(170.dp).clip(CircleShape).background(PrimaryBrush).clickable(onClick = onClick),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
         ) {
-            Text("🌙", fontSize = 40.sp)
+            PoliceLogo(68.dp, awake = true)
+            Spacer(Modifier.height(4.dp))
             Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
             Text(subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
         }

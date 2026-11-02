@@ -1,12 +1,16 @@
 # Police du Dodo 👮💤 : suivi du sommeil pour Android
 
-![Écrans de Police du Dodo : accueil, historique des nuits, réveil](docs/apercu.png)
+![Démonstration animée : tuto puis écrans de l'application](docs/demo.gif)
+
+![Le logo : éveillé (avant la nuit, au réveil) et endormi (pendant la nuit)](docs/logos.png)
 
 Police du Dodo écoute la nuit et **n'enregistre que les sons qui se détachent du bruit de fond** : paroles, cris (terreurs nocturnes), ronflements, rires, pleurs, toux. Chaque son est reconnu automatiquement et peut être réécouté le matin, avec une version « voix isolée » pour mieux comprendre ce qui a été dit.
 
 Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 
 ## Interface
+- **Tuto au premier lancement** : un diaporama animé de 6 pages (« Bonsoir ma Moman », j'écoute la nuit, je reconnais les sons, voix isolée, comment ça marche, réveil). On peut le revoir depuis Réglages > Aide.
+- **Logo animé** : le policier a les yeux ouverts et cligne avant la nuit. Il s'endort avec des « Zzz » pendant la surveillance, puis ouvre les yeux quand le réveil sonne. Le dessin vient d'une seule source, `tools/logo.py`, qui génère l'icône et le code.
 - **Ce soir** : un gros bouton « Commencer », le rapport du soir (caféine, sport, écrans…) et le score de la dernière nuit.
 - **Pendant la nuit** : un orbe qui réagit au son, le temps écoulé et le nombre de sons relevés par type. Le bouton « Je me réveille » arrête la surveillance.
 - **Mes nuits** : un rapport par nuit avec le score, les chiffres clés, les phases et la liste des sons à réécouter (original ou voix isolée).
@@ -55,6 +59,13 @@ Pour les paroles, cris, rires et pleurs, l'application crée une deuxième versi
 - **Conseils** selon la nuit : nuit courte, ronflements fréquents (avec une mention de l'apnée du sommeil), chambre bruyante…
 - **Gestion des fichiers** : suppression automatique après N jours, sauf pour les favoris ❤. Les sons peuvent être partagés et toutes les données exportées en CSV.
 - Option de **délai avant détection**, pour laisser le temps de s'endormir.
+
+## Installer sur un téléphone Android
+1. Sur le téléphone, ouvrir l'APK (`police-du-dodo-debug.apk`) reçu par mail, Drive ou WhatsApp, ou téléchargé.
+2. Android demande d'autoriser l'installation depuis cette application (Chrome, Fichiers, Gmail…) : **Paramètres > Autoriser cette source**, puis revenir en arrière.
+3. Appuyer sur **Installer**. Si Play Protect prévient que l'appli est inconnue : **Plus de détails > Installer quand même**.
+4. Ouvrir **Police du Dodo**, suivre le tuto, puis accepter le **micro** et les **notifications**.
+5. Conseillé : **Paramètres > Applis > Police du Dodo > Batterie > Non restreinte**, pour que l'écoute ne soit pas coupée la nuit.
 
 ## Compiler
 

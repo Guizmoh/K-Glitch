@@ -15,6 +15,10 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.somnia.app.ui.screens.OnboardingScreen
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -56,7 +60,13 @@ class MainActivity : ComponentActivity() {
                     Triple("stats", "Tendances", "📈"),
                     Triple("settings", "Réglages", "⚙️"),
                 )
+                val prefs = remember { getSharedPreferences("app", MODE_PRIVATE) }
+                var showTuto by remember { mutableStateOf(!prefs.getBoolean("tuto_done", false)) }
                 NightBackground {
+                    if (showTuto) {
+                        OnboardingScreen { prefs.edit().putBoolean("tuto_done", true).apply(); showTuto = false }
+                        return@NightBackground
+                    }
                     Scaffold(
                         containerColor = Color.Transparent,
                         bottomBar = {
@@ -91,7 +101,7 @@ class MainActivity : ComponentActivity() {
                             composable("tonight") { TonightScreen(vm) { nav.navigate("session/$it") } }
                             composable("history") { HistoryScreen(vm) { nav.navigate("session/$it") } }
                             composable("stats") { StatsScreen(vm) }
-                            composable("settings") { SettingsScreen(vm) }
+                            composable("settings") { SettingsScreen(vm) { showTuto = true } }
                             composable("session/{id}", listOf(navArgument("id") { type = NavType.LongType })) {
                                 SessionScreen(vm, it.arguments?.getLong("id") ?: 0L) { nav.popBackStack() }
                             }

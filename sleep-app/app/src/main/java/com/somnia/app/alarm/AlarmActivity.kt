@@ -13,6 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,14 +60,17 @@ class AlarmActivity : ComponentActivity() {
 }
 
 @Composable
-internal fun AlarmScreen(onStop: () -> Unit, onSnooze: () -> Unit) {
+internal fun AlarmScreen(onStop: () -> Unit, onSnooze: () -> Unit, startAwake: Boolean = false) {
+    // Le policier dort encore une seconde... puis ouvre les yeux.
+    var awake by remember { mutableStateOf(startAwake) }
+    LaunchedEffect(Unit) { delay(900); awake = true }
     NightBackground {
         Column(
             Modifier.fillMaxSize().padding(32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PoliceLogo(120.dp)
+            PoliceLogo(150.dp, awake = awake)
             Spacer(Modifier.height(24.dp))
             Text(
                 SimpleDateFormat("HH:mm", Locale.FRANCE).format(Date()),

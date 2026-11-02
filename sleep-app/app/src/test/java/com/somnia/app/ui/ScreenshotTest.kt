@@ -11,6 +11,8 @@ import com.somnia.app.ui.components.NightBackground
 import com.somnia.app.ui.screens.TonightIdle
 import com.somnia.app.ui.screens.TonightLive
 import com.somnia.app.ui.theme.SomniaTheme
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 
@@ -56,5 +58,21 @@ class ScreenshotTest {
         com.somnia.app.ui.screens.HistoryContent(nights) {}
     }
 
-    @Test fun alarm() = shot { com.somnia.app.alarm.AlarmScreen(onStop = {}, onSnooze = {}) }
+    @Test fun alarm() = shot { com.somnia.app.alarm.AlarmScreen(onStop = {}, onSnooze = {}, startAwake = true) }
+
+    @Test fun logos() = paparazzi.snapshot {
+        SomniaTheme {
+            NightBackground {
+                androidx.compose.foundation.layout.Row(
+                    androidx.compose.ui.Modifier.padding(40.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(40.dp),
+                ) {
+                    com.somnia.app.ui.components.PoliceLogo(150.dp, awake = true, animated = false)
+                    com.somnia.app.ui.components.PoliceLogo(150.dp, awake = false, animated = false)
+                }
+            }
+        }
+    }
+
+    @Test fun tutoHello() = shot { com.somnia.app.ui.screens.OnboardingFrame(0, 1f) }
 }

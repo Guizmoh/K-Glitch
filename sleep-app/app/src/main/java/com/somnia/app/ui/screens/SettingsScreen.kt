@@ -36,7 +36,7 @@ import com.somnia.app.ui.theme.TextSoft
 import kotlin.math.roundToInt
 
 @Composable
-fun SettingsScreen(vm: SomniaViewModel) {
+fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
     val s by vm.settings.collectAsState()
     val live by TrackingState.state.collectAsState()
     val ctx = LocalContext.current
@@ -108,6 +108,10 @@ fun SettingsScreen(vm: SomniaViewModel) {
             SwitchRow("Mesurer les mouvements (téléphone sur le matelas)", s.trackMovement) { v -> vm.updateSettings { it.copy(trackMovement = v) } }
             Text("Ignorer les ${s.startDelayMin} premières minutes", Modifier.padding(top = 8.dp))
             Slider(s.startDelayMin.toFloat(), { v -> vm.updateSettings { it.copy(startDelayMin = (v / 5).roundToInt() * 5) } }, valueRange = 0f..60f, steps = 11)
+        }
+
+        GlassCard(title = "Aide", icon = "👮", onClick = onTutorial) {
+            Text("Revoir le tuto de l'agent du Dodo", color = TextSoft)
         }
 
         GlassCard(title = "Mes données", icon = "🔒") {

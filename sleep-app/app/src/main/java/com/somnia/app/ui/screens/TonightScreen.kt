@@ -50,6 +50,7 @@ import com.somnia.app.ui.components.GradientButton
 import com.somnia.app.ui.components.LevelMeter
 import com.somnia.app.ui.components.ListeningOrb
 import com.somnia.app.ui.components.Pill
+import com.somnia.app.ui.components.PoliceLogo
 import com.somnia.app.ui.components.ScoreRing
 import com.somnia.app.ui.components.ScreenHeader
 import com.somnia.app.ui.components.ToggleChip
@@ -117,7 +118,7 @@ fun TonightIdle(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val hello = when (hour) { in 5..11 -> "Bonjour"; in 12..17 -> "Bon après-midi"; else -> "Bonsoir" }
-        ScreenHeader("Police du Dodo", "$hello ! On surveille votre nuit ?", logo = true)
+        ScreenHeader("Police du Dodo", "$hello ! On surveille votre nuit ?")
 
         BigRoundButton("Commencer", "la nuit", onClick = onStart)
 
@@ -173,11 +174,12 @@ fun TonightLive(l: LiveState, now: Long, onStop: () -> Unit) {
         Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ScreenHeader("Surveillance en cours", "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone", logo = true)
+        ScreenHeader("Surveillance en cours", "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone")
 
         ListeningOrb(l.levelDb, l.noiseFloorDb, l.capturing) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                PoliceLogo(58.dp, awake = false)
+                Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(
                     when {
                         now < l.detectionStartsAt -> "Endormissement… ${((l.detectionStartsAt - now) / 60_000) + 1} min"

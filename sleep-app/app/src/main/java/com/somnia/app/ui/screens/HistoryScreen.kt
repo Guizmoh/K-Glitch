@@ -47,7 +47,7 @@ fun HistoryContent(sessions: List<SleepSession>, open: (Long) -> Unit) {
         item { ScreenHeader("Mes nuits", "${sessions.size} nuit(s) dans le registre") }
         if (sessions.isEmpty()) item {
             Column(Modifier.padding(top = 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                PoliceLogo(96.dp)
+                PoliceLogo(96.dp, awake = false)
                 Spacer(Modifier.height(16.dp))
                 Text(
                     "Aucune nuit pour l'instant.\nLancez votre première surveillance depuis « Ce soir ».",
