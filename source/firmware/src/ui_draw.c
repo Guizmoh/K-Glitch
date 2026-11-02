@@ -491,6 +491,42 @@ UI_SMALL static void graph_fx(const track_t *t, uint16_t c)
 /* SLICER page: the pattern's 16 steps, a 'x' step a full bar; a '.' step: GATE a bar as high as
  * it stays open (DEPTH), STUT hatched (it repeats the last 'x'); the step playing underlined.
  * Grey when the SLICER is OFF. */
+/* K-GLITCH: EDIT > DJ FILTER: the track's filter as a curve (as fx.c djf_block sets it: the square-root law, 12 dB an
+ * octave, the resonance's peak), its cutoff marked and named in Hz; open (0): a flat line */
+UI_SMALL static void graph_tflt(const track_t *t, uint16_t c)
+{
+    static const uint8_t SQ[65] = {0, 14, 20, 24, 28, 31, 34, 37, 39, 42, 44, 46, 48, 50, 52, 54, 56, 57, 59, 60, 62, 64,
+                                   65, 67, 68, 69, 71, 72, 73, 75, 76, 77, 78, 80, 81, 82, 83, 84, 86, 87, 88, 89, 90, 91,
+                                   92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 107, 108, 109,
+                                   110, 111};
+    int32_t v = t->p[P_TFLT], a = SQ[v < 0 ? (-v > 64 ? 64 : -v) : (v > 64 ? 64 : v)], cut = v < 0 ? 127 - a : a, x, py = 0;
+    int32_t pk = song.g[G_KTR1 + song.sel % 4u] * 12;   /* the peak, dB x 10 */
+    char b[16];
+    cv_line(8, 36, 232, 36, C_LINE);                    /* 0 dB */
+    for (x = 8; x <= 232; x++) {
+        int32_t i = (x - 8) * 127 / 224, d = v < 0 ? i - cut : cut - i, db = 0, y;   /* (dB x 10) */
+        if (v && d > 0) db = -d * 86 / 10;              /* 12 dB an octave: 0.86 dB a step */
+        if (v && d > -8 && d < 8) db += pk * (64 - d * d) / 64;   /* (the resonance: a rounded peak) */
+        y = clamp(36 - db / 5, 4, 96);
+        if (x > 8) cv_line(x - 1, py, x, y, c);
+        py = y;
+    }
+    if (v) {
+        uint32_t hz = CUTOFF_HZ[clamp(cut, 0, 127)];
+        int32_t cx = 8 + cut * 224 / 127;
+        cv_line(cx, 8, cx, 96, C_WHITE);
+        str_cpy(b, v < 0 ? "LP " : "HP ", sizeof b);
+        fmt_int(b + 3, (int32_t)(hz < 1000u ? hz : hz / 100u));
+        if (hz >= 1000u) {                             /* "2.4K" */
+            uint32_t n = str_len(b);
+            b[n] = b[n - 1u], b[n - 1u] = '.', b[n + 1u] = 'K', b[n + 2u] = 0;
+        } else
+            str_cpy(b + str_len(b), " HZ", sizeof b - str_len(b));
+        cv_text(cx > 150 ? cx - 6 - text_w(&FONT_S, b) : cx + 6, 8, &FONT_S, b, C_WHITE);
+    } else {
+        cv_text(80, 8, &FONT_S, "FILTER OPEN", C_DIM);
+    }
+}
 UI_SMALL static void graph_slicer(const track_t *t, uint16_t c)
 {
     uint32_t i, pat = sl_pattern(t), mode = (uint32_t)t->p[P_SLCR], cur = sl[t - trk].idx;
@@ -555,6 +591,8 @@ UI_SMALL static uint32_t graph_signature(void)
         uint32_t q;
         for (q = 0; q < FAV_N; q++) h = h * 31u + fav[q];
     }
+    if (pg->graph == GR_TFLT)                          /* (DJ FILTER: its resonance) */
+        h ^= (uint32_t)song.g[G_KTR1 + song.sel % 4u] * 2654435761u;
     if (pg->graph == GR_SLCR && t->p[P_SLCR])        /* the SLICER's step playing */
         h ^= (sl[song.sel].idx + 1u) * 2654435761u;
     if (pg->graph == GR_SLOTS)                       /* (a checksum over each slot) */
@@ -904,6 +942,9 @@ UI_SMALL static void draw_graph(void)
             break;
         case GR_SLCR:
             graph_slicer(t, c);
+            break;
+        case GR_TFLT:
+            graph_tflt(t, c);
             break;
         case GR_BROWSE:
             cv_oy = 0;

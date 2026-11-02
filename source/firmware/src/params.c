@@ -308,6 +308,12 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KXDRV] = PD("DRIVE", F_INT, 0, 127, 0),
     [G_KXDLY] = PD("DLY", F_INT, 0, 127, 0),
     [G_KXREV] = PD("REV", F_INT, 0, 127, 0),
+    [G_KTFLT] = PD("FILT", F_FILT, -64, 63, 0),
+    [G_KTRES] = {"RESO", F_INT, 0, 100, 0, 0, "%"},
+    [G_KTR1] = {"RES1", F_INT, 0, 100, 0, 0, "%"},
+    [G_KTR2] = {"RES2", F_INT, 0, 100, 0, 0, "%"},
+    [G_KTR3] = {"RES3", F_INT, 0, 100, 0, 0, "%"},
+    [G_KTR4] = {"RES4", F_INT, 0, 100, 0, 0, "%"},
 };
 
 static const param_desc_t DRUM_KIT_DESC = PE("KIT", DRUM_KIT_NAMES, 0);
@@ -493,7 +499,7 @@ enum { FAM_HOME, FAM_ENV, FAM_LFO, FAM_FX, FAM_SCL, FAM_EDIT, FAM_GLO, FAM_SAVE,
        FAM_COUNT };
 enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK, SC_SONG, SC_DRUM };
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_FX, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
-       GR_SLCR, GR_INS, GR_KG };   /* GR_KG: K-GLITCH's DESTROY pages (ui_draw.c graph_kg) */
+       GR_SLCR, GR_INS, GR_KG, GR_TFLT };   /* GR_TFLT: EDIT > DJ FILTER's curve (ui_draw.c graph_tflt) */   /* GR_KG: K-GLITCH's DESTROY pages (ui_draw.c graph_kg) */
 
 typedef struct {
     const char *title;
@@ -515,11 +521,10 @@ static const page_t PAGES[] = {
      * white keys: the pads), then its three modes DRUMS, CHOP, CHAOS, and the effect sequencer, the bank, the setup */
     {"PADS", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KCHAOS, G_KDENS, G_KMOVE}},   /* (the bank and the macros; PRESETS: INTENSITY) */
     {"FX SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KPROB, G_KSEQ}},   /* (OCT+: DICE) */
-    {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},   /* drum track too */
     {"INSERT", FAM_FX, SC_TRACK, GR_INS, {P_ITYPE, P_IA, P_IB, P_IC}},   /* 2.6 (Felucca 1.5): the track's INSERT (fx.c), */
     {"INSERT 2", FAM_FX, SC_TRACK, GR_INS, {P_IMIX, 0xFF, 0xFF, 0xFF}},  /* .. its dry / wet; the drum track too */
-    /* K-GLITCH: SEL is the FILTER and the LOOP sampler (the scale pages: EDIT > SCALE, SCALE 2) */
+    /* K-GLITCH: SEL is the FILTER and the LOOP sampler (the scale: the SEL layer's knobs, SEL held) */
     {"FILTER", FAM_SCL, SC_GLOBAL, GR_KG, {G_KFTYPE, G_KFCUT, G_KFRES, G_KFMOD}},   /* (kg_filter.c; the keys: FREQ) */
     {"LOOP", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */
     {"SLICE", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLSL, G_KLPLAY, G_KLREV, G_KLRET}},
@@ -530,8 +535,6 @@ static const page_t PAGES[] = {
                                                                           * RES KTR (page_shown) */
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
-    {"SCALE", FAM_EDIT, SC_TRACK, GR_SCALE, {P_ROOT, P_SCALE, P_QUANT, P_CHORD}},
-    {"SCALE 2", FAM_EDIT, SC_TRACK, GR_SCALE, {P_TRANS, P_STRUM, P_VLEAD, 0xFF}},   /* (2.4: the chords played) */
     /* K-GLITCH DRUMS (kg_drum.c): EDIT on the drum track; the model's pages with its kit (page_shown) */
     {"KIT", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KDKIT, G_KDSND, G_KDLVL, G_KDINIT}},
     {"FM TONE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KMPIT, G_KMRAT, G_KMIDX, G_KMIDEC}},
@@ -541,6 +544,7 @@ static const page_t PAGES[] = {
     {"C64 MOVE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_K6SWP, G_K6PW, G_K6PWM, G_K6DEC}},
     {"C64 FILT", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_K6FLT, G_K6CUT, G_K6RES, G_KDSND}},
     {"DRUM FX", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KXSAT, G_KXDRV, G_KXDLY, G_KXREV}},
+    {"DJ FILTER", FAM_EDIT, SC_GLOBAL, GR_TFLT, {G_KTFLT, G_KTRES, 0xFF, 0xFF}},   /* (K-GLITCH: the track's FILTER, its curve) */
     {"GLOBAL", FAM_GLO, SC_GLOBAL, GR_NONE, {G_BPM, G_SWING, G_CLOCK, G_TUNE}},
     {"MASTER", FAM_GLO, SC_GLOBAL, GR_NONE, {G_DUST, G_DUCK, G_FILT, G_ROLL}},
     {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_SYNC, G_ROUTE, G_INFO}},
@@ -590,8 +594,10 @@ static int page_for_drum(const page_t *pg)
 static int page_shown(const page_t *pg)
 {
     uint32_t id = pg->id[0];
-    if (pg->scope == SC_GLOBAL && id >= G_KDKIT && id <= G_KXREV) {   /* K-GLITCH DRUMS: the drum track, its kit's pages */
+    if (pg->scope == SC_GLOBAL && id >= G_KDKIT && id <= G_KTFLT) {   /* K-GLITCH DRUMS: the drum track, its kit's pages */
         int32_t kit = TDRUM->p[P_E0] - (int32_t)DRUM_KGFM;
+        if (id == G_KTFLT)
+            return 1;                                 /* (DJ FILTER: every track) */
         if (!is_drum(TSEL))
             return 0;
         if (id == G_KDKIT)

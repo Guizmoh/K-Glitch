@@ -158,6 +158,9 @@ enum {                          /* global parameters */
     G_KMPIT, G_KMRAT, G_KMIDX, G_KMIDEC, G_KMFB, G_KMBEND, G_KMBT, G_KMDEC, G_KMNZ, G_KMNDEC, G_KMNCOL,   /* FM */
     G_K6PIT, G_K6W1, G_K6FR, G_K6W2, G_K6SWP, G_K6PW, G_K6PWM, G_K6DEC, G_K6FLT, G_K6CUT, G_K6RES,       /* C64 */
     G_KXSAT, G_KXDRV, G_KXDLY, G_KXREV,                                                                    /* DRUM FX */
+    /* K-GLITCH: EDIT > DJ FILTER, the selected track's FILTER (a mirror of its P_TFLT) and its resonance (each track's
+     * kept in G_KTR1..4: K-GLITCH's record, not the project) */
+    G_KTFLT, G_KTRES, G_KTR1, G_KTR2, G_KTR3, G_KTR4,
     G_COUNT
 };
 

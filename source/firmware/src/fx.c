@@ -376,6 +376,12 @@ static djf_t djf, tflt[NTRK];
  * always was) at 0, up to 110 at 10 (a strong but still stable peak; tflt_run leaves 4x headroom for it). The master
  * DJ filter (G_FILT) and the tape TONE keep the fixed 40. */
 static int32_t tflt_reso(void) { return 40 + (int32_t)(flt_reso > 10u ? 10u : flt_reso) * 7; }
+/* K-GLITCH: track k's (EDIT > DJ FILTER RESO, 0..100 %: from the menu's toward 118) */
+static int32_t tflt_reso_t(uint32_t k)
+{
+    int32_t b = tflt_reso();
+    return b + (int32_t)clamp(song.g[G_KTR1 + k % 4u], 0, 100) * (118 - b) / 100;
+}
 /* the knob v -> this block's coefficients in *c; 0 = bypassed (nothing to do). reso: tsvf_coef's resonance */
 static int djf_block(djf_t *f, int32_t v, tsvf_t *c, int32_t reso)
 {
@@ -714,7 +720,7 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
         {
             tsvf_t fc;                                  /* the track's FILTER (P_TFLT), after the SLICER */
             djf_t *f = &tflt[(uint32_t)(t - trk) % NTRK];
-            if (djf_block(f, t->p[P_TFLT], &fc, tflt_reso()))
+            if (djf_block(f, t->p[P_TFLT], &fc, tflt_reso_t((uint32_t)(t - trk))))
                 tflt_run(f, &fc, b, n, 0);
         }
         int32_t lvl0, dl, gl0, dgl, gr0, dgr;          /* (2.7) LEVEL (and a new sound's trim) and PAN glide (drums.c
@@ -855,7 +861,7 @@ static void mix_drums(uint32_t n, mixacc_t *mx)
     int flt;
     drums.a0 = TDRUM->att;                              /* the drum track's mute / solo fade */
     drums.a1 = 32767 - gain_next(TDRUM);
-    flt = n <= CTL && djf_block(f, TDRUM->p[P_TFLT], &fc, tflt_reso());   /* the drum track's FILTER */
+    flt = n <= CTL && djf_block(f, TDRUM->p[P_TFLT], &fc, tflt_reso_t(TRK_DRUM));   /* the drum track's FILTER */
     if (flt || (n <= CTL && (TDRUM->p[P_ITYPE] | TDRUM->ins_run))) {   /* .. or its INSERT: left, right, the sends */
         int32_t *dl = drum_buf[0], *dr = drum_buf[1], *dv = drum_buf[2], *dd = drum_buf[3];
         for (i = 0; i < n; i++)

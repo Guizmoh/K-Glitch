@@ -583,7 +583,7 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         kg_hold_clear();
     if (pg->scope == SC_GLOBAL && (id == G_KFTYPE || id == G_KFCUT || id == G_KFRES))
         kf_touch = 1;                                     /* K-GLITCH FILTER: REC writes it (kg_route) */
-    if (pg->scope == SC_GLOBAL && id >= G_KDKIT && id <= G_KXREV && id != G_KDINIT)
+    if (pg->scope == SC_GLOBAL && id >= G_KDKIT && id <= G_KTRES && id != G_KDINIT)
         kgd_ui_set(id, v);                                /* K-GLITCH DRUMS: the sound's value (kg_ui.c) */
     if (pg->scope == SC_GLOBAL && id == G_KLMODE && v == KL_OFF && kl.st != KLS_EMPTY) {   /* K-GLITCH LOOP: let go */
         kl_free();

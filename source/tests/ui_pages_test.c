@@ -207,12 +207,17 @@ int main(int argc, char **argv)
         uint32_t j, sel = song.sel;
         int16_t f0 = TDRUM->p[P_TFLT];
         uint8_t lp = ui.lock_par;
-        for (j = 0; j < NPAGES; j++) if (!strcmp(PAGES[j].title, "FILTER") && PAGES[j].fam == FAM_FX) break;
+        for (j = 0; j < NPAGES; j++) if (!strcmp(PAGES[j].title, "DJ FILTER") && PAGES[j].fam == FAM_EDIT) break;
         song.sel = TRK_DRUM;
-        check(j < NPAGES && page_for_drum(&PAGES[j]), "FX > FILTER (2.7.2): a page of the drum track (its filter)");
+        check(j < NPAGES && page_for_drum(&PAGES[j]) && page_shown(&PAGES[j]), "EDIT > DJ FILTER: a page of the drum track (its filter)");
         ui.page = (uint8_t)j; ui.home = 0; ui.force = 1; frame();
         encs[panel.enc[EN_K1]] = 5; frame();
-        check(TDRUM->p[P_TFLT] == f0 + 5, "FX > FILTER on the drum track: KNOB 1 turns the drum track's FILT");
+        check(TDRUM->p[P_TFLT] == f0 + 5, "EDIT > DJ FILTER on the drum track: KNOB 1 turns the drum track's FILT");
+        encs[panel.enc[EN_K1]] = -40; frame();
+        encs[panel.enc[EN_K2]] = 60; frames(2);
+        check(song.g[G_KTR4] > 0 && song.g[G_KTR1] == 0, "EDIT > DJ FILTER: KNOB 2 the drum track's resonance only");
+        ui.force = 1; frame(); ppm("page-djfilter");
+        song.g[G_KTR4] = 0;
         TDRUM->p[P_TFLT] = f0; song.sel = (uint8_t)sel; ui.lock_par = lp; go_home(); frame();
     }
     open_family(FAM_EDIT); ui.force = 1; frame(); ppm("page-edit");
@@ -302,7 +307,7 @@ int main(int argc, char **argv)
         check(TDRUM->p[P_E0] == (int16_t)DRUM_KGFM && song.g[G_KDKIT] == 1 && song.g[G_KDSND] == 2,
               "K-GLITCH DRUMS: KIT FM: the drum track plays FM DRUM; SOUND the lane last played");
         ui.force = 1; frame(); ppm("page-kg-kit");
-        for (n = 0; n < 6u; n++) { encs[panel.enc[EN_SELECT]] = 1; frames(2); }
+        for (n = 0; n < 4u; n++) { encs[panel.enc[EN_SELECT]] = 1; frames(2); }
         check(!strcmp(cur_page()->title, "DRUM FX"), "K-GLITCH DRUMS: SELECT: FM TONE, FM BODY, FM NOISE, DRUM FX (no C64 page)");
         encs[panel.enc[EN_K1]] = 2; frames(2);
         check(kgd_kit[KGD_FM][2].sat == KS_HARD && song.g[G_KXSAT] == KS_HARD, "K-GLITCH DRUMS: DRUM FX SAT writes the sound's");
@@ -1580,11 +1585,11 @@ int main(int argc, char **argv)
         SEL(-1);
         check(!strcmp(PT(), "LFO"), "SELECT left: LFO");
         go_title("FX SEQ", FAM_FX); SEL(1);                /* (K-GLITCH: FX: PADS, FX SEQ, then FILTER) */
-        check(!strcmp(PT(), "FILTER"), "SELECT on FX: next page, the track FILTER");
+        check(!strcmp(PT(), "SLICER"), "SELECT on FX: next page, the SLICER (K-GLITCH: the track's FILTER is EDIT > DJ FILTER)");
+        go_title("DJ FILTER", FAM_EDIT);
         TSEL->p[P_TFLT] = -32; ui.force = 1; frames(2); ppm("page-filter");
-        check(!strcmp(ui.big_l[0], "FILT") && !strcmp(ui.big_v[0], "LP50") && !ui.big_l[1][0],
-              "FILTER page: its one value drawn large (LP50 %)");
-        {   /* the big value in the graph strip: white pixels in the middle of the screen */
+        check(song.g[G_KTFLT] == -32 && !strcmp(cur_page()->title, "DJ FILTER"), "DJ FILTER page: the selected track's FILT (LP50 %)");
+        {   /* its curve in the graph strip */
             uint32_t x, y, lit = 0;
             for (y = Y_GRAPH + 30; y < Y_GRAPH + 90; y++)
                 for (x = 40; x < 200; x++)
@@ -1592,12 +1597,12 @@ int main(int argc, char **argv)
             check(lit > 300u, "FILTER page: the graph strip shows it");
         }
         TSEL->p[P_TFLT] = 0;
-        SEL(9);
+        go_title("SLICER", FAM_FX); SEL(9);
         check(!strcmp(PT(), "INSERT 2"), "SELECT on FX: on to the last page, INSERT 2");
         tap(B_EDIT); SEL(-9);
         check(!strcmp(PT(), "EDIT 1"), "SELECT on EDIT: back to the first page");
         SEL(9);
-        check(!strcmp(PT(), "SCALE 2"), "SELECT on EDIT: up to SCALE 2 (K-GLITCH: the scale pages are EDIT's last)");
+        check(!strcmp(PT(), "DJ FILTER"), "SELECT on EDIT: up to DJ FILTER (K-GLITCH: EDIT's last)");
         tap(B_SEQ); SEL(9);
         check(!strcmp(PT(), "PATTERN"), "SELECT on SEQ: STEP <-> PATTERN, not into the SONG screen");
         tap(B_ENV);

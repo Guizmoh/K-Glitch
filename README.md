@@ -18,10 +18,11 @@ Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 e
 
 Les pages K-GLITCH sont rangées par bouton (0.9) :
 
-- **FX** (un appui : les **16 PADS**, un autre appui : la page suivante) : PADS (banque + macros), FX SEQ, puis le FILTER de piste, le SLICER et l'INSERT de SLOOP.
+- **FX** (un appui : les **16 PADS**, un autre appui : la page suivante) : PADS (banque + macros), FX SEQ, puis le SLICER et l'INSERT de SLOOP.
 - **LFO** : … puis les envois **SENDS** (DIST, CHO, DLY, REV de la piste), **DLY** et **REV/CHO**.
 - **ARP** : … puis **MODES** (mode CHAOS, AUTO, LFO, HOLD), **MODES 2** (SOLO / MULTI, INTENSITÉ, CLEAR), **GEN** (générateur DRUMS) et **CHOP** (mutation).
-- **SEL** : le **FILTER** créatif et le sampler **LOOP**, **SLICE**, **GRAIN** (les anciennes pages SEL de gamme sont à la fin d'**EDIT** : SCALE, SCALE 2).
+- **SEL** : le **FILTER** créatif et le sampler **LOOP**, **SLICE**, **GRAIN** (la gamme se règle avec SEL maintenu : CHORD, SCALE, KEYS, TRANSPOSE).
+- **EDIT** : … et, en dernier, **DJ FILTER** : le filtre DJ de la piste sélectionnée (K1 : passe-bas à gauche, passe-haut à droite), sa **résonance** (K2, propre à chaque piste) et sa **courbe** dessinée avec la fréquence de coupure.
 - **GLO** : … et **MPC** (sortie MIDI vers la MPC).
 - **SAVE** (un appui, même depuis HOME) : les pages SAVE ; l'écran SONG : SAVE maintenu + 16e touche blanche.
 - **Sélecteur de pages** : bouton d'une section maintenu (FX, EDIT, ARP, SEQ, SEL, GLO, SAVE) + **ALGO** : la liste de ses pages, **les plus visitées en premier** (étoile) ; on relâche le bouton : la page choisie s'ouvre.

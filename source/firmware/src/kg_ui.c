@@ -613,6 +613,8 @@ UI_SMALL static void kgd_ui_sync(void)
     uint32_t k;
     song.g[G_KDKIT] = (int16_t)(m + 1);
     song.g[G_KDSND] = (int16_t)(pen_lane & 15u);
+    song.g[G_KTFLT] = TSEL->p[P_TFLT];                /* (DJ FILTER: the selected track's) */
+    song.g[G_KTRES] = song.g[G_KTR1 + song.sel % 4u];
     if (m < 0)
         return;
     {
@@ -631,6 +633,20 @@ UI_SMALL static void kgd_ui_set(uint32_t id, int32_t v)
         if (v > 0 || m >= 0)
             TDRUM->p[P_E0] = (int16_t)(v > 0 ? DRUM_KGFM + (uint32_t)v - 1u : DRUM_DEFAULT_KIT);
         ui.force = 1;
+        return;
+    }
+    if (id == G_KTFLT || id == G_KTRES) {             /* DJ FILTER: the selected track's FILTER, its resonance */
+        if (id == G_KTRES) {
+            song.g[G_KTR1 + song.sel % 4u] = (int16_t)clamp(v, 0, 100);
+            return;
+        }
+        TSEL->p[P_TFLT] = (int16_t)clamp(v, -64, 63);
+        if (song.playing && ((song.rec >> song.sel) & 1u)) {   /* (REC: written on the step playing, as a sound knob) */
+            fm1_irq_off();
+            if (!lock_set(TSEL, TSEL->seq_idx % trk_len(TSEL), P_TFLT, v))
+                ui_message("AUTOMATION FULL (24)");
+            fm1_irq_on();
+        }
         return;
     }
     if (id == G_KDSND) {
