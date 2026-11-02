@@ -394,7 +394,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
         )
         return NotificationCompat.Builder(this, SomniaApp.CH_TRACKING)
             .setSmallIcon(R.drawable.ic_moon)
-            .setContentTitle("Police du Dodo surveille votre nuit 👮")
+            .setContentTitle("Police du Dodo surveille votre nuit")
             .setContentText(text)
             .setOngoing(true)
             .setContentIntent(open)

@@ -1,6 +1,8 @@
 package com.somnia.app.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -11,39 +13,40 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.somnia.app.audio.SoundType
 
 // Palette « Police du Dodo » : bleu nuit, bleu police, or de l'insigne.
-val Night = Color(0xFF0B1026)
-val NightMid = Color(0xFF151B45)
-val NightCard = Color(0x1FFFFFFF)
-val CardStroke = Color(0x22FFFFFF)
-val PoliceBlue = Color(0xFF5B7CFF)
-val PoliceBlueDark = Color(0xFF2B3A8C)
-val Badge = Color(0xFFFFC857)
+val Night = Color(0xFF0F1530)
+val NightMid = Color(0xFF141B3A)
+val NightCard = Color(0xFF18203F)
+val CardStroke = Color(0xFF263057)
+val PoliceBlue = Color(0xFFE6C47A) // or de l'insigne (couleur d'accent)
+val PoliceBlueDark = Color(0xFF2A3360)
+val Badge = Color(0xFFE6C47A)
 val Moon = Color(0xFFC9BCFF)
-val TextSoft = Color(0xFFA9AED6)
-val DeepColor = Color(0xFF5B5BD6)
+val TextSoft = Color(0xFF9AA2C0)
+val DeepColor = Color(0xFF4A5AA8)
 val LightColor = Color(0xFF8FB7FF)
-val AwakeColor = Color(0xFFFF9F7A)
-val Good = Color(0xFF6EE7A8)
+val AwakeColor = Color(0xFFE3A07F)
+val Good = Color(0xFF8FCFA5)
 
-val BackgroundBrush = Brush.verticalGradient(listOf(Color(0xFF1B2160), NightMid, Night))
-val PrimaryBrush = Brush.linearGradient(listOf(Color(0xFF6D8BFF), Color(0xFF8E6CFF)))
-val SunriseBrush = Brush.linearGradient(listOf(Color(0xFFFFC857), Color(0xFFFF8A65)))
+val BackgroundBrush = Brush.verticalGradient(listOf(Color(0xFF131A38), Night))
+val PrimaryBrush = Brush.linearGradient(listOf(Color(0xFFE6C47A), Color(0xFFE6C47A)))
+val SunriseBrush = Brush.linearGradient(listOf(Color(0xFFF1E6CF), Color(0xFFF1E6CF)))
 
 fun SoundType.color(): Color = when (this) {
-    SoundType.SPEECH -> Color(0xFF7FD1FF)
-    SoundType.NIGHT_TERROR -> Color(0xFFFF6B6B)
-    SoundType.SNORING -> Color(0xFFB9A7FF)
-    SoundType.LAUGHTER -> Color(0xFFFFD166)
-    SoundType.CRYING -> Color(0xFF64B5F6)
-    SoundType.COUGH -> Color(0xFF9BE89B)
-    SoundType.BREATHING -> Color(0xFF80CBC4)
-    SoundType.NOISE -> Color(0xFF9E9EB8)
+    SoundType.SPEECH -> Color(0xFF8DB8E0)
+    SoundType.NIGHT_TERROR -> Color(0xFFE08A7E)
+    SoundType.SNORING -> Color(0xFFB3A6D9)
+    SoundType.LAUGHTER -> Color(0xFFE6C47A)
+    SoundType.CRYING -> Color(0xFF7FA7D6)
+    SoundType.COUGH -> Color(0xFF9CC9A3)
+    SoundType.BREATHING -> Color(0xFF8CC2BC)
+    SoundType.NOISE -> Color(0xFF9AA2C0)
 }
 
 fun scoreColor(score: Int?): Color = when {
@@ -55,7 +58,7 @@ fun scoreColor(score: Int?): Color = when {
 
 private val scheme = darkColorScheme(
     primary = PoliceBlue,
-    onPrimary = Color.White,
+    onPrimary = Color(0xFF151A33),
     primaryContainer = PoliceBlueDark,
     onPrimaryContainer = Color.White,
     secondary = Badge,
@@ -68,8 +71,8 @@ private val scheme = darkColorScheme(
     surfaceContainer = NightMid,
     surfaceContainerHigh = Color(0xFF1E2558),
     surfaceContainerHighest = Color(0xFF262E66),
-    onBackground = Color(0xFFF1F0FF),
-    onSurface = Color(0xFFF1F0FF),
+    onBackground = Color(0xFFEDE8DC),
+    onSurface = Color(0xFFEDE8DC),
     onSurfaceVariant = TextSoft,
     outline = CardStroke,
     outlineVariant = CardStroke,
@@ -77,12 +80,13 @@ private val scheme = darkColorScheme(
 
 private val typography = Typography().let { t ->
     t.copy(
-        displaySmall = t.displaySmall.copy(fontWeight = FontWeight.Bold),
-        headlineLarge = t.headlineLarge.copy(fontWeight = FontWeight.Bold),
-        headlineMedium = t.headlineMedium.copy(fontWeight = FontWeight.Bold),
-        headlineSmall = t.headlineSmall.copy(fontWeight = FontWeight.Bold),
+        // Titres à empattements, comme le titre de l'affiche
+        displaySmall = t.displaySmall.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold),
+        headlineLarge = t.headlineLarge.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold),
+        headlineMedium = t.headlineMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold),
+        headlineSmall = t.headlineSmall.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold),
         titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-        titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        titleMedium = t.titleMedium.copy(fontWeight = FontWeight.Medium),
         labelSmall = TextStyle(fontSize = 11.sp, letterSpacing = 0.3.sp),
     )
 }
@@ -99,3 +103,14 @@ fun SomniaTheme(content: @Composable () -> Unit) =
         // Texte clair par défaut, même hors d'une Surface (fonds dégradés).
         CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
     }
+
+fun SoundType.icon(): androidx.compose.ui.graphics.vector.ImageVector = when (this) {
+    SoundType.SPEECH -> Icons.Rounded.RecordVoiceOver
+    SoundType.NIGHT_TERROR -> Icons.Rounded.Campaign
+    SoundType.SNORING -> Icons.Rounded.Waves
+    SoundType.LAUGHTER -> Icons.Rounded.SentimentVerySatisfied
+    SoundType.CRYING -> Icons.Rounded.SentimentVeryDissatisfied
+    SoundType.COUGH -> Icons.Rounded.Sick
+    SoundType.BREATHING -> Icons.Rounded.Air
+    SoundType.NOISE -> Icons.Rounded.GraphicEq
+}

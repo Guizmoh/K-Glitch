@@ -78,7 +78,7 @@ fun StatsScreen(vm: SomniaViewModel) {
         }
         val spread = if (bed.size > 1) bed.max() - bed.min() else 0
         if (spread > 90) GlassCard {
-            Text("⚠️ Horaires irréguliers (écart de ${Fmt.duration(spread)}). Un rythme régulier aide à mieux dormir.", color = AwakeColor)
+            Text("Horaires irréguliers (écart de ${Fmt.duration(spread)}). Un rythme régulier aide à mieux dormir.", color = AwakeColor)
         }
 
         GlassCard(title = "Durée de sommeil (h)", icon = "😴") {
@@ -98,7 +98,7 @@ fun StatsScreen(vm: SomniaViewModel) {
         val periodEvents = events.filter { it.sessionId in ids }.groupingBy { SoundType.fromName(it.type) }.eachCount()
         if (periodEvents.isNotEmpty()) GlassCard(title = "Sons relevés", icon = "🚨") {
             periodEvents.entries.sortedByDescending { it.value }.forEach { (t, n) ->
-                Text("${t.emoji}  ${t.label} : $n  (${"%.1f".format(n.toFloat() / nights.size)} / nuit)", Modifier.padding(vertical = 2.dp))
+                Text("${t.label} : $n  (${"%.1f".format(n.toFloat() / nights.size)} / nuit)", Modifier.padding(vertical = 2.dp))
             }
         }
         val effects = Insights.tagEffects(all)
@@ -107,7 +107,7 @@ fun StatsScreen(vm: SomniaViewModel) {
             effects.forEach {
                 val good = it.delta >= 0
                 Text(
-                    "${if (good) "👍" else "👎"} ${it.tag} : ${if (good) "+" else ""}${it.delta} points (${it.nights} nuits)",
+                    "${if (good) "" else ""} ${it.tag} : ${if (good) "+" else ""}${it.delta} points (${it.nights} nuits)",
                     color = if (good) Good else AwakeColor, modifier = Modifier.padding(vertical = 2.dp),
                 )
             }

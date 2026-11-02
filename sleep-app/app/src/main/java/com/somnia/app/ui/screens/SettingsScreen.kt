@@ -63,7 +63,7 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
                 style = MaterialTheme.typography.bodySmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp),
             )
             SoundType.entries.filter { it != SoundType.NOISE }.forEach { t ->
-                Text("${t.emoji} ${t.label} : ${s.typeSensitivity[t] ?: 5}/10", Modifier.padding(top = 10.dp))
+                Text("${t.label} : ${s.typeSensitivity[t] ?: 5}/10", Modifier.padding(top = 10.dp))
                 LevelSlider(s.typeSensitivity[t] ?: 5) { v -> vm.updateSettings { it.copy(typeSensitivity = it.typeSensitivity + (t to v)) } }
             }
         }
@@ -74,11 +74,11 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
                     Checkbox(t in s.recordTypes, { on ->
                         vm.updateSettings { it.copy(recordTypes = if (on) it.recordTypes + t else it.recordTypes - t) }
                     })
-                    Text("${t.emoji} ${t.label}" + if (t == SoundType.NOISE) " (non identifiés)" else "")
+                    Text("${t.label}" + if (t == SoundType.NOISE) " (non identifiés)" else "")
                 }
             }
             SwitchRow("Version « voix isolée » du bruit ambiant", s.enhanceVoice) { v -> vm.updateSettings { it.copy(enhanceVoice = v) } }
-            Text("Garder les fichiers : " + if (s.retentionDays == 0) "toujours" else "${s.retentionDays} jours (sauf favoris ❤)", Modifier.padding(top = 8.dp))
+            Text("Garder les fichiers : " + if (s.retentionDays == 0) "toujours" else "${s.retentionDays} jours (sauf favoris )", Modifier.padding(top = 8.dp))
             Slider(s.retentionDays.toFloat(), { v -> vm.updateSettings { it.copy(retentionDays = (v / 7).roundToInt() * 7) } }, valueRange = 0f..91f, steps = 12)
         }
 

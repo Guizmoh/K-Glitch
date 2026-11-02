@@ -82,9 +82,9 @@ internal fun AlarmScreen(onStop: () -> Unit, onSnooze: () -> Unit, startAwake: B
                 textAlign = TextAlign.Center, color = TextSoft, modifier = Modifier.padding(top = 8.dp),
             )
             Spacer(Modifier.height(48.dp))
-            GradientButton("☀️  Je me lève", brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop)
+            GradientButton("Je me lève", brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop)
             Spacer(Modifier.height(14.dp))
-            GradientButton("😴  Encore 9 minutes", onClick = onSnooze)
+            GradientButton("Encore 9 minutes", onClick = onSnooze)
         }
     }
 }

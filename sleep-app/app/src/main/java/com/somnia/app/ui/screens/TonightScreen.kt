@@ -159,7 +159,7 @@ fun TonightIdle(
         }
         GlassCard {
             Text(
-                "💡 Posez le téléphone près de votre tête, branché. Sur le matelas, il mesure aussi vos mouvements.",
+                "Posez le téléphone près de votre tête, branché. Sur le matelas, il mesure aussi vos mouvements.",
                 style = MaterialTheme.typography.bodySmall, color = TextSoft,
             )
         }
@@ -183,7 +183,7 @@ fun TonightLive(l: LiveState, now: Long, onStop: () -> Unit) {
                 Text(
                     when {
                         now < l.detectionStartsAt -> "Endormissement… ${((l.detectionStartsAt - now) / 60_000) + 1} min"
-                        l.capturing -> "🔴 J'enregistre"
+                        l.capturing -> "J'enregistre"
                         else -> "J'écoute…"
                     },
                     color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center,
@@ -197,7 +197,7 @@ fun TonightLive(l: LiveState, now: Long, onStop: () -> Unit) {
         GlassCard(title = "Sons relevés : ${l.eventCount}", icon = "🚨") {
             if (l.counts.isEmpty()) Text("Rien à signaler pour l'instant.", color = TextSoft)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                l.counts.forEach { (t, n) -> Pill("${t.emoji} ${t.label} · $n", t.color(), Modifier.padding(bottom = 6.dp)) }
+                l.counts.forEach { (t, n) -> Pill("${t.label} · $n", t.color(), Modifier.padding(bottom = 6.dp)) }
             }
             l.lastEvent?.let {
                 Text("Dernier : ${it.label.lowercase()} à ${Fmt.time(l.lastEventTime ?: 0)}", style = MaterialTheme.typography.bodySmall, color = TextSoft)
@@ -209,7 +209,7 @@ fun TonightLive(l: LiveState, now: Long, onStop: () -> Unit) {
             Text("Gris : bruit de fond · Jaune : seuil de déclenchement", style = MaterialTheme.typography.labelSmall, color = TextSoft)
         }
         Spacer(Modifier.height(12.dp))
-        GradientButton("☀️  Je me réveille", brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop)
+        GradientButton("Je me réveille", brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop)
         Spacer(Modifier.height(16.dp))
     }
 }

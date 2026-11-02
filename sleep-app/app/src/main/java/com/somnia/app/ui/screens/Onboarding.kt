@@ -62,7 +62,7 @@ class TutoPage(val title: String, val text: String, val art: @Composable (t: Flo
 
 val TUTO_PAGES = listOf(
     TutoPage(
-        "Bonsoir ma Moman 💙",
+        "Bonsoir ma Moman",
         "Je suis l'agent du Dodo. Pendant que tu dors, je veille sur tes nuits… et je te raconte tout le matin.",
     ) { t -> HelloArt(t) },
     TutoPage(
@@ -155,7 +155,7 @@ private fun TutoFooter(page: Int, onNext: () -> Unit) {
             }
         }
         Spacer(Modifier.height(20.dp))
-        GradientButton(if (page == TUTO_PAGES.lastIndex) "C'est parti ! 🌙" else "Suivant", onClick = onNext)
+        GradientButton(if (page == TUTO_PAGES.lastIndex) "C'est parti !" else "Suivant", onClick = onNext)
     }
 }
 
@@ -181,7 +181,7 @@ private fun HelloArt(t: Float) {
             }
         }
         Box(Modifier.padding(top = (12 + bob).coerceAtLeast(0f).dp)) { PoliceLogoFrame(200.dp, 1f) }
-        Text("👋", fontSize = 44.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 36.dp, bottom = 30.dp)
+        Text("", fontSize = 44.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 36.dp, bottom = 30.dp)
             .scale(1f + 0.08f * sin(t * 6f)))
     }
 }
@@ -209,7 +209,7 @@ private fun WaveArt(t: Float) {
             }
         }
         Spacer(Modifier.height(10.dp))
-        Box(Modifier.alpha(if (event > 0.3f) 1f else 0.25f)) { Pill("🔴 J'enregistre !", Color(0xFFFF8A80)) }
+        Box(Modifier.alpha(if (event > 0.3f) 1f else 0.25f)) { Pill("Enregistrement en cours", Color(0xFFE08A7E)) }
         Text("— seuil au-dessus du bruit de fond", color = Badge, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
     }
 }
@@ -226,7 +226,7 @@ private fun SoundsArt(t: Float) {
                     val a = smooth((cycle - k * 0.55f) / 0.35f)
                     Box(Modifier.alpha(a).scale(0.7f + 0.3f * a)) {
                         Text(
-                            "${ty.emoji} ${ty.label}",
+                            ty.label,
                             Modifier.clip(RoundedCornerShape(50)).background(ty.color().copy(alpha = 0.2f)).padding(horizontal = 16.dp, vertical = 12.dp),
                             color = ty.color(), fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1,
                         )
@@ -235,7 +235,7 @@ private fun SoundsArt(t: Float) {
             }
         }
         Spacer(Modifier.height(10.dp))
-        Text("🔒 100 % dans le téléphone", color = Good, fontWeight = FontWeight.SemiBold)
+        Text("100 % dans le téléphone", color = Good, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -246,7 +246,7 @@ private fun CleanVoiceArt(t: Float) {
         Text("Avant", color = TextSoft, fontSize = 13.sp)
         WaveLine(noise = 1f, scan = 1f, t = t)
         Spacer(Modifier.height(18.dp))
-        Text("Après : voix isolée 🗣️", color = Good, fontSize = 13.sp)
+        Text("Après : voix isolée", color = Good, fontSize = 13.sp)
         WaveLine(noise = 0f, scan = scan.coerceAtMost(1f), t = t)
     }
 }
@@ -275,9 +275,9 @@ private fun WaveLine(noise: Float, scan: Float, t: Float) {
 @Composable
 private fun StepsArt(t: Float) {
     val steps = listOf(
-        "📱" to "Pose le téléphone près de ta tête, branché.",
-        "🌙" to "Appuie sur « Commencer » et dors bien.",
-        "☀️" to "Le matin, appuie sur « Je me réveille ».",
+        "" to "Pose le téléphone près de ta tête, branché.",
+        "" to "Appuie sur « Commencer » et dors bien.",
+        "" to "Le matin, appuie sur « Je me réveille ».",
     )
     val cycle = t % 6f
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

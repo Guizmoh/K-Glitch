@@ -9,6 +9,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -55,10 +59,10 @@ class MainActivity : ComponentActivity() {
                 val entry by nav.currentBackStackEntryAsState()
                 val route = entry?.destination?.route
                 val tabs = listOf(
-                    Triple("tonight", "Ce soir", "🌙"),
-                    Triple("history", "Mes nuits", "📋"),
-                    Triple("stats", "Tendances", "📈"),
-                    Triple("settings", "Réglages", "⚙️"),
+                    Triple("tonight", "Ce soir", androidx.compose.material.icons.Icons.Rounded.Bedtime),
+                    Triple("history", "Mes nuits", androidx.compose.material.icons.Icons.Rounded.CalendarMonth),
+                    Triple("stats", "Tendances", androidx.compose.material.icons.Icons.Rounded.Insights),
+                    Triple("settings", "Réglages", androidx.compose.material.icons.Icons.Rounded.Settings),
                 )
                 val prefs = remember { getSharedPreferences("app", MODE_PRIVATE) }
                 var showTuto by remember { mutableStateOf(!prefs.getBoolean("tuto_done", false)) }
@@ -74,8 +78,8 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         containerColor = Color.Transparent,
                         bottomBar = {
-                            NavigationBar(containerColor = Color(0xE60B1026), tonalElevation = 0.dp) {
-                                tabs.forEach { (r, label, emoji) ->
+                            NavigationBar(containerColor = Color(0xFF111834), tonalElevation = 0.dp) {
+                                tabs.forEach { (r, label, ico) ->
                                     val selected = route == r || (r == "history" && route?.startsWith("session") == true)
                                     NavigationBarItem(
                                         selected = selected,
@@ -86,11 +90,13 @@ class MainActivity : ComponentActivity() {
                                                 restoreState = true
                                             }
                                         },
-                                        icon = { Text(emoji, fontSize = 22.sp) },
+                                        icon = { androidx.compose.material3.Icon(ico, null) },
                                         label = { Text(label) },
                                         colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = PoliceBlueDark,
-                                            selectedTextColor = Color.White,
+                                            indicatorColor = Color(0x1FE6C47A),
+                                            selectedIconColor = com.somnia.app.ui.theme.Badge,
+                                            selectedTextColor = com.somnia.app.ui.theme.Badge,
+                                            unselectedIconColor = TextSoft,
                                             unselectedTextColor = TextSoft,
                                         ),
                                     )

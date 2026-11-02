@@ -72,9 +72,18 @@ import com.somnia.app.ui.theme.LightColor
 import com.somnia.app.ui.theme.PoliceBlue
 import com.somnia.app.ui.theme.TextSoft
 import com.somnia.app.ui.theme.color
+import com.somnia.app.ui.theme.icon
+import androidx.compose.material.icons.rounded.SentimentDissatisfied
+import androidx.compose.material.icons.rounded.SentimentNeutral
+import androidx.compose.material.icons.rounded.SentimentSatisfied
+import androidx.compose.material.icons.rounded.SentimentVeryDissatisfied
+import androidx.compose.material.icons.rounded.SentimentVerySatisfied
 import com.somnia.app.ui.theme.scoreColor
 
-private val MOODS = listOf("😫", "😕", "😐", "🙂", "😄")
+private val MOODS = listOf(
+    Icons.Rounded.SentimentVeryDissatisfied, Icons.Rounded.SentimentDissatisfied, Icons.Rounded.SentimentNeutral,
+    Icons.Rounded.SentimentSatisfied, Icons.Rounded.SentimentVerySatisfied,
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -120,7 +129,7 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
                             when {
                                 s.endTime == null -> "Nuit en cours…"
                                 s.score == null -> "Nuit trop courte"
-                                s.score >= 80 -> "Excellente nuit ✨"
+                                s.score >= 80 -> "Excellente nuit"
                                 s.score >= 60 -> "Bonne nuit"
                                 s.score >= 40 -> "Nuit moyenne"
                                 else -> "Nuit difficile"
@@ -128,9 +137,9 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
                             style = MaterialTheme.typography.titleLarge,
                         )
                         Spacer(Modifier.height(4.dp))
-                        Text("🛏️ ${Fmt.time(s.startTime)} → ${s.endTime?.let { Fmt.time(it) } ?: "…"}", color = TextSoft)
-                        s.sleepOnset?.let { Text("💤 Endormi·e en ${(it - s.startTime) / 60_000} min", color = TextSoft) }
-                        s.wakeTime?.let { Text("☀️ Réveil vers ${Fmt.time(it)}", color = TextSoft) }
+                        Text("${Fmt.time(s.startTime)} → ${s.endTime?.let { Fmt.time(it) } ?: "…"}", color = TextSoft)
+                        s.sleepOnset?.let { Text("Endormi·e en ${(it - s.startTime) / 60_000} min", color = TextSoft) }
+                        s.wakeTime?.let { Text("Réveil vers ${Fmt.time(it)}", color = TextSoft) }
                     }
                 }
             }
@@ -138,7 +147,7 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         item {
             TileRow {
                 StatTile("😴", Fmt.duration(s.deepMinutes + s.lightMinutes), "Sommeil", Modifier.weight(1f))
-                StatTile("🌊", Fmt.duration(s.deepMinutes), "Profond", Modifier.weight(1f), accent = Color(0xFF9C9CFF))
+                StatTile("🌊", Fmt.duration(s.deepMinutes), "Profond", Modifier.weight(1f), accent = com.somnia.app.ui.theme.LightColor)
             }
             TileRow {
                 StatTile("👀", "${s.awakenings}", "Réveils", Modifier.weight(1f), accent = AwakeColor)
@@ -158,21 +167,20 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         // --- Sons ---
         item {
             Row(Modifier.padding(top = 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("🚨", fontSize = 18.sp)
-                Text("  Sons relevés", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text("Sons relevés", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Text("${events.size}", color = TextSoft)
             }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ToggleChip("Tous", filter == null) { filter = null }
                 events.map { SoundType.fromName(it.type) }.distinct().forEach { t ->
                     val n = events.count { it.type == t.name }
-                    ToggleChip("${t.emoji} ${t.label} $n", filter == t) { filter = if (filter == t) null else t }
+                    ToggleChip("${t.label} · $n", filter == t) { filter = if (filter == t) null else t }
                 }
             }
         }
         val shown = events.filter { filter == null || it.type == filter!!.name }
         if (shown.isEmpty()) item {
-            GlassCard { Text("👮 Rien à signaler, nuit calme !", color = TextSoft) }
+            GlassCard { Text("Rien à signaler, nuit calme !", color = TextSoft) }
         }
         items(shown, key = { it.id }) { e -> EventCard(e, vm, onShare = { p -> vm.shareAudio(ctx, p) }) }
 
@@ -184,12 +192,12 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
                     MOODS.forEachIndexed { i, m ->
                         val sel = s.morningMood == i + 1
                         Box(
-                            Modifier.size(52.dp).clip(CircleShape)
-                                .background(if (sel) PoliceBlue.copy(alpha = 0.35f) else Color(0x10FFFFFF))
-                                .border(if (sel) 2.dp else 1.dp, if (sel) PoliceBlue else CardStroke, CircleShape)
+                            Modifier.size(52.dp).clip(RoundedCornerShape(14.dp))
+                                .background(if (sel) PoliceBlue.copy(alpha = 0.14f) else Color.Transparent)
+                                .border(1.dp, if (sel) PoliceBlue else CardStroke, RoundedCornerShape(14.dp))
                                 .clickable { vm.saveSession(s.copy(morningMood = i + 1)) },
                             contentAlignment = Alignment.Center,
-                        ) { Text(m, fontSize = 26.sp) }
+                        ) { Icon(m, null, tint = if (sel) PoliceBlue else TextSoft, modifier = Modifier.size(28.dp)) }
                     }
                 }
                 val tags = s.tags.split(",").filter { it.isNotBlank() }.toSet()
@@ -238,9 +246,9 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
     GlassCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(46.dp).clip(CircleShape).background(t.color().copy(alpha = 0.2f)),
+                Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(t.color().copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center,
-            ) { Text(t.emoji, fontSize = 22.sp) }
+            ) { Icon(t.icon(), null, tint = t.color(), modifier = Modifier.size(22.dp)) }
             Column(Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(t.label, color = t.color(), style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -258,8 +266,8 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
         }
         val playing = AudioPlayer.playingPath
         Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            e.audioPath?.let { p -> PlayButton(if (playing == p) "⏹ Stop" else "▶ Écouter", playing == p, t.color()) { AudioPlayer.toggle(p) } }
-            e.enhancedPath?.let { p -> PlayButton(if (playing == p) "⏹ Stop" else "🗣️ Voix isolée", playing == p, t.color()) { AudioPlayer.toggle(p) } }
+            e.audioPath?.let { p -> PlayButton(if (playing == p) "Stop" else "▶ Écouter", playing == p, t.color()) { AudioPlayer.toggle(p) } }
+            e.enhancedPath?.let { p -> PlayButton(if (playing == p) "Stop" else "Voix isolée", playing == p, t.color()) { AudioPlayer.toggle(p) } }
             if (e.audioPath == null) Text("Audio non conservé", style = MaterialTheme.typography.labelSmall, color = TextSoft)
             Spacer(Modifier.weight(1f))
             (e.enhancedPath ?: e.audioPath)?.let { p -> IconButton(onClick = { onShare(p) }) { Icon(Icons.Filled.Share, "Partager", tint = TextSoft) } }

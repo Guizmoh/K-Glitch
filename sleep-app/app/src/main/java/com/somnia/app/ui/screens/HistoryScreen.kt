@@ -71,8 +71,7 @@ fun HistoryContent(sessions: List<SleepSession>, open: (Long) -> Unit) {
                         )
                         Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             if (s.snoringMinutes > 0) Pill("😴 ${s.snoringMinutes} min", SoundType.SNORING.color())
-                            if (s.awakenings > 0) Pill("👀 ${s.awakenings}", AwakeColor)
-                            if (s.morningMood > 0) Pill(listOf("😫", "😕", "😐", "🙂", "😄")[s.morningMood - 1], Badge)
+                            if (s.awakenings > 0) Pill("👀 ${s.awakenings} réveil(s)", AwakeColor)
                         }
                     }
                     Text("›", fontSize = 28.sp, color = TextSoft)
