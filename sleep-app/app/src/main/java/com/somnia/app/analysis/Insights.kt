@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 /** Étiquettes du journal du soir. */
 object JournalTags {
     val ALL = listOf(
-        "Caféine", "Alcool", "Sport", "Repas tardif", "Stress", "Écrans tard",
+        "Caféine", "Alcool", "Repas tardif", "Stress", "Écrans tard",
         "Sieste", "Médicament", "Malade", "Bruit extérieur",
     )
 }

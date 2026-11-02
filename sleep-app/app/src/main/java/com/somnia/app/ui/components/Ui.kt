@@ -246,7 +246,7 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
                     .clickable { onSelect(i) }.padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(o, color = if (sel) Badge else TextSoft, fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal, fontSize = 14.sp)
+                Text(o, color = if (sel) Badge else TextSoft, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             }
         }
     }
@@ -265,7 +265,7 @@ fun ToggleChip(text: String, selected: Boolean, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon?.let { Icon(it, null, tint = if (selected) Badge else TextSoft, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)) }
-        Text(label, color = if (selected) Badge else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f), fontSize = 14.sp)
+        Text(label, color = if (selected) Badge else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

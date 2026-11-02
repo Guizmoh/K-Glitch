@@ -210,7 +210,7 @@ private fun WaveArt(t: Float) {
         }
         Spacer(Modifier.height(10.dp))
         Box(Modifier.alpha(if (event > 0.3f) 1f else 0.25f)) { Pill("Enregistrement en cours", Color(0xFFE08A7E)) }
-        Text("— seuil au-dessus du bruit de fond", color = Badge, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        Text("— seuil au-dessus du bruit de fond", color = Badge, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
@@ -243,10 +243,10 @@ private fun SoundsArt(t: Float) {
 private fun CleanVoiceArt(t: Float) {
     val scan = (t % 3.5f) / 3f
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Avant", color = TextSoft, fontSize = 13.sp)
+        Text("Avant", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         WaveLine(noise = 1f, scan = 1f, t = t)
         Spacer(Modifier.height(18.dp))
-        Text("Après : voix isolée", color = Good, fontSize = 13.sp)
+        Text("Après : voix isolée", color = Good, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         WaveLine(noise = 0f, scan = scan.coerceAtMost(1f), t = t)
     }
 }

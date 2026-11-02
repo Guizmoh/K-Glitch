@@ -31,7 +31,7 @@ class ScreenshotTest {
         TonightIdle(
             settings = Settings(smartAlarmEnabled = true, alarmHour = 7, alarmMinute = 15),
             lastNight = SleepSession(id = 1, startTime = t0, endTime = t0 + 8 * 3_600_000L, score = 82, deepMinutes = 95, lightMinutes = 330),
-            tags = setOf("Sport", "Écrans tard"),
+            tags = setOf("Stress", "Écrans tard"),
             onToggleTag = {}, onStart = {}, onOpen = {}, hour = 22,
         )
     }

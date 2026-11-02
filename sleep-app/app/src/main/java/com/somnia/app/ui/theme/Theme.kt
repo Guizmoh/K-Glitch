@@ -87,7 +87,12 @@ private val typography = Typography().let { t ->
         headlineSmall = t.headlineSmall.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold),
         titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold),
         titleMedium = t.titleMedium.copy(fontWeight = FontWeight.Medium),
-        labelSmall = TextStyle(fontSize = 11.sp, letterSpacing = 0.3.sp),
+        // Petits textes agrandis et en semi-gras (lisibilité de près)
+        bodyMedium = t.bodyMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium),
+        bodySmall = t.bodySmall.copy(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold),
+        labelLarge = t.labelLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+        labelMedium = t.labelMedium.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+        labelSmall = TextStyle(fontSize = 13.sp, lineHeight = 17.sp, letterSpacing = 0.2.sp, fontWeight = FontWeight.SemiBold),
     )
 }
 
