@@ -62,7 +62,11 @@ class MainActivity : ComponentActivity() {
                 )
                 val prefs = remember { getSharedPreferences("app", MODE_PRIVATE) }
                 var showTuto by remember { mutableStateOf(!prefs.getBoolean("tuto_done", false)) }
-                NightBackground {
+                var showSplash by remember { mutableStateOf(savedInstanceState == null) }
+                androidx.compose.animation.AnimatedVisibility(
+                    showSplash, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut(),
+                ) { com.somnia.app.ui.screens.SplashPoster(onDone = { showSplash = false }) }
+                if (!showSplash) NightBackground {
                     if (showTuto) {
                         OnboardingScreen { prefs.edit().putBoolean("tuto_done", true).apply(); showTuto = false }
                         return@NightBackground

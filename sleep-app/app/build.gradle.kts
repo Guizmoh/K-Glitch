@@ -57,6 +57,15 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
     androidResources { noCompress += "tflite" }
+
+    // Nom du fichier APK : police-du-dodo.apk (release : police-du-dodo-release.apk)
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                if (variant.buildType.name == "debug") "police-du-dodo.apk" else "police-du-dodo-${variant.buildType.name}.apk"
+        }
+    }
 }
 
 tasks.named("preBuild") { dependsOn(downloadYamnet) }

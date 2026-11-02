@@ -180,7 +180,7 @@ private fun HelloArt(t: Float) {
                 drawCircle(Badge.copy(alpha = 0.7f * tw), 3.dp.toPx() * tw, Offset(center.x + r * kotlin.math.cos(a), center.y + r * sin(a)))
             }
         }
-        Box(Modifier.padding(top = (12 + bob).coerceAtLeast(0f).dp)) { PoliceLogoFrame(200.dp, blink(t)) }
+        Box(Modifier.padding(top = (12 + bob).coerceAtLeast(0f).dp)) { PoliceLogoFrame(200.dp, 1f) }
         Text("👋", fontSize = 44.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 36.dp, bottom = 30.dp)
             .scale(1f + 0.08f * sin(t * 6f)))
     }

@@ -75,4 +75,6 @@ class ScreenshotTest {
     }
 
     @Test fun tutoHello() = shot { com.somnia.app.ui.screens.OnboardingFrame(0, 1f) }
+
+    @Test fun splash() = paparazzi.snapshot { SomniaTheme { com.somnia.app.ui.screens.SplashPoster(onDone = {}, autoCloseMs = 999_999) } }
 }
