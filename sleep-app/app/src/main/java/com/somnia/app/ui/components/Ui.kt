@@ -180,7 +180,8 @@ fun GradientButton(text: String, modifier: Modifier = Modifier, brush: Brush = S
 /** Bulle de dialogue (pointe vers le haut, vers l'agent). */
 @Composable
 fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
-    val cream = Color(0xFFF6EEDC)
+    // Bleu clair à 50 % d'opacité : se fond dans le décor, reste lisible
+    val cream = Color(0xFFC9D8F7).copy(alpha = 0.5f)
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Canvas(Modifier.size(width = 22.dp, height = 11.dp)) {
             val p = androidx.compose.ui.graphics.Path().apply {
@@ -191,7 +192,7 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
         Text(
             text,
             Modifier.clip(RoundedCornerShape(18.dp)).background(cream).padding(horizontal = 18.dp, vertical = 12.dp),
-            color = Color(0xFF1E2A55),
+            color = Color(0xFF14204A),
             style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
