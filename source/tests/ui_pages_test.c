@@ -222,6 +222,16 @@ int main(int argc, char **argv)
         ui.force = 1; frame(); ppm("page-destroy");
         fm1_in.notes = 0; frame();
         check(punch.req == -1, "K-GLITCH DESTROY: the pad up: the mix comes back");
+        song.g[G_KBANK] = 2; frame();                   /* the third bank: BEAT */
+        check(kg_sel == DD_BANK + 5u, "K-GLITCH BANK BEAT: the selection follows the bank");
+        encs[panel.enc[EN_ALGO]] = 11; frame();
+        check(kg_sel == DD_BANK + 0u, "K-GLITCH BANK BEAT: ALGORITHM turns within the bank");
+        fm1_in.notes = 1u << key_of_white(12); frame();
+        check(punch.req == (int8_t)(PUNCH_NFX + DD_SCRBAR) && kg_sel == DD_SCRBAR, "K-GLITCH BANK BEAT: a pad (SCRATCH BAR)");
+        ui.force = 1; frame(); ppm("page-k-beat");
+        fm1_in.notes = 0; frame();
+        song.g[G_KBANK] = 1; frame();
+        check(kg_sel == DD_SCRBAR - DD_BANK, "K-GLITCH BANK DESTROY: the selection back in its bank");
         encs[panel.enc[EN_SELECT]] = 1; frame();
         check(!strcmp(cur_page()->title, "D-FILTER"), "K-GLITCH: SELECT: FILTER (TYPE, FREQ, RESO, MOVE)");
         {   /* FILTER: TYPE through the eleven, a key tunes FREQ, a screen of each type */

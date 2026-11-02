@@ -1399,7 +1399,8 @@ UI_SMALL static void ui_input(void)
 
     if (!ui.home && cur_page()->graph == GR_KG && !ft_on) {   /* K-GLITCH: ALGORITHM the effect, PRESETS its INTENSITY */
         if ((s = panel_enc(EN_ALGO)) != 0) {
-            kg_sel = (uint8_t)(((int32_t)kg_sel + s % (int32_t)DD_N + (int32_t)DD_N) % (int32_t)DD_N);
+            int32_t b0 = song.g[G_KBANK] >= 2 ? (int32_t)DD_BANK : 0;   /* (within the bank on the keys) */
+            kg_sel = (uint8_t)(b0 + ((int32_t)kg_sel - b0 + s % (int32_t)DD_BANK + (int32_t)DD_BANK) % (int32_t)DD_BANK);
             ui_message(DD_NAME[kg_sel]);
         }
         if ((s = panel_enc(EN_PRESET)) != 0 && kg_pads == 2u) {   /* SEQ: the step's INTENSITY (0: the effect's own) */

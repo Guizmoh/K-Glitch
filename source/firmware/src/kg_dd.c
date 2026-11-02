@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* K-GLITCH: the DRUM DESTROYER bank, 16 effects on the white keys (FX held, BANK: DESTROY), in the effect sequencer
+/* K-GLITCH: the DRUM DESTROYER bank, 16 effects on the white keys (and the BEAT bank's 16: kg_beat.c) (FX held, BANK: DESTROY), in the effect sequencer
  * and in AUTO. Included by kglitch.c; runs in the audio ISR after punch_process (fx.c mix_block: kd_process), on the
  * whole mix. Its past is SLOOP's punch ring (punch.c: the dry mix, mono, 0.74 s): a held segment is kept from the
  * ring's writer (punch.c asks kd_owns). INTENSITY (FX > BANK) shapes every effect:
@@ -8,7 +8,8 @@
  *   STUTTER X     2x, 3x, 4x, 8x a beat (INTENSITY), each repeat fading; past 75 % random bursts (1/2, 1/4 the length)
  *   GLITCH        bit crush and sample-rate reduction, buffer corruption (a chunk of the past instead of now) and, past
  *                 60 %, digital noise bursts
- *   SCRATCH       the record pushed back and forth around the beat (faster with INTENSITY); past 85 % a brake each beat
+ *   SCRATCH       a hand on the record (kg_beat.c): strokes of the last attack heard, each 16th, under a crossfader;
+ *                 INTENSITY: baby scratches, chirps, then tears, transformers, scribbles, drags, backward cuts
  *   REVERSE X     the last beat, 1/2 or 1/4 (INTENSITY) played backwards, segment after segment; past 70 % some
  *                 segments forwards (delayed)
  *   PITCH MAD     a pitch shift that moves each 16th: up a staircase (low), random jumps (middle), a dive (high)
@@ -26,11 +27,18 @@
  * at most 1, the fuzz clipped). */
 
 enum { DD_LOOP, DD_STUT, DD_GLITCH, DD_SCRATCH, DD_REV, DD_PITCH, DD_GATE, DD_FILTER,
-       DD_BREP, DD_BSKIP, DD_MICRO, DD_STRETCH, DD_RING, DD_FUZZ, DD_RAND, DD_TOTAL, DD_N };
+       DD_BREP, DD_BSKIP, DD_MICRO, DD_STRETCH, DD_RING, DD_FUZZ, DD_RAND, DD_TOTAL,
+       /* the BEAT bank (kg_beat.c): programs over the bar */
+       DD_RSTUT, DD_RBAR, DD_RFILL, DD_ROLL, DD_SKIP8, DD_STAMR, DD_GATE8, DD_GATE16, DD_GATE332, DD_GRAMP,
+       DD_REVB, DD_REVOFF, DD_SCRBAR, DD_SCRCUT, DD_TSTOP, DD_HALFT, DD_N };
+#define DD_BANK 16u                               /* effects a bank (DESTROY: 0..15, BEAT: 16..31) */
 #define KG_NFX (PUNCH_NFX + DD_N)                 /* the effect ids K-GLITCH knows: PX_*, then PUNCH_NFX + DD_* */
 static const char *const DD_NAME[DD_N] = {"LOOP DESTROY", "STUTTER X", "GLITCH", "SCRATCH", "REVERSE X", "PITCH MAD",
                                           "GATE X", "FILTER CHAOS", "BEAT REPEAT", "BEAT SKIP", "MICRO STUT",
-                                          "TIME STRETCH", "RING MOD", "FUZZ", "RANDOMIZER", "TOTAL CHAOS"};
+                                          "TIME STRETCH", "RING MOD", "FUZZ", "RANDOMIZER", "TOTAL CHAOS",
+                                          "RND STUTTER", "RND BAR", "RND FILL", "ROLL UP", "SKIP 8TH", "STAMMER",
+                                          "GATE 8", "GATE 16", "GATE 3-3-2", "GATE RAMP", "REV BEAT", "REV OFFBEAT",
+                                          "SCRATCH BAR", "SCRATCH CUT", "TAPE STOP", "HALF TIME"};
 #define DD_W 2048u                                /* PITCH and STRETCH: the grain window (46 ms) */
 
 typedef struct {
@@ -56,6 +64,12 @@ typedef struct {
     int32_t hl, hr;           /* GLITCH: the held sample */
     uint32_t hn, corrupt, csrc, noise;   /* GLITCH: hold count, corrupted samples left, their source, noise left */
     uint32_t rnd;
+    /* BEAT and SCRATCH (kg_beat.c): the bar's seed, the record, the 16th's length and the samples into it, the stroke's
+     * depth, its progress (Q24) and step */
+    uint32_t bseed, rec, slen, sk, D, u24, du;
+    int32_t acc, lpy, ps, dl, dr, ll, lr;   /* STOP's slowdown; the cartridge's low-pass; the record's last place (Q15);
+                                             * the jump's declick and the last output */
+    uint8_t op, arg, open, newop, qi, from8, to8;   /* the 16th's operation (BO_*), open (gate, fader, mute) */
 } kd_t;
 #define KD_SLOTS 3u                               /* MULTI: three DRUM DESTROYER effects at once, one after the other */
 static kd_t kd_slot[KD_SLOTS] = {{.cur = -1, .sub = -1, .rnd = 0x51A3E1B7u}, {.cur = -1, .sub = -1, .rnd = 0x2F6B1D3Bu},
@@ -67,7 +81,7 @@ static volatile uint8_t kd_sintv[KD_SLOTS];       /* its recorded INTENSITY + 1 
 
 /* INTENSITY: each effect its own (FX > BANK K2, PRESETS on the K-GLITCH pages), 0..100; the LFO (FX > BANK / CHAOS)
  * moves it by up to MOVEMENT / 2 */
-static uint8_t kd_int[DD_N] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+static uint8_t kd_int[DD_N] = {[0 ... DD_N - 1] = 50};
 static volatile int8_t kd_lfo;                   /* the LFO now, -50..50 (kg_route, per block) */
 static volatile uint8_t kg_sel;                  /* the effect ALGORITHM selects (and a pad pressed): DD_* */
 static volatile uint8_t kg_pads;                 /* UI: the keys are pads (1: the K-GLITCH pages) or SEQ's steps (2) */
@@ -116,6 +130,7 @@ static int32_t dd_semi(int32_t s)
     while (s >= 12) s -= 12, o++;
     return o >= 0 ? (int32_t)(R[s] << o) : (int32_t)(R[s] >> -o);
 }
+#include "kg_beat.c"                              /* the BEAT bank, SCRATCH */
 
 /* the effect e takes over from the sample at ring index `base` (its fields set; the 16th's part in dd_tick) */
 static void dd_engage(int32_t e, uint32_t base)
@@ -161,12 +176,6 @@ static void dd_engage(int32_t e, uint32_t base)
         kd.L = kd.L0 = L;
         kd.rev = 1;
         break;
-    case DD_SCRATCH:
-        kd.ri = base - beat / 2u;
-        kd.rf = 0;
-        kd.ph = 0;
-        kd.dph = 0xFFFFFFFFu / (I > 50u ? beat / 4u + 1u : beat / 2u + 1u);
-        break;
     case DD_PITCH:
         kd.pp = 0;
         kd.semi = 0;
@@ -197,12 +206,14 @@ static void dd_engage(int32_t e, uint32_t base)
         kd.corrupt = kd.noise = 0;
         break;
     default:
+        if (dd_isop(e))
+            beat_engage(base);
         break;
     }
 }
 
-/* each 16th: what changes on the grid */
-static void dd_tick(uint32_t base)
+/* each 16th: what changes on the grid (s16: the transport's 16th, or since the effect started) */
+static void dd_tick(uint32_t base, uint32_t s16)
 {
     uint32_t I = dd_int(), r = kg_rand(&kd.rnd), step = dd_beat() / 4u;
     if (kd.cur == DD_RAND || kd.cur == DD_TOTAL) {      /* a new effect each 16th */
@@ -253,6 +264,8 @@ static void dd_tick(uint32_t base)
     default:
         break;
     }
+    if (dd_isop(kd.sub))                               /* BEAT, SCRATCH: the 16th's operation */
+        beat_slot(s16 % 16u, base);
 }
 
 /* the wet sample of the effect playing, for the dry x, y; idx the ring index of this sample */
@@ -305,23 +318,6 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
         }
         *wl = *wr = m;
         return;
-    case DD_SCRATCH: {
-        int32_t f;
-        uint32_t back;
-        kd.sp = 65536 + sine_i(kd.ph) * (6 + (int32_t)I / 25);
-        if (I > 85u && (dd_barpos() % dd_beat()) > dd_beat() * 3u / 4u)   /* the brake, the last quarter of each beat */
-            kd.sp = kd.sp / 4;
-        kd.ph += kd.dph;
-        m = dd_rd(kd.ri, kd.rf);
-        f = kd.rf + kd.sp;
-        kd.ri += (uint32_t)(f >> 16);
-        kd.rf = f & 0xFFFF;
-        back = idx - kd.ri;                            /* never past now, never further back than the ring holds */
-        if ((int32_t)back < 8) kd.ri = idx - 8u, kd.rf = 0;
-        else if (back > PUNCH_N - 4096u) kd.ri = idx - (PUNCH_N - 4096u);
-        *wl = *wr = m;
-        return;
-    }
     case DD_PITCH: {                                   /* two taps sliding through a delay, crossfaded */
         uint32_t W16 = DD_W << 16, pa = kd.pp, pb = (kd.pp + W16 / 2u) % W16;
         int32_t a = ring_at(idx - 64u - (pa >> 16)), b = ring_at(idx - 64u - (pb >> 16));
@@ -395,6 +391,10 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
         return;
     }
     default:
+        if (dd_isop(kd.sub)) {
+            beat_sample(x, y, idx, wl, wr);
+            return;
+        }
         *wl = x, *wr = y;
         return;
     }
@@ -427,7 +427,7 @@ static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
     s16 = song.playing ? clk_beat * 4u + clk_pos / ((uint32_t)FS * 15u) : kd.t / (dd_beat() / 4u + 1u);
     if (s16 != kd.s16) {
         kd.s16 = s16;
-        dd_tick(base);
+        dd_tick(base, s16);
     }
     I = dd_int();
     if (kd.sub == DD_GATE) {                           /* the slot of the bar: open or shut */
@@ -441,6 +441,8 @@ static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
         }
         kd.i32 = slot;
     }
+    if (dd_isgate(kd.sub))                             /* BEAT's gates: open or shut, on the bar */
+        kd.open = (uint8_t)beat_gate(kd.sub, dd_barpos(), I);
     if (kd.sub == DD_FILTER) {                         /* the cutoff glides to its 16th's, per block */
         tsvf_t c;
         kd.cut += (kd.cut_to - kd.cut) / 8;
@@ -454,8 +456,8 @@ static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
         int32_t x = l[i], y = r[i], wl, wr, target = want == kd.cur ? 32767 : 0;
         if (kd.g < target) kd.g = kd.g + 512 > target ? target : kd.g + 512;
         else if (kd.g > target) kd.g = kd.g - 512 < target ? target : kd.g - 512;
-        if (kd.sub == DD_GATE || kd.sub == DD_BSKIP) {   /* the gate's gain glides (64 samples) */
-            int32_t open = kd.sub == DD_GATE ? (kd.mask >> kd.i32 & 1u) : kd.mode != 1u;
+        if (kd.sub == DD_GATE || kd.sub == DD_BSKIP || dd_isop(kd.sub)) {   /* the gate's gain glides (64 samples) */
+            int32_t open = kd.sub == DD_GATE ? (kd.mask >> kd.i32 & 1u) : dd_isop(kd.sub) ? kd.open : kd.mode != 1u;
             int32_t gt = open ? 32767 : 0;
             kd.gg += gt > kd.gg ? (gt - kd.gg > 512 ? 512 : gt - kd.gg) : -(kd.gg - gt > 512 ? 512 : kd.gg - gt);
         }

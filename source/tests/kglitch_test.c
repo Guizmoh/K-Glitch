@@ -243,6 +243,60 @@ int main(int argc, char **argv)
         assert(kd.cur == DD_LOOP && L > 1000u && d < 2000u * 64u && "the fragment is kept");
     }
     printf("kglitch: LOOP DESTROY held 3.75 s: the fragment kept from the ring's writer                ok\n");
+    /* the BEAT bank: its keys, its programs on the bar (16ths' levels against the dry mix) */
+    {
+        static int32_t L[NS], R[NS];
+        double lv[16];
+        uint32_t s;
+#define LEVELS() for (s = 0; s < 16u; s++) { double e = 0, d = 0; uint32_t a = FS * 2u + s * S16, j; \
+            for (j = a; j < a + S16; j++) e += (double)L[j] * L[j], d += (double)dl[j] * dl[j]; lv[s] = sqrt(e / (d + 1)); }
+        reset();
+        song.g[G_KSEQ] = 0;
+        run(NS, -1, 0, 0, dl, dr);
+        uint32_t k0 = 0, k15 = 0;
+        for (s = 0; s < 27u; s++) { if (punch_fx_of_key(s) == 0) k0 = s; if (punch_fx_of_key(s) == 15) k15 = s; }
+        song.g[G_KBANK] = 2;
+        assert(kg_fx_of_key(k0) == (int32_t)(PUNCH_NFX + DD_RSTUT) && kg_fx_of_key(k15) == (int32_t)(PUNCH_NFX + DD_HALFT));
+        assert(kg_cc_of((int32_t)(PUNCH_NFX + DD_RSTUT + 3u)) == KG_CC[3] && "a key's CC, whatever the bank");
+        song.g[G_KBANK] = 1;
+        assert(kg_fx_of_key(k0) == (int32_t)(PUNCH_NFX + DD_LOOP));
+        song.g[G_KBANK] = 0;
+        assert(kg_fx_of_key(k0) == 0);
+        reset();
+        song.g[G_KSEQ] = 0;
+        kd_int[DD_SCRBAR] = 0;
+        run(NS, (int32_t)(PUNCH_NFX + DD_SCRBAR), FS * 2u, NS, L, R);
+        LEVELS();
+        assert(lv[1] < 0.02 && lv[2] < 0.02 && lv[3] < 0.02 && "SCRATCH BAR: a beat of silence");
+        assert(lv[4] > 0.3 && lv[6] > 0.3 && lv[8] > 0.3 && lv[5] < 0.05 && "three short scratches");
+        assert(lv[12] > 0.2 && lv[13] > 0.2 && "then the downbeat backwards");
+        reset();
+        song.g[G_KSEQ] = 0;
+        kd_int[DD_TSTOP] = 0;
+        run(NS, (int32_t)(PUNCH_NFX + DD_TSTOP), FS * 2u, NS, L, R);
+        LEVELS();
+        assert(lv[0] > 0.95 && lv[0] < 1.05 && lv[11] > 0.9 && lv[15] < 0.02 && "TAPE STOP: the last beat slows to a stop");
+        reset();
+        song.g[G_KSEQ] = 0;
+        kd_int[DD_GATE8] = 0;
+        run(NS, (int32_t)(PUNCH_NFX + DD_GATE8), FS * 2u, NS, L, R);
+        LEVELS();
+        for (s = 0; s < 16u; s++) assert(s & 1u ? lv[s] < 0.02 : lv[s] > 0.6);
+        reset();
+        song.g[G_KSEQ] = 0;
+        kd_int[DD_SKIP8] = 0;
+        run(NS, (int32_t)(PUNCH_NFX + DD_SKIP8), FS * 2u, NS, L, R);
+        LEVELS();
+        for (s = 0; s < 16u; s++) assert((s & 3u) >= 2u ? lv[s] < 0.03 : lv[s] > 0.95);
+        for (k = DD_RSTUT; k < DD_N; k++) kd_int[k] = 50;
+        kd_int[DD_SCRATCH] = 50;
+        reset();                                        /* AUTO with BANK BEAT: only its effects */
+        song.g[G_KBANK] = 2, song.g[G_KSEQ] = 0, song.g[G_KAUTO] = 1, song.g[G_KDENS] = 100, song.g[G_KCHAOS] = 100;
+        run(NS, -1, 0, 0, L, R);
+        for (i = 0; i < 32u; i++) assert(now16[i] >= (int8_t)(PUNCH_NFX + DD_RSTUT) && now16[i] < (int8_t)KG_NFX);
+#undef LEVELS
+    }
+    printf("kglitch: BANK BEAT: its keys and CCs, SCRATCH BAR, TAPE STOP, GATE 8, SKIP 8TH, AUTO   ok\n");
     /* BANK DESTROY: AUTO and MUTATE pick the DRUM DESTROYER effects */
     reset();
     song.g[G_KBANK] = 1, song.g[G_KSEQ] = 0, song.g[G_KAUTO] = 1, song.g[G_KDENS] = 100, song.g[G_KCHAOS] = 100;

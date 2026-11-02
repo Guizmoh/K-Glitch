@@ -10,8 +10,8 @@
  *      wobble...); MOVEMENT makes the gestures short (high) or long, up to a beat (low).
  * MUTATE (FX > D-SEQ) writes a new effect sequence from the same three macros; CHOP mutates the rhythm itself and
  * DRUMS writes one (kg_rhythm.c); CHAOS mode (FX > CHAOS) turns AUTO and the LFO on and mutates on the bar.
- * The effects: SLOOP's 27 punch-in ones (PX_*) and K-GLITCH's DRUM DESTROYER bank (kg_dd.c, PUNCH_NFX + DD_*), which
- * FX > BANK puts on the white keys and in AUTO / MUTATE; INTENSITY shapes them; HOLD keeps a key's effect after its
+ * The effects: SLOOP's 27 punch-in ones (PX_*), K-GLITCH's DRUM DESTROYER bank (kg_dd.c, PUNCH_NFX + DD_*) and its
+ * BEAT bank (kg_beat.c, PUNCH_NFX + 16 + n), one of which FX > BANK puts on the white keys and in AUTO / MUTATE; INTENSITY shapes them; HOLD keeps a key's effect after its
  * release (until another key or HOLD off).
  *
  * Where it plays (FX > DESTROY, OUT): FM-1 (the FM-1's mix, as SLOOP), MPC (only a MIDI CC goes out: the FM-1's mix
@@ -19,7 +19,7 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.7"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.8"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */
@@ -38,18 +38,24 @@ static const uint8_t KG_CC[PUNCH_NFX] = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
 static const uint8_t KG_DPOOL[] = {DDX(1), DDX(0), DDX(8), DDX(6), DDX(10), DDX(4), DDX(9), DDX(7), DDX(5), DDX(3),
                                    DDX(11), DDX(2), DDX(12), DDX(13), DDX(14), DDX(15)};   /* (DD_*: kg_dd.c) */
 #define KG_NDPOOL (sizeof KG_DPOOL / sizeof KG_DPOOL[0])
+/* BANK BEAT: its programs, gentle to wild (DD_RSTUT + n) */
+static const uint8_t KG_BPOOL[] = {DDX(22), DDX(16), DDX(23), DDX(20), DDX(21), DDX(19), DDX(26), DDX(31), DDX(24),
+                                   DDX(25), DDX(18), DDX(17), DDX(27), DDX(30), DDX(28), DDX(29)};
+#define KG_NBPOOL (sizeof KG_BPOOL / sizeof KG_BPOOL[0])
 static const uint8_t KG_POOL[] = {PX_LOOP16, PX_LOOP8, PX_STUT, PX_GATE,
                                   PX_LOOP32, PX_REV, PX_CRUSH, PX_LOOP4, PX_HALF, PX_LOOP8T, PX_DOWN, PX_ECHO, PX_RWD,
                                   PX_OCT, PX_STOP, PX_WOBBLE, PX_FREEZE, PX_FLANGE, PX_TEL, PX_KLOW, PX_KHIGH, PX_HPF,
                                   PX_LPF};
 #define KG_NPOOL (sizeof KG_POOL / sizeof KG_POOL[0])
 /* three-letter names for the sequencer's cells (ui_draw.c graph_kg) */
-static const char *const KG_SHORT[PUNCH_NFX + 16u] = {
+static const char *const KG_SHORT[PUNCH_NFX + 32u] = {
     "L4", "L8", "L16", "L32", "STU", "REV", "STP", "HLF", "LPF", "HPF", "TEL", "CRU", "ALI", "GAT", "ECH", "WOB",
     "KLO", "KMI", "KHI", "RWD", "OCT", "FLA", "PAN", "FRZ", "L8T", "MON", "FAD",
     /* the DRUM DESTROYER bank: four letters */
     "LOOP", "STUT", "GLIT", "SCRA", "REVS", "PTCH", "GATE", "FILT", "BREP", "SKIP", "MICR", "STRE", "RING", "FUZZ", "RAND",
-    "TOTL"};
+    "TOTL",
+    /* the BEAT bank */
+    "RST", "RBR", "FIL", "ROL", "SK8", "STM", "GT8", "G16", "332", "RMP", "RBT", "ROF", "SBR", "SCT", "STP", "HLF"};
 
 static struct {
     volatile int8_t seq[KG_STEPS];    /* main writes (D-SEQ, MUTATE), ISR reads and records: PX_*, PUNCH_NFX + DD_*, or -1 */
@@ -114,17 +120,28 @@ static void kg_mutate(uint32_t seed);
 #include "kg_loop.c"                            /* LOOP: a loop recorded from what plays, sliced, as grains */
 #include "kg_filter.c"                          /* FILTER: LP HP BP NOTCH DRIVE COMB METAL VOWEL PHASER RESONATOR */
 /* an effect's CC: its key's (DRUM DESTROYER n is on SLOOP's white key n: the same CC, the MPC maps keys) */
-static uint32_t kg_cc_of(int32_t fx) { return KG_CC[fx < (int32_t)PUNCH_NFX ? fx : fx - (int32_t)PUNCH_NFX]; }
+static uint32_t kg_cc_of(int32_t fx) { return KG_CC[fx < (int32_t)PUNCH_NFX ? fx : (fx - (int32_t)PUNCH_NFX) % DD_BANK]; }
 static const char *kg_name(int32_t fx) { return fx < (int32_t)PUNCH_NFX ? PUNCH_NAME[fx] : DD_NAME[fx - (int32_t)PUNCH_NFX]; }
-/* FX held + a key: SLOOP's effect, or with BANK on DESTROY a white key's DRUM DESTROYER effect (seq.c key_down, midi_fx) */
+/* the bank on the white keys: its first effect's id (BANK SLOOP: 0, its own PX_*) */
+static int32_t kg_bank_base(void)
+{
+    uint32_t b = (uint32_t)song.g[G_KBANK];
+    return b ? (int32_t)(PUNCH_NFX + (b >= 2u ? DD_BANK : 0u)) : 0;
+}
+/* FX held + a key: SLOOP's effect, or with BANK on DESTROY / BEAT a white key's effect of that bank (seq.c key_down,
+ * midi_fx) */
 static int32_t kg_fx_of_key(uint32_t k)
 {
     int32_t fx = punch_fx_of_key(k);
-    return song.g[G_KBANK] && fx >= 0 && fx < 16 ? (int32_t)PUNCH_NFX + fx : fx;
+    return song.g[G_KBANK] && fx >= 0 && fx < 16 ? kg_bank_base() + fx : fx;
 }
 /* an effect from the CHAOS pool */
 static int8_t kg_pick(uint32_t *s)
 {
+    if (song.g[G_KBANK] >= 2) {
+        uint32_t n = 3u + kg_pct(G_KCHAOS) * (KG_NBPOOL - 3u) / 100u;
+        return (int8_t)KG_BPOOL[kg_rand(s) % n];
+    }
     if (song.g[G_KBANK]) {
         uint32_t n = 3u + kg_pct(G_KCHAOS) * (KG_NDPOOL - 3u) / 100u;
         return (int8_t)KG_DPOOL[kg_rand(s) % n];
@@ -271,7 +288,7 @@ static int32_t kg_route(int32_t key)
         }
         /* the MPC: a CC at 127 for each effect playing (a key's CC), 0 when it stops; FM-1 or the channel OFF: none */
         if (out != KG_OUT_FM1 && ch > 0)
-            for (k = 0; k < nl; k++) ccm |= 1u << (lst[k] < (int32_t)PUNCH_NFX ? lst[k] : lst[k] - (int32_t)PUNCH_NFX);
+            for (k = 0; k < nl; k++) ccm |= 1u << (lst[k] < (int32_t)PUNCH_NFX ? lst[k] : (lst[k] - (int32_t)PUNCH_NFX) % DD_BANK);
         if (kg.sent_cc && (uint32_t)(ch - 1) != kg.sent_ch) {   /* (a new channel: the old one's let go first) */
             for (k = 0; k < PUNCH_NFX; k++)
                 if (kg.sent_cc >> k & 1u) kg_cc(kg.sent_ch, KG_CC[k], 0);
@@ -364,7 +381,7 @@ static void kg_clean(void)
  * change, stopped, and takes it back at power-on): the effect lane (both layers, intensities, probabilities), each
  * effect's INTENSITY, the slices' map, and K-GLITCH's settings. The loop's sound itself is RAM only */
 #define ST_TAIL_MAX_KG 1024u                     /* (storage.c ST_TAIL_MAX) */
-#define KG_BLOB_MAGIC 0x324C474Bu                 /* "KGL2" (0.7: the FILTER's automation) */
+#define KG_BLOB_MAGIC 0x334C474Bu                 /* "KGL3" (0.8: the BEAT bank's intensities) */
 typedef struct {
     uint32_t magic;
     uint16_t ng, ver;

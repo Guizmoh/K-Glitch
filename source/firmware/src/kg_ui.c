@@ -39,7 +39,8 @@ UI_SMALL static uint16_t kg_mix(uint16_t a, uint16_t b, uint32_t t)   /* a .. b,
 UI_SMALL static uint16_t kg_fam(int32_t fx)
 {
     if (fx >= (int32_t)PUNCH_NFX) {                   /* the DRUM DESTROYER bank */
-        static const uint8_t F[DD_N] = {0, 0, 3, 2, 2, 2, 1, 1, 0, 1, 0, 2, 3, 3, 3, 3};
+        static const uint8_t F[DD_N] = {0, 0, 3, 2, 2, 2, 1, 1, 0, 1, 0, 2, 3, 3, 3, 3,
+                                        0, 3, 3, 0, 1, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2};   /* (BEAT) */
         static const uint16_t C[4] = {KG_CYAN, KG_VIO, KG_AMB, KG_RED};
         return C[F[(fx - (int32_t)PUNCH_NFX) % DD_N]];
     }
@@ -161,15 +162,15 @@ UI_SMALL static void kg_pads16(int32_t now)
     uint32_t i;
     for (i = 0; i < 16u; i++) {
         int32_t cx = 13 + (int32_t)(i & 7u) * 27, cy = 52 + (int32_t)(i >> 3) * 22;
-        int32_t fx = song.g[G_KBANK] ? (int32_t)(PUNCH_NFX + i) : (int32_t)i, lit = fx == now;
+        int32_t fx = kg_bank_base() + (int32_t)i, lit = fx == now, d = fx - (int32_t)PUNCH_NFX;
         uint16_t c = kg_fam(fx);
         cv_rect(cx, cy, 25, 16, kg_mix(KG_PANEL, c, lit ? 256u : 170u));
         kg_cell_label(cx, cy + 5, 25, KG_SHORT[fx], KG_BG);
         if (lit) kg_box(cx - 1, cy - 1, 27, 18, KG_INK);
         if (song.g[G_KBANK]) {
             cv_rect(cx, cy + 17, 25, 2, KG_RULE);
-            cv_rect(cx, cy + 17, (int32_t)kd_int[i] / 4, 2, i == kg_sel ? KG_ACC : kg_mix(KG_RULE, KG_INK, 150));
-            if (i == kg_sel) kg_box(cx - 2, cy - 2, 29, 22, KG_ACC);
+            cv_rect(cx, cy + 17, (int32_t)kd_int[d % DD_N] / 4, 2, d == kg_sel ? KG_ACC : kg_mix(KG_RULE, KG_INK, 150));
+            if (d == kg_sel) kg_box(cx - 2, cy - 2, 29, 22, KG_ACC);
         }
     }
 }
@@ -313,8 +314,11 @@ UI_SMALL static void kg_paint(void)
     else cv_rect(229, 6, 6, 6, KG_MUTE);
     /* the card: title, the orange line under it (or the last message), the tags */
     kg_rbox(3, 19, 234, 219, KG_CARD, kg_mix(KG_CARD, KG_ACC, 150));
-    cv_text(10, 21, &FONT_S, TITLE[pn], KG_INK);
-    cv_text(11, 21, &FONT_S, TITLE[pn], KG_INK);           /* (bold) */
+    {   /* (DESTROY: the bank on the pads names it) */
+        const char *t = pn == KP_DESTROY ? (song.g[G_KBANK] >= 2 ? "BEAT FX" : song.g[G_KBANK] ? TITLE[0] : "SLOOP FX") : TITLE[pn];
+        cv_text(10, 21, &FONT_S, t, KG_INK);
+        cv_text(11, 21, &FONT_S, t, KG_INK);           /* (bold) */
+    }
     s[0] = 0;
     if (ui.msg_t) str_cpy(s, ui.msg, sizeof s);
     else switch (pn) {
@@ -392,7 +396,7 @@ UI_SMALL static void kg_paint(void)
         break;
     }
     case KP_BANK:
-        str_cpy(s, song.g[G_KBANK] ? "DRUM DESTROYER / " : "SLOOP FX / ", sizeof s);
+        str_cpy(s, song.g[G_KBANK] >= 2 ? "BEAT / " : song.g[G_KBANK] ? "DRUM DESTROYER / " : "SLOOP FX / ", sizeof s);
         str_cpy(s + str_len(s), DD_NAME[kg_sel % DD_N], sizeof s - str_len(s));
         break;
     case KP_CHAOS:
@@ -595,6 +599,8 @@ UI_SMALL static void kg_screen_draw(void)
         song.g[G_KLREV] = kl.rev[sl];
         song.g[G_KLRET] = RI[kl.ret[sl] % 9u];
     }
+    if (song.g[G_KBANK] && (kg_sel >= DD_BANK) != (song.g[G_KBANK] >= 2))   /* (the selection: in the bank shown) */
+        kg_sel = (uint8_t)(kg_sel % DD_BANK + (song.g[G_KBANK] >= 2 ? DD_BANK : 0u));
     song.g[G_KINT] = kd_int[kg_sel % DD_N];
     sig = kg_signature();
     if (!kg_shown || ui.force || sig != kg_sig) {
