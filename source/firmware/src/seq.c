@@ -443,28 +443,99 @@ static uint32_t trk_grid(const track_t *t, uint32_t *into, uint32_t *len)
 static uint32_t trk_len(const track_t *t) { return t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u; }
 
 /* ------------------------------------------------------------- undo --- */
-/* One step back (and forward again) for the pattern of one track: what it was before the last
- * recording pass, erase, step edit, tool or clear (a session: one mark). EDIT + OCT- / OCT+. */
+/* Steps back (and forward again) for the patterns: what a track was before each recording pass, erase, step edit, tool
+ * or clear (a session: one mark). `undo` holds the open session's track as it was when it opened; K-GLITCH: when the
+ * session closes (the next one opens, or an undo / redo comes), what it changed goes into a history (uh): each step that
+ * differs, before and after, with its nudge, and the length. Undo (EDIT or SAVE + OCT-) takes the history's last change
+ * back, again and again; redo (+ OCT+) puts them back, until something new is changed. The oldest go when it is full. */
 static struct {
     uint8_t valid, undone, trk;
+    uint8_t open;                                        /* (K-GLITCH) a session is open: its changes not in uh yet */
     int16_t len;
     uint32_t sess;
     step_t st[NSTEP];
     int8_t micro[NSTEP];                                 /* (2.7) the nudges too (REC QUANT OFF writes them) */
 } undo;
+#define UH_BYTES 2048u
+#define UH_MAXE 48u
+#define UH_REC (1u + 2u * (sizeof(step_t) + 1u))   /* a step: its index, before and after, the nudge before and after */
+static struct {
+    uint8_t buf[UH_BYTES];                              /* entries: track, length before, after, steps; then the steps */
+    uint16_t off[UH_MAXE + 1u];                          /* entry k: buf[off[k] .. off[k + 1]) */
+    uint8_t n, cur;                                      /* entries; applied (cur < n: the ones after can be redone) */
+} uh;
+static volatile uint8_t uh_busy;                         /* the main loop is writing it (the ISR's mark waits a pass) */
+static void uh_close(void)                               /* the open session's changes into the history */
+{
+    const track_t *t;
+    uint32_t i, cnt = 0, size, at;
+    uint8_t *p;
+    if (!undo.valid || !undo.open)
+        return;
+    undo.open = 0;
+    t = &trk[undo.trk % NTRK];
+    for (i = 0; i < NSTEP; i++)
+        cnt += memcmp(&undo.st[i], &t->step[i], sizeof(step_t)) != 0 || undo.micro[i] != t->micro[i];
+    if (!cnt && undo.len == t->p[P_SLEN])
+        return;                                          /* (nothing changed: nothing to undo) */
+    size = 4u + cnt * UH_REC;
+    uh.n = uh.cur;                                       /* (a new change: what was undone cannot come back) */
+    while (uh.n && (uh.off[uh.n] + size > UH_BYTES || uh.n >= UH_MAXE)) {   /* full: the oldest go */
+        uint32_t sh = uh.off[1];
+        memmove(uh.buf, uh.buf + sh, uh.off[uh.n] - sh);
+        for (i = 0; i < uh.n; i++) uh.off[i] = (uint16_t)(uh.off[i + 1u] - sh);
+        uh.n--;
+    }
+    at = uh.off[uh.n];
+    p = uh.buf + at;
+    p[0] = undo.trk, p[1] = (uint8_t)undo.len, p[2] = (uint8_t)t->p[P_SLEN], p[3] = (uint8_t)cnt;
+    p += 4;
+    for (i = 0; i < NSTEP; i++)
+        if (memcmp(&undo.st[i], &t->step[i], sizeof(step_t)) != 0 || undo.micro[i] != t->micro[i]) {
+            *p++ = (uint8_t)i;
+            memcpy(p, &undo.st[i], sizeof(step_t)), p += sizeof(step_t);
+            memcpy(p, &t->step[i], sizeof(step_t)), p += sizeof(step_t);
+            *p++ = (uint8_t)undo.micro[i];
+            *p++ = (uint8_t)t->micro[i];
+        }
+    uh.off[uh.n + 1u] = (uint16_t)(at + size);
+    uh.n++;
+    uh.cur = uh.n;
+}
+static void uh_apply(uint32_t e, int after)             /* entry e's steps as they were before it, or after */
+{
+    const uint8_t *p = uh.buf + uh.off[e];
+    track_t *t = &trk[p[0] % NTRK];
+    uint32_t i, cnt = p[3];
+    t->p[P_SLEN] = (int16_t)(after ? p[2] : p[1]);
+    p += 4;
+    for (i = 0; i < cnt; i++, p += UH_REC) {
+        uint32_t k = p[0] % NSTEP;
+        memcpy(&t->step[k], p + 1u + (after ? sizeof(step_t) : 0u), sizeof(step_t));
+        t->micro[k] = (int8_t)p[1u + 2u * sizeof(step_t) + (after ? 1u : 0u)];
+    }
+}
+static int uh_can_undo(void) { return undo.open || uh.cur > 0u; }
+static int uh_can_redo(void) { return !undo.open && uh.cur < uh.n; }
 static uint32_t undo_sess = 1;           /* UI sessions (seq.c: recording passes use the track's pass) */
 static void undo_mark(const track_t *t, uint32_t sess)
 {
     uint32_t i = trk_index(t);
-    if (undo.valid && !undo.undone && undo.trk == i && undo.sess == sess)
+    if (undo.valid && undo.open && undo.trk == i && undo.sess == sess)
         return;                                          /* (this session is marked already) */
+    if (uh_busy)
+        return;                                          /* (the ISR while the main loop writes: a pass unmarked) */
+    uh_busy = 1;
+    uh_close();
     memcpy(undo.st, t->step, sizeof undo.st);
     memcpy(undo.micro, t->micro, sizeof undo.micro);
     undo.len = t->p[P_SLEN];
     undo.trk = (uint8_t)i;
     undo.sess = sess;
     undo.valid = 1;
+    undo.open = 1;
     undo.undone = 0;
+    uh_busy = 0;
 }
 #define UNDO_REC(t) (((t)->pass << 2) | 1u)      /* a recording pass of track t */
 static uint32_t undo_erase_sess;

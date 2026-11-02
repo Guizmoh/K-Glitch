@@ -325,7 +325,7 @@ UI_SMALL static void note_mark(void)
 {
     static uint32_t sess, at = 0xFFFFu;
     uint32_t here = ui.cursor | (uint32_t)song.sel << 8;
-    if (here != at || !undo.valid || undo.undone || undo.sess != sess) {
+    if (here != at || !undo.valid || !undo.open || undo.sess != sess) {
         sess = (undo_sess += 4u) | 3u;
         at = here;
     }
@@ -1041,7 +1041,8 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
             ui.force = 1;                                 /* (the layer's sub line says it) */
         thr_req = (uint8_t)q;
     }
-    if (held == LY_ERASE) {                               /* EDIT + OCT- / OCT+: undo / redo */
+    if (held == LY_ERASE || held == LY_SONG) {            /* EDIT or SAVE + OCT- / OCT+: undo / redo, as far as the history
+                                                           * goes (K-GLITCH: SAVE too, many steps: seq.c uh) */
         uint32_t ob = 1u << panel.btn[B_OCTDN], pb = 1u << panel.btn[B_OCTUP];
         static uint32_t prev;
         uint32_t b = fm1_in.buttons & (ob | pb), press = b & ~prev;

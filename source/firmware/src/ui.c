@@ -260,34 +260,27 @@ UI_SMALL static void step_clear(step_t *st)
     st->time = ST_REST;
 }
 
-/* undo / redo (EDIT + OCT- / OCT+): the marked pattern and the one now swap places */
+/* undo / redo (EDIT or SAVE + OCT- / OCT+), as many steps as the history holds (seq.c uh) */
 UI_SMALL static int undo_swap(int redo)
 {
-    track_t *t;
-    int16_t len;
-    if (!undo.valid || (uint32_t)!!redo != undo.undone)
-        return 0;
-    t = &trk[undo.trk % NTRK];
+    int ok = 0;
     fm1_irq_off();
-    {
-        uint32_t i;
-        for (i = 0; i < NSTEP; i++) {
-            step_t x = t->step[i];
-            int8_t m = t->micro[i];
-            t->step[i] = undo.st[i];
-            undo.st[i] = x;
-            t->micro[i] = undo.micro[i];                 /* (2.7) and its nudge */
-            undo.micro[i] = m;
-        }
+    uh_close();                                          /* (the session open: its changes first) */
+    if (!redo && uh.cur) {
+        uh_apply(--uh.cur, 0);
+        ok = 1;
+    } else if (redo && uh.cur < uh.n) {
+        uh_apply(uh.cur++, 1);
+        ok = 1;
     }
-    len = t->p[P_SLEN];
-    t->p[P_SLEN] = undo.len;
-    undo.len = len;
-    undo.undone = (uint8_t)!redo;
+    if (ok)
+        undo.undone = (uint8_t)!redo;
     fm1_irq_on();
-    sync_reload = 1;
-    ui.force = 1;
-    return 1;
+    if (ok) {
+        sync_reload = 1;
+        ui.force = 1;
+    }
+    return ok;
 }
 
 /* SEQ cursor: wraps inside the pattern length, the bank follows, a step entry ends */

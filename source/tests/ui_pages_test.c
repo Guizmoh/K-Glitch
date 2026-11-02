@@ -204,6 +204,27 @@ int main(int argc, char **argv)
         TDRUM->p[P_TFLT] = f0; song.sel = (uint8_t)sel; ui.lock_par = lp; go_home(); frame();
     }
     open_family(FAM_EDIT); ui.force = 1; frame(); ppm("page-edit");
+    {   /* K-GLITCH: undo / redo many steps back: SAVE + OCT- three times, SAVE + OCT+ twice */
+        track_t *t = &trk[0];
+        static step_t keep[NSTEP];
+        uint32_t sb = 1u << panel.btn[B_SAVE], ob = 1u << panel.btn[B_OCTDN], pb = 1u << panel.btn[B_OCTUP], j;
+        int ok;
+        memcpy(keep, t->step, sizeof keep);
+        for (j = 0; j < 3u; j++) {                      /* three edits, three sessions */
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            t->step[j].note[0] = (uint8_t)(70 + j), t->step[j].n = 1, t->step[j].time = ST_NOTE;
+        }
+        fm1_in.buttons = sb; frames(3);
+        for (j = 0; j < 3u; j++) { fm1_in.buttons = sb | ob; frames(2); fm1_in.buttons = sb; frames(2); }
+        ok = !memcmp(t->step, keep, sizeof keep);
+        fm1_in.buttons = sb | ob; frames(2); fm1_in.buttons = sb; frames(2);
+        for (j = 0; j < 2u; j++) { fm1_in.buttons = sb | pb; frames(2); fm1_in.buttons = sb; frames(2); }
+        ok &= t->step[0].note[0] == 70 && t->step[1].note[0] == 71 && !memcmp(&t->step[2], &keep[2], sizeof(step_t));
+        fm1_in.buttons = 0; frames(4);
+        check(ok && !on_song_page(), "K-GLITCH: SAVE + OCT- undoes three edits in a row, SAVE + OCT+ redoes (SAVE stays a hold)");
+        memcpy(t->step, keep, sizeof keep);
+        go_home(); frames(40);                          /* (after SAVE: the knobs quiet a moment, #39) */
+    }
     {   /* K-GLITCH DRUMS: EDIT on the drum track: KIT, then the kit's pages (FM, C64), DRUM FX; a knob writes the sound */
         uint32_t sel = song.sel, j, n;
         int16_t kit0 = TDRUM->p[P_E0];

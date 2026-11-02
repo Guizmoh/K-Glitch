@@ -799,7 +799,7 @@ UI_SMALL static void layer_screen_draw(void)
                     str_cpy(tl[i].lab, "off", 8);
             }
         }
-        if (layer == LY_ERASE && is_drum(t) && !mute && !undo.valid)
+        if (layer == LY_ERASE && is_drum(t) && !mute && !uh_can_undo())
             str_cpy(sub, "black key: mute", sizeof sub);
         if (layer == LY_ERASE) {
             lab[0] = "shift", lab[1] = "length", lab[2] = is_drum(t) ? "" : "transp";
@@ -807,7 +807,7 @@ UI_SMALL static void layer_screen_draw(void)
             fmt_int(v[1], t->p[P_SLEN]);
             str_cpy(v[2], is_drum(t) ? "" : "-  +", 8);
             if (!mute)
-                str_cpy(sub, undo.valid ? (undo.undone ? "oct+ redo" : "oct- undo") : sub, sizeof sub);
+                str_cpy(sub, uh_can_redo() && undo.undone ? "oct+ redo" : uh_can_undo() ? "oct- undo" : sub, sizeof sub);
         } else {
             lab[0] = "rate";
             str_cpy(v[0], N_ROLL[clamp(song.g[G_ROLL], 0, 4)], 8);
@@ -1013,7 +1013,7 @@ UI_SMALL static void layer_screen_draw(void)
         } else if (chain_taps >= 2u || chain_n) {
             chain_sub(sub, sizeof sub);                 /* "chain A B B C" */
         } else {
-            str_cpy(sub, arrangement_enabled ? "song mode" : srec ? "rec armed" : "play  store", sizeof sub);
+            str_cpy(sub, arrangement_enabled ? "song mode" : srec ? "rec armed" : "oct- undo  oct+ redo", sizeof sub);
         }
         for (i = 0; i < 4u; i++) {                      /* (the chain's next entry framed as the one asked for) */
             int used = (ready >> i) & 1u, playing = live_sec == (int8_t)i && !arrangement_clock.running;

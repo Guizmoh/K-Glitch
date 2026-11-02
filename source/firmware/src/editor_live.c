@@ -153,7 +153,7 @@ UI_SMALL static void ed_live(const uint8_t *a, uint32_t na)
     ed_b(a[0]);
     ed_b((song.playing != 0) | (transport_req != 0) << 1 | (arrangement_enabled != 0) << 2 |
          (arrangement_clock.running != 0) << 3 | (fill_now != 0) << 4 | (fill_arm != 0) << 5 | (srec != 0) << 6);
-    ed_b((rec_wait != 0) | (undo.valid && !undo.undone) << 1 | (undo.valid && undo.undone) << 2 | (ft_on != 0) << 3);
+    ed_b((rec_wait != 0) | uh_can_undo() << 1 | uh_can_redo() << 2 | (ft_on != 0) << 3);
     ed_v(song.g[G_BPM]);
     ed_b((uint32_t)(live_sec + 1));
     ed_b((uint32_t)(live_req + 1));
