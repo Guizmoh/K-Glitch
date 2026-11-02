@@ -168,6 +168,16 @@ static uint16_t te_gray(uint32_t c)
     return (uint16_t)out;
 }
 
+/* K-GLITCH: the RIBBON palette also draws SLOOP's screens in the K-WASUB "ribbon classic" layout (tabs, cards, an orange
+ * rule; ui_draw.c, ui_studio.c); the other palettes and a user theme keep SLOOP's layout */
+static uint8_t pal_ribbon;
+static uint16_t pal_card, pal_row;               /* a card's fill, a row's (between the background and the rules) */
+static uint16_t rgb565_mix(uint32_t a, uint32_t b, uint32_t t)   /* a .. b, t 0..256 */
+{
+    uint32_t r = ((a >> 11) * (256u - t) + (b >> 11) * t) >> 8, g = (((a >> 5) & 63u) * (256u - t) + ((b >> 5) & 63u) * t) >> 8,
+             bl = ((a & 31u) * (256u - t) + (b & 31u) * t) >> 8;
+    return (uint16_t)(r << 11 | g << 5 | bl);
+}
 static void palette_set(uint32_t i)              /* built-in palette i, or the theme when it is chosen (2.7) */
 {
     uint32_t k;
@@ -178,6 +188,9 @@ static void palette_set(uint32_t i)              /* built-in palette i, or the t
     pal_hi = cu ? theme.hi : PALETTES[i % NPALETTES].hi ? PALETTES[i % NPALETTES].hi : 0xFFFFu;
     for (k = 0; k < 4u; k++)
         te_g[k] = te_gray(TE_G_DEF[k]);
+    pal_ribbon = (uint8_t)(!cu && i % NPALETTES == PAL_RIBBON);
+    pal_card = rgb565_mix(pal_bg, pal[0], 120);
+    pal_row = rgb565_mix(pal_bg, pal[0], 70);
     for (k = 0; k < 4u; k++) {
         uint16_t pt = PALETTES[i % NPALETTES].trk[k];
         TE_COL[k] = cu ? theme.trk[k] : pt ? pt : TE_COL_DEF[k];
@@ -248,6 +261,15 @@ static void cv_rect(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
             cv_px[(uint32_t)y * cv_w + (uint32_t)i] = sc;
 }
 
+/* K-GLITCH (ribbon): a rounded card, 2 px corners; edge == fill: no outline */
+static void cv_card(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t fill, uint16_t edge)
+{
+    cv_rect(x + 2, y, w - 4, h, edge);
+    cv_rect(x, y + 2, w, h - 4, edge);
+    cv_rect(x + 1, y + 1, w - 2, h - 2, edge);
+    cv_rect(x + 2, y + 1, w - 4, h - 2, fill);
+    cv_rect(x + 1, y + 2, w - 2, h - 4, fill);
+}
 static void cv_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t c)
 {
     int32_t dx = x1 > x0 ? x1 - x0 : x0 - x1, sx = x0 < x1 ? 1 : -1;

@@ -37,6 +37,57 @@ UI_SMALL static int32_t batt_shown(void)
 }
 
 /* top bar: transport, BPM, octave | USB, battery, CPU; messages replace it */
+/* K-GLITCH (the RIBBON palette): the head as K-GLITCH's pages have it, the pages of the family as tabs (the one shown an
+ * orange pill), then the beat and the tempo; a message in their place */
+UI_SMALL static void draw_head_ribbon(uint32_t rec)
+{
+    const page_t *pg = cur_page();
+    const engine_t *e = ENGINES[TSEL->eng_req % NENGINES];
+    char b[16];
+    const char *tl[24];
+    int32_t pos[24], w[24], tot = 0, off = 0, x;
+    uint32_t i, n = 0, cur = 0;
+    cv_begin(240, H_HEAD, C_BLACK);
+    if (ui.home) {
+        tl[n++] = "HOME";
+    } else {
+        for (i = 0; i < NPAGES && n < 24u; i++)
+            if (PAGES[i].fam == pg->fam && (i == ui.page || (page_shown(&PAGES[i]) && PAGES[i].scope != SC_SONG &&
+                                                             PAGES[i].scope != SC_DRUM))) {
+                const char *pt = PAGES[i].scope == SC_ENGINE ? e->page_title[PAGES[i].id[0] != P_E0] : 0;
+                if (i == ui.page) cur = n;
+                tl[n++] = pt ? pt : PAGES[i].title;
+            }
+    }
+    if (ui.msg_t) {
+        cv_text(4, 4, &FONT_T, ui.msg, C_WHITE);
+    } else {
+        for (i = 0; i < n; i++) { w[i] = text_w(&FONT_T, tl[i]) + 12; pos[i] = tot; tot += w[i] + 3; }
+        off = pos[cur] + w[cur] / 2 - 80;
+        if (off > tot - 160) off = tot - 160;
+        if (off < 0) off = 0;
+        for (i = 0; i < n; i++) {
+            int32_t tx = 3 + pos[i] - off;
+            if (tx < 1 || tx + w[i] > 168) continue;   /* (whole tabs only) */
+            if (i == cur) cv_card(tx, 3, w[i], 14, C_WHITE, C_WHITE);
+            cv_text(tx + 6, 4, &FONT_T, tl[i], i == cur ? C_BLACK : C_GRAY);
+        }
+    }
+    fmt_int(b, song.g[G_BPM]);
+    x = 236 - text_w(&FONT_T, b);
+    cv_text(x, 4, &FONT_T, b, ui.bpm_t ? C_WHITE : C_AMB);
+    x -= 27;
+    for (i = 0; i < 4u; i++)                          /* the beat: four dots, the bar's first orange */
+        cv_rect(x + (int32_t)i * 6, 8, 4, 4, song.playing && (clk_beat & 3u) == i ? (i ? C_AMB : C_WHITE) : C_LINE);
+    if (rec) te_disc(x - 7, 10, 3, rec == 2u ? TE_RED : C_GRAY);
+    if (mlu.on) cv_text(x - 44, 4, &FONT_T, "LEARN", C_WHITE);
+    else if (song.octave) {
+        str_cpy(b, song.octave > 0 ? "+" : "", 4);
+        fmt_int(b + str_len(b), song.octave);
+        cv_text(x - 14 - text_w(&FONT_T, b), 4, &FONT_T, b, C_WHITE);
+    }
+    cv_blit(0, Y_HEAD);
+}
 UI_SMALL static void draw_head(void)
 {
     char b[16];
@@ -46,9 +97,15 @@ UI_SMALL static void draw_head(void)
     uint32_t sig = (uint32_t)song.playing * 3u + rec * 5u + (uint32_t)(song.octave + 8) * 11u + song.sel * 13131u +
                    (ui.msg_t ? str_hash(7u, ui.msg) : 0u) + (uint32_t)song.g[G_BPM] * 101u + (ui.bpm_t != 0) * 31u +
                    (uint32_t)batt_shown() * 7777u + (usb.config && !usb.suspended) * 99991u + mlu.on * 7919u;
+    if (pal_ribbon)                                   /* (the tabs: the page; the beat's dots) */
+        sig += (uint32_t)ui.page * 2654435761u + ui.home * 977u + (song.playing ? (clk_beat & 3u) + 1u : 0u) * 40503u;
     if (!ui.force && sig == ui.head_sig)
         return;
     ui.head_sig = sig;
+    if (pal_ribbon) {
+        draw_head_ribbon(rec);
+        return;
+    }
     cv_begin(240, H_HEAD, C_BLACK);
     if (ui.msg_t) {
         cv_text(4, 1, &FONT_S, ui.msg, C_HI);
@@ -110,6 +167,18 @@ UI_SMALL static void draw_head(void)
 UI_SMALL static void draw_frame(void)
 {
     uint32_t i;
+    if (pal_ribbon) {                                   /* (K-GLITCH: no column rules; orange under the tabs, over the foot) */
+        lcd_fill(0, H_HEAD, 240, Y_LABEL - H_HEAD, C_BLACK);
+        lcd_fill(0, Y_SEP_END, 240, Y_GRAPH - Y_SEP_END, C_BLACK);
+        lcd_fill(0, Y_GRAPH + H_GRAPH, 240, Y_FOOT - Y_GRAPH - H_GRAPH, C_BLACK);
+        lcd_fill(0, Y_LABEL, 2, Y_SEP_END - Y_LABEL, C_BLACK);
+        lcd_fill(238, Y_LABEL, 2, Y_SEP_END - Y_LABEL, C_BLACK);
+        for (i = 1; i < 4u; i++)
+            lcd_fill(i * 60u - 2u, Y_LABEL, 4, Y_SEP_END - Y_LABEL, C_BLACK);
+        lcd_fill(0, H_HEAD + 1, 240, 1, C_WHITE);
+        lcd_fill(0, Y_FOOT - 2, 240, 1, C_WHITE);
+        return;
+    }
     lcd_fill(0, H_HEAD, 240, Y_LABEL - H_HEAD, C_BLACK);
     lcd_fill(0, Y_SEP_END, 240, Y_GRAPH - Y_SEP_END, C_BLACK);
     lcd_fill(0, Y_GRAPH + H_GRAPH, 240, Y_FOOT - Y_GRAPH - H_GRAPH, C_BLACK);
@@ -160,6 +229,25 @@ UI_SMALL static void draw_column(uint32_t c, const char *label, const char *val,
     if (!ui.force && str_eq(key, ui.col[c]))
         return;
     str_cpy(ui.col[c], key, sizeof ui.col[c]);
+    if (pal_ribbon) {                                   /* K-GLITCH: a card, its knob's colour on the left edge */
+        int32_t ch = Y_SEP_END - Y_LABEL;
+        cv_begin(56, (uint32_t)ch, C_BLACK);
+        if (l[0] || v[0]) {
+            cv_card(0, 0, 56, ch, pal_card, vc == C_WHITE ? C_WHITE : pal_card);
+            cv_rect(0, 6, 2, ch - 12, TE_COL[c & 3u]);
+            cv_text(6, 3, &FONT_T, l, C_GRAY);
+            x = cv_text(6, 15, &FONT_S, v, vc);
+            cv_text(x + 3, 20, &FONT_T, u, C_DIM);
+            if (ratio >= 0) {
+                fx = ratio * 44 / 1000;
+                cv_rect(6, ch - 6, 44, 2, pal_row);
+                cv_rect(6, ch - 6, fx, 2, vc == C_DIM ? C_DIM : TE_COL[c & 3u]);
+                cv_rect(6 + fx, ch - 8, 1, 6, vc == C_DIM ? C_HI : vc);
+            }
+        }
+        cv_blit(c * 60u + 2u, Y_LABEL);
+        return;
+    }
     cv_begin(55, Y_SEP_END - Y_LABEL, C_BLACK);         /* x 4..58: the rule at 59 stays */
     if (FELUCCA_ICONS && icon != ICON_NONE && l[0])
         cv_icon(0, 1, icon, TE_COL[c & 3u]);            /* icon rows 1..10 = the label's cap height */
@@ -716,7 +804,11 @@ UI_SMALL static void graph_big(void)
     uint32_t c, n = 0;
     for (c = 0; c < 4u; c++)
         n += ui.big_l[c][0] != 0;
-    if (n > 1u) {
+    if (pal_ribbon) {                                   /* K-GLITCH: the panel's four quarters */
+        for (c = 0; c < 4u; c++)
+            if (ui.big_l[c][0] && n > 1u)
+                cv_card(c & 1u ? 122 : 6, c & 2u ? 63 : 3, 112, 57, pal_card, ui.big_c[c] == C_WHITE ? C_WHITE : pal_card);
+    } else if (n > 1u) {
         cv_rect(119, 6, 1, 112, C_LINE);
         cv_rect(6, 62, 228, 1, C_LINE);
     }
@@ -728,7 +820,8 @@ UI_SMALL static void graph_big(void)
             x0 = (240 - text_w(&FONT_L, ui.big_v[c]) - (ui.big_u[c][0] ? text_w(&FONT_S, ui.big_u[c]) + 4 : 0)) / 2;
             y0 = 30;
         }
-        cv_text(x0, y0 + 2, &FONT_S, ui.big_l[c], TE_COL[c & 3u]);
+        if (pal_ribbon) x0 += 4;
+        cv_text(x0, y0 + 2, &FONT_S, ui.big_l[c], pal_ribbon ? C_GRAY : TE_COL[c & 3u]);
         x = cv_text(x0, y0 + 20, &FONT_L, ui.big_v[c], ui.big_c[c] == C_DIM ? C_DIM : ui.big_c[c] == C_WHITE ? C_WHITE : C_HI);
         if (ui.big_u[c][0])
             cv_text(x + 4, y0 + 34, &FONT_S, ui.big_u[c], C_GRAY);
@@ -750,6 +843,10 @@ UI_SMALL static void draw_graph(void)
     if (!ui.force && sig == ui.graph_sig)
         return;
     ui.graph_sig = sig;
+    {
+    uint16_t bg0 = pal_bg;
+    if (pal_ribbon)                                     /* K-GLITCH: the graph on a panel (its background drawn as "black") */
+        pal_bg = pal_row;
     cv_begin(240, H_GRAPH, C_BLACK);
     cv_oy = G_OY;
     if (ui.home) {
@@ -813,9 +910,19 @@ UI_SMALL static void draw_graph(void)
         x = cv_text(4, 16, &FONT_L, ui.focus_v, C_WHITE);
         cv_text(x + 4, 30, &FONT_S, ui.focus_u, C_DIM);
     }
+    if (pal_ribbon) {                                   /* the panel's margins and rounded corners, the page's background */
+        pal_bg = bg0;
+        cv_rect(0, 0, 3, H_GRAPH, bg0), cv_rect(237, 0, 3, H_GRAPH, bg0);
+        cv_rect(3, 0, 2, 1, bg0), cv_rect(3, 1, 1, 1, bg0), cv_rect(235, 0, 2, 1, bg0), cv_rect(236, 1, 1, 1, bg0);
+        cv_rect(3, H_GRAPH - 1, 2, 1, bg0), cv_rect(3, H_GRAPH - 2, 1, 1, bg0);
+        cv_rect(235, H_GRAPH - 1, 2, 1, bg0), cv_rect(236, H_GRAPH - 2, 1, 1, bg0);
+        top = 1;                                        /* (the whole panel each time: its margins) */
+    }
+    pal_bg = bg0;
     /* graphs keep out of the top G_OY rows: skip them unless something is (or was) there */
     cv_blit_from(0, Y_GRAPH, top || ui.graph_top || ui.force ? 0u : G_OY);
     ui.graph_top = (uint8_t)top;
+    }
 }
 
 /* the page shown: its place in its family and how many (*n), as SELECT walks them (2.7: the screens of their own, SONG
@@ -907,9 +1014,15 @@ UI_SMALL static void draw_foot(void)
         str_cpy(pf, pn, sizeof pf);
         while (pf[0] && text_w(&FONT_S, pf) > room)
             pf[str_len(pf) - 1u] = 0;
-        cv_text(x + 10, 20, &FONT_S, pf, C_AMB);
+        cv_text(x + 10, 20, &FONT_S, pf, pal_ribbon ? C_WHITE : C_AMB);
     }
-    cv_text(236 - text_w(&FONT_S, ti), 20, &FONT_S, ti, C_GRAY);
+    if (pal_ribbon) {                                   /* K-GLITCH: the page as a tag */
+        int32_t tw = text_w(&FONT_T, ti) + 10;
+        cv_rect(236 - text_w(&FONT_S, ti), 18, text_w(&FONT_S, ti) + 4, 20, C_BLACK);
+        cv_card(236 - tw, 21, tw, 15, pal_card, pal_card);
+        cv_text(236 - tw + 5, 23, &FONT_T, ti, C_GRAY);
+    } else
+        cv_text(236 - text_w(&FONT_S, ti), 20, &FONT_S, ti, C_GRAY);
     cv_blit(0, Y_FOOT);
 }
 UI_SMALL static void draw_columns(void)

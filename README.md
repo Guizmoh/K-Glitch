@@ -14,7 +14,7 @@ Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cib
 
 ## Ce que K-GLITCH ajoute à SLOOP
 
-Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : onze pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre). Ce thème (ardoise, valeurs cyan, accent orange) est aussi celui de **tout le logiciel** : c'est la palette **RIBBON**, par défaut (MENU > COLOR garde les autres).
+Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : onze pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre). Ce thème est aussi celui de **tout le logiciel** : avec la palette **RIBBON** (par défaut), les pages de SLOOP ont les mêmes onglets (les pages de la famille, celle affichée en pastille orange, le temps et le tempo à droite), les valeurs en cartes, le graphe sur un panneau, les filets orange ; les écrans TRACKS, DRUMS et REC ont les onglets TRACKS / DRUMS / SONG et des cartes pour les potards. MENU > COLOR garde les autres palettes, avec la mise en page d'origine de SLOOP.
 
 | Page | Rôle | K1 | K2 | K3 | K4 |
 | --- | --- | --- | --- | --- | --- |

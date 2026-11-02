@@ -110,6 +110,25 @@ UI_SMALL static void te_dials(int32_t y0, const char *const lab[4], const char *
     if (!ui.force && sig == *cache)
         return;
     *cache = sig;
+    if (pal_ribbon && !ui.msg_t) {                      /* K-GLITCH: four cards, a gauge each, the knob's colour on the left */
+        cv_begin(240, 240u - (uint32_t)y0, C_BLACK);
+        cv_rect(0, 0, 240, 1, C_WHITE);
+        for (k = 0; k < 4u; k++) {
+            int32_t cx = 2 + 60 * (int32_t)k, hot = ui.hot_t && ui.hot_col == k, fx;
+            if (!lab[k][0])
+                continue;
+            cv_card(cx, 4, 56, 50, pal_card, hot ? C_WHITE : pal_card);
+            cv_rect(cx, 10, 2, 38, TE_COL[k]);
+            cv_text(cx + 6, 7, &FONT_T, lab[k], C_GRAY);
+            cv_text(cx + 6, 21, &FONT_S, val[k], hot ? C_WHITE : C_HI);
+            fx = clamp(ratio[k], 0, 1000) * 44 / 1000;
+            cv_rect(cx + 6, 45, 44, 2, pal_row);
+            cv_rect(cx + 6, 45, fx, 2, TE_COL[k]);
+            cv_rect(cx + 6 + fx, 43, 1, 6, hot ? C_WHITE : C_HI);
+        }
+        cv_blit(0, (uint32_t)y0);
+        return;
+    }
     cv_begin(240, ui.msg_t ? 240u - (uint32_t)y0 : 40u, C_BLACK);
     if (ui.msg_t) {                                     /* a message: a white bar */
         cv_rect(0, 10, 240, 32, C_WHITE);
@@ -190,6 +209,63 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     if (!ui.force && sig == *cache)
         return;
     *cache = sig;
+    if (pal_ribbon) {                                   /* K-GLITCH: the screens as tabs (this one an orange pill), the beat, the
+                                                         * tempo; under them where the loop is, and the tags */
+        static const char *const TABS[3] = {"tracks", "drums", "song"};
+        int32_t x = 3, tw;
+        uint32_t own = 3;
+        const char *tag = 0;                           /* (DRUMS: the kit's style, a tag under the tabs) */
+        for (k = 0; k < 3u; k++) if (str_eq(title, TABS[k])) own = k;
+        if (own == 3u && tc == TE_DRUM) own = 1, tag = title;
+        cv_begin(240, 40, C_BLACK);
+        for (k = own == 3u ? 3u : 0u; k < 3u + (own == 3u); k++) {   /* (another screen, REC: its name alone) */
+            const char *t = k < 3u ? TABS[k] : title;
+            int on = k == own;
+            tw = text_w(&FONT_T, t) + 12;
+            if (on) cv_card(x, 3, tw, 14, own == 3u && tc == TE_RED ? TE_RED : C_WHITE, own == 3u && tc == TE_RED ? TE_RED : C_WHITE);
+            cv_text(x + 6, 4, &FONT_T, t, on ? C_BLACK : C_GRAY);
+            x += tw + 3;
+        }
+        fmt_int(b, song.g[G_BPM]);
+        x = 236 - text_w(&FONT_T, b);
+        cv_text(x, 4, &FONT_T, b, ui.bpm_t ? C_WHITE : C_AMB);
+        x -= 27;
+        for (k = 0; k < 4u; k++)
+            cv_rect(x + (int32_t)k * 6, 8, 4, 4, playing && beat % 4u == k ? (k ? C_AMB : C_WHITE) : C_LINE);
+        te_play_icon(4, 22, (int)playing);
+        if (playing) loop_pos(TSEL, b);
+        else str_cpy(b, arrangement_enabled ? "song" : "loop", sizeof b);
+        cv_text(20, 21, &FONT_S, b, playing ? C_WHITE : C_GRAY);
+        x = 236;
+        if (song.rec) {
+            tw = text_w(&FONT_T, "rec") + 10;
+            x -= tw;
+            cv_card(x, 22, tw, 13, TE_RED, TE_RED);
+            cv_text(x + 5, 23, &FONT_T, "rec", C_AMB);
+            if (song.g[G_CLOCK] != 0) { x -= text_w(&FONT_T, "click") + 6; cv_text(x, 23, &FONT_T, "click", C_GRAY); }
+        }
+        if (song.solo) {
+            tw = text_w(&FONT_T, "solo") + 10;
+            x -= tw + 4;
+            cv_card(x, 22, tw, 13, C_AMB, C_AMB);
+            cv_text(x + 5, 23, &FONT_T, "solo", C_BLACK);
+        }
+        if (tag) {
+            tw = text_w(&FONT_T, tag) + 10;
+            x -= tw + 4;
+            cv_card(x, 22, tw, 13, TE_DRUM, TE_DRUM);
+            cv_text(x + 5, 23, &FONT_T, tag, C_BLACK);
+        }
+        if (sect >= 0) {                               /* (2.7.2) the section A..D playing, SONG-layer colours */
+            char sb[2] = {(char)('A' + (sect & 3)), 0};
+            x -= 18;
+            cv_card(x, 22, 14, 13, playing ? TE_COL[sect & 3] : TE_DIM[sect & 3], playing ? TE_COL[sect & 3] : TE_DIM[sect & 3]);
+            cv_text(x + 4, 23, &FONT_T, sb, C_BLACK);
+        }
+        cv_rect(0, 39, 240, 1, C_WHITE);
+        cv_blit(0, 0);
+        return;
+    }
     cv_begin(240, 40, C_BLACK);
     fmt_int(b, song.g[G_BPM]);
     cv_text(4, 4, &FONT_L, b, ui.bpm_t ? C_WHITE : TE_G4);
@@ -259,6 +335,12 @@ UI_SMALL static void studio_tracks_draw(void)
         if (!ui.force && h == rows[i]) continue;
         rows[i] = h;
         cv_begin(240, 36, C_BLACK);
+        {
+        uint16_t bg0 = pal_bg;
+        if (pal_ribbon) {                               /* K-GLITCH: each track a row card, the selected one outlined */
+            cv_card(1, 1, 238, 34, pal_row, selected ? C_WHITE : pal_row);
+            pal_bg = pal_row;
+        }
         cv_rect(2, 3, 26, 30, selected ? col : dim);   /* the track tile */
         {
             char n[2] = {(char)('1' + i), 0};
@@ -296,9 +378,11 @@ UI_SMALL static void studio_tracks_draw(void)
             if (song.playing && p == pos)
                 cv_rect(34 + (int32_t)j * 10, 31, 8, 2, C_WHITE);
         }
-        cv_rect(198, 23, 38, 5, TE_G1);                /* the level */
+        cv_rect(198, 23, 36, 5, TE_G1);                /* the level */
         if (!silent)
-            cv_rect(198, 23, (int32_t)level * 38 / 127, 5, selected ? col : TE_G3);
+            cv_rect(198, 23, (int32_t)level * 36 / 127, 5, selected ? col : TE_G3);
+        pal_bg = bg0;
+        }
         cv_blit(0, 40 + i * 36);
     }
     {   /* KNOB 1 swing (the global groove), 2 level, 3 steps, 4 pan of the selected track */
