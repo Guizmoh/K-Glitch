@@ -51,6 +51,17 @@ UI_SMALL static uint16_t kg_fam(int32_t fx)
 /* the small font (FONT_T, 6 x 11, anti-aliased: tools/gen_font.py): x, y the top of the capitals; returns the x after */
 UI_SMALL static int32_t kg_t5(int32_t x, int32_t y, const char *s, uint16_t c) { return cv_text(x, y - 1, &FONT_T, s, c); }
 UI_SMALL static int32_t kg_t5w(const char *s) { return text_w(&FONT_T, s) - 1; }
+/* a label centred in a cell w wide at (x, y): as many of its letters as fit */
+UI_SMALL static void kg_cell_label(int32_t x, int32_t y, int32_t w, const char *s, uint16_t c)
+{
+    char b[8];
+    uint32_t n = str_len(s);
+    if (n > 7u) n = 7u;
+    str_cpy(b, s, n + 1u);
+    while (n > 1u && kg_t5w(b) > w - 2)
+        b[--n] = 0;
+    kg_t5(x + (w - kg_t5w(b)) / 2, y, b, c);
+}
 UI_SMALL static void kg_box(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)   /* a 1 px frame */
 {
     cv_rect(x, y, w, 1, c);
@@ -153,7 +164,7 @@ UI_SMALL static void kg_pads16(int32_t now)
         int32_t fx = song.g[G_KBANK] ? (int32_t)(PUNCH_NFX + i) : (int32_t)i, lit = fx == now;
         uint16_t c = kg_fam(fx);
         cv_rect(cx, cy, 25, 16, kg_mix(KG_PANEL, c, lit ? 256u : 170u));
-        kg_t5(cx + (25 - kg_t5w(KG_SHORT[fx])) / 2, cy + 5, KG_SHORT[fx], KG_BG);
+        kg_cell_label(cx, cy + 5, 25, KG_SHORT[fx], KG_BG);
         if (lit) kg_box(cx - 1, cy - 1, 27, 18, KG_INK);
         if (song.g[G_KBANK]) {
             cv_rect(cx, cy + 17, 25, 2, KG_RULE);
@@ -360,7 +371,7 @@ UI_SMALL static void kg_paint(void)
             if (fx >= 0 && fx < (int32_t)KG_NFX) {
                 uint16_t c = kg_fam(fx);
                 cv_rect(cx, cy, 25, 18, kg_mix(KG_PANEL, c, lit ? 256u : 180u));
-                kg_t5(cx + (25 - kg_t5w(KG_SHORT[fx])) / 2, cy + 6, KG_SHORT[fx], KG_BG);
+                kg_cell_label(cx, cy + 6, 25, KG_SHORT[fx], KG_BG);
             } else {
                 kg_box(cx, cy, 25, 18, kg_mix(KG_PANEL, KG_RULE, 170));
                 cv_rect(cx + 11, cy + 8, 2, 2, (i & 3u) == 0u ? KG_MUTE : KG_RULE);

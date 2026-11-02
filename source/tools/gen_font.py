@@ -25,19 +25,19 @@ FONTS = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 # anti-aliasing at their design size and enlarged by an integer factor
 # SLOOP 2.6: Terminus Bold (the same 8 x 16 cell and advances as the regular one: no layout moves), drawn in
 # capitals only (gfx.c glyph); the regular ter-u16n.bdf stays for the web editor's font (gen_webfont.py)
-# K-GLITCH: anti-aliased, from IBM Plex Mono SemiBold (SIL OFL 1.1; rendered to bitmaps: a Modified Version, which
-# does not carry the Reserved Font Name), on SLOOP's cells: S 8 x 16 (capitals' baseline at row 12), L 16 x 32 drawn
-# at its own size (not S enlarged: no staircase), T 6 x 11 (K-GLITCH's small labels, kg_ui.c). KG_FONT=terminus:
-# SLOOP's Terminus again (the flash: S + L + T anti-aliased take about 34 KB, Terminus 5 KB)
+# K-GLITCH: anti-aliased, from Inter SemiBold (SIL OFL 1.1, assets/fonts/Inter-LICENSE.txt), proportional with
+# tabular figures (values do not jitter), on SLOOP's rows: S 16 high (capitals' baseline at row 12), L 32 drawn at its
+# own size (not S enlarged: no staircase), T 11 (K-GLITCH's small labels, kg_ui.c). KG_FONT=terminus: SLOOP's
+# Terminus again (the flash: S + L + T anti-aliased take about 35 KB, Terminus 5 KB)
 import os
 if os.environ.get("KG_FONT", "").lower() == "terminus":
     SIZES = [("S", "ter-u16b.bdf", 16, 1, True, 32, 255, 0, 0),   # Latin-1 (Hügelton needs the umlaut)
              ("L", "ter-u16b.bdf", 16, 2, True, 32, 95, 0, 0),    # values / titles: digits, signs, capitals
-             ("T", "IBMPlexMono-SemiBold.ttf", 10, 1, False, 32, 126, 11, 8)]   # (K-GLITCH's small labels)
+             ("T", "Inter-SemiBold.otf", 10, 1, False, 32, 126, 11, 8)]   # (K-GLITCH's small labels)
 else:
-    SIZES = [("S", "IBMPlexMono-SemiBold.ttf", 13, 1, False, 32, 126, 16, 12),
-             ("L", "IBMPlexMono-SemiBold.ttf", 26, 1, False, 32, 95, 32, 25),
-             ("T", "IBMPlexMono-SemiBold.ttf", 10, 1, False, 32, 126, 11, 8)]
+    SIZES = [("S", "Inter-SemiBold.otf", 12, 1, False, 32, 126, 16, 12),
+             ("L", "Inter-SemiBold.otf", 24, 1, False, 32, 95, 32, 25),
+             ("T", "Inter-SemiBold.otf", 10, 1, False, 32, 126, 11, 8)]
 PAD = 2
 
 
@@ -123,11 +123,11 @@ def render(ttf, px, scale, pixel, first, last, cell_h=0, base=0):
     glyphs = []
     for c in range(first, last + 1):
         ch = chr(c)
-        adv = int(round(font.getlength(ch, features=feats)))
+        adv = int(round(font.getlength(ch, features=["tnum"] if cell_h else feats)))
         bw = adv + 2 * PAD
         img = Image.new("L", (bw, asc + desc + h), 0)
         if cell_h:                                     # (K-GLITCH) the baseline on row `base` of a fixed cell
-            ImageDraw.Draw(img).text((PAD, base), ch, font=font, fill=255, anchor="ls")
+            ImageDraw.Draw(img).text((PAD, base), ch, font=font, fill=255, anchor="ls", features=["tnum"])
             img = img.crop((0, 0, bw, h))
         else:
             ImageDraw.Draw(img).text((PAD, 0), ch, font=font, fill=255, features=feats)

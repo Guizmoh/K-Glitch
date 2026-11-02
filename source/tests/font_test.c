@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* The screen fonts (gfx.c cv_text, tools/gen_font.py). K-GLITCH: anti-aliased, from IBM Plex Mono SemiBold, on
- * SLOOP's cells, so that no layout moves: S 8 x 16 (every advance 8, as Terminus's), L 16 x 32 (advance 16), T 6 x 11
- * (K-GLITCH's small labels). Checked: the cells and every advance; every printable character draws something (the
+/* The screen fonts (gfx.c cv_text, tools/gen_font.py). K-GLITCH: anti-aliased, from Inter SemiBold, proportional with
+ * tabular figures, on SLOOP's rows: S 16 high (the figures 8 wide, as Terminus's), L 32 (figures 16), T 11 (figures 6;
+ * K-GLITCH's small labels). Checked: the cells, the figures' advances (values do not jitter), every advance within
+ * reason; every printable character draws something (the
  * space nothing), inside its cell's rows; the anti-aliasing blends with what is under it (white text on orange: no
  * black fringe; dark text on a light fill: no pixel darker than the text); lower case drawn as capitals; clipping at the
  * canvas's edges. (SLOOP's own test checked Terminus pixel for pixel: KG_FONT=terminus builds that font again.)
@@ -32,7 +33,7 @@ int main(void)
         for (c = ft->first; c <= ft->last; c++) {
             char s[2] = {(char)c, 0};
             uint32_t lit = 0;
-            oka &= ft->adv[c - ft->first] == ADV[f];
+            oka &= (c >= '0' && c <= '9') ? ft->adv[c - ft->first] == ADV[f] : ft->adv[c - ft->first] <= ADV[f] * 2u;
             cv_begin(64, 48, 0);
             cv_text(10, 4, ft, s, 0xFFFFu);
             for (y = 0; y < 48u; y++)
@@ -44,7 +45,7 @@ int main(void)
             if (c == ' ') okd &= lit == 0u;
             else if (c >= 33u && c <= 126u && !(c >= 'a' && c <= 'z')) okd &= lit > 0u;
         }
-        snprintf(nm, sizeof nm, "font %u: cell %u high, every advance %u, every glyph drawn in its rows", f, H[f], ADV[f]);
+        snprintf(nm, sizeof nm, "font %u: cell %u high, figures %u wide, every glyph drawn in its rows", f, H[f], ADV[f]);
         check(okc && oka && okd, nm);
     }
     {   /* lower case as capitals */

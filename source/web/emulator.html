@@ -45,7 +45,8 @@ button.primary { background: var(--acc); color: #1a0e04; border-color: var(--acc
 .lcol, .rcol { display: grid; gap: 14px; align-content: start; min-width: 0; }
 .lrow { display: flex; gap: 14px; }
 .screen { background: #000; border: 6px solid #0b1015; border-radius: 10px; width: 100%; aspect-ratio: 1; max-width: 480px; }
-.screen canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; border-radius: 4px; }
+.screen canvas { width: 100%; height: 100%; display: block; image-rendering: auto; border-radius: 4px; }
+.screen.px canvas { image-rendering: pixelated; }   /* (PIXELS: the FM-1's pixels as they are) */
 .knobs { display: flex; flex-wrap: wrap; gap: 10px; }
 .enc { display: grid; justify-items: center; gap: 6px; width: 64px; }
 .knob { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4c5a68, #1a222a 70%);
@@ -100,6 +101,7 @@ kbd { font: 600 11px var(--f-mono); color: var(--ink); background: var(--body-hi
       <div class="tag">FM-1 drum destroyer &middot; <span lang="fr">émulateur</span><span lang="en">emulator</span> &middot; SLOOP 2.8.4 + K-GLITCH 0.4</div>
     </div>
     <div class="bar">
+      <button id="pix" type="button" title="Écran lissé ou pixels réels / smooth screen or real pixels">PIXELS</button>
       <button id="lang" type="button">EN / FR</button>
       <button id="midi" type="button">MIDI</button>
       <select id="mout" aria-label="MIDI out" hidden></select>
@@ -445,6 +447,13 @@ $("midi").addEventListener("click", async () => {
     acc.onstatechange = hook; hook();
   } catch (err) { $("status").textContent = T("Accès MIDI refusé.", "MIDI access refused."); }
 });
+{   /* the screen: smooth by default (the FM-1's 240 x 240 enlarged), PIXELS shows them as they are */
+  let px = false;
+  try { px = localStorage.getItem("kg.px") === "1"; } catch (e) {}
+  const apply = () => { document.querySelector(".screen").classList.toggle("px", px); $("pix").classList.toggle("primary", px); };
+  $("pix").addEventListener("click", () => { px = !px; try { localStorage.setItem("kg.px", px ? "1" : "0"); } catch (e) {} apply(); });
+  apply();
+}
 $("lang").addEventListener("click", () => { const u = new URL(location.href); if (EN) u.searchParams.delete("lang"); else u.searchParams.set("lang", "en"); location.href = u.href; });
 
 startIdle();
