@@ -147,6 +147,7 @@ void emu_init(void)
     }
     TDRUM->p[P_E0] = DRUM_DEFAULT_KIT;
     kr_generate(KS_JUNGLE);                             /* a break to destroy at once (the ORIGINAL) */
+    song.g[G_BPM] = GP[G_BPM].def;                      /* (K-GLITCH's tempo at power-on: 98, not the style's) */
     usb.config = 1;                                     /* (the MIDI out queue runs: the page reads it) */
     sloop_splash();
 }

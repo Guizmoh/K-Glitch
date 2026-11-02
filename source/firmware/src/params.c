@@ -183,7 +183,7 @@ static void preset_extras(int16_t *p, const preset_t *pr)
 
 
 static const param_desc_t GP[G_COUNT] = {
-    [G_BPM] = PD("BPM", F_BPM, 40, 240, 90),
+    [G_BPM] = PD("BPM", F_BPM, 40, 240, 98),   /* (K-GLITCH: 98; SLOOP: 90) */
     [G_SWING] = PD("SWING", F_SWING, 0, 100, 0),
     [G_CLOCK] = PE("CLICK", N_CLICK, 0),            /* (the old CLK slot: projects keep their format) */
     [G_TUNE] = PD("TUNE", F_INT, -50, 50, 0),
