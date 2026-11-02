@@ -87,8 +87,10 @@ static const char *const N_KFX[] = {"--", "LOOP4", "LOOP8", "LOOP16", "LOOP32", 
                                     "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBL", "K LOW", "K MID", "K HI",
                                     "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE",
                                     "D-LOP", "D-STU", "D-GLI", "D-SCR", "D-REV", "D-PIT", "D-GAT", "D-FIL", "D-BRP",
-                                    "D-SKP", "D-MIC", "D-STR", "D-RNG", "D-FUZ", "D-RND", "D-TOT"};   /* 1 + PX_*, then the
-                                                                       * DRUM DESTROYER bank (kg_dd.c) */
+                                    "D-SKP", "D-MIC", "D-STR", "D-RNG", "D-FUZ", "D-RND", "D-TOT",
+                                    "B-RST", "B-RBR", "B-FIL", "B-ROL", "B-SK8", "B-STM", "B-GT8", "B-G16", "B-332",
+                                    "B-RMP", "B-RBT", "B-ROF", "B-SBR", "B-SCT", "B-STP", "B-HLF"};   /* 1 + PX_*, then the
+                                                                       * DRUM DESTROYER bank (kg_dd.c), BEAT's (kg_beat.c) */
 static const char *const N_SLCR[] = {"OFF", "GATE", "STUT"};             /* SL_OFF .. SL_STUT (slicer.c) */
 static const char *const N_SLDIV[] = {"1/8", "1/16", "1/32", "8T", "16T", "32T"};   /* SL_DEN */
 static const char *const N_CHORD[] = {"OFF", "TRIAD", "7TH", "9TH", "SUS4", "POWER"};   /* seq.c CHORD_DEG */
@@ -508,17 +510,12 @@ static const page_t PAGES[] = {
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
     /* K-GLITCH (kg_ui.c draws them whole): DESTROY the main screen (ALGORITHM: the effect, PRESETS: its INTENSITY, the
      * white keys: the pads), then its three modes DRUMS, CHOP, CHAOS, and the effect sequencer, the bank, the setup */
-    {"DESTROY", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
-    {"D-FILTER", FAM_FX, SC_GLOBAL, GR_KG, {G_KFTYPE, G_KFCUT, G_KFRES, G_KFMOD}},   /* (kg_filter.c; the keys: FREQ) */
-    {"D-DRUMS", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
-    {"D-CHOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
-    {"D-LOOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */
-    {"D-SLICE", FAM_FX, SC_GLOBAL, GR_KG, {G_KLSL, G_KLPLAY, G_KLREV, G_KLRET}},
-    {"D-GRAIN", FAM_FX, SC_GLOBAL, GR_KG, {G_KGPOS, G_KGSIZE, G_KGDENS, G_KGPIT}},
-    {"D-SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KPROB, G_KSEQ}},   /* (OCT+: DICE) */
-    {"D-BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KMULTI}},
-    {"D-CHAOS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
-    {"D-SETUP", FAM_FX, SC_GLOBAL, GR_KG, {G_KTGT, G_KCCCH, G_KCLR, G_KCTGT}},
+    {"PADS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
+    {"FX SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KPROB, G_KSEQ}},   /* (OCT+: DICE) */
+    {"BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KMULTI}},
+    {"CHAOS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
+    {"GEN", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
+    {"CHOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
     {"FX", FAM_FX, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},
     {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},   /* drum track too */
@@ -526,14 +523,19 @@ static const page_t PAGES[] = {
     {"INSERT 2", FAM_FX, SC_TRACK, GR_INS, {P_IMIX, 0xFF, 0xFF, 0xFF}},  /* .. its dry / wet; the drum track too */
     {"DLY", FAM_FX, SC_GLOBAL, GR_NONE, {G_DTIME, G_DFDBK, G_DCOLOR, G_DMIX}},
     {"REV/CHO", FAM_FX, SC_GLOBAL, GR_NONE, {G_RSIZE, G_RDAMP, G_CRATE, G_CDEPTH}},
-    {"SEL", FAM_SCL, SC_TRACK, GR_SCALE, {P_ROOT, P_SCALE, P_QUANT, P_CHORD}},
-    {"SEL 2", FAM_SCL, SC_TRACK, GR_SCALE, {P_TRANS, P_STRUM, P_VLEAD, 0xFF}},   /* (2.4: the chords played) */
+    /* K-GLITCH: SEL is the FILTER and the LOOP sampler (the scale pages: EDIT > SCALE, SCALE 2) */
+    {"FILTER", FAM_SCL, SC_GLOBAL, GR_KG, {G_KFTYPE, G_KFCUT, G_KFRES, G_KFMOD}},   /* (kg_filter.c; the keys: FREQ) */
+    {"LOOP", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */
+    {"SLICE", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLSL, G_KLPLAY, G_KLREV, G_KLRET}},
+    {"GRAIN", FAM_SCL, SC_GLOBAL, GR_KG, {G_KGPOS, G_KGSIZE, G_KGDENS, G_KGPIT}},
     {"EDIT 1", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E0, P_E1, P_E2, P_E3}},
     {"EDIT 2", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E4, P_E5, P_E6, P_E7}},
     {"FILTER", FAM_EDIT, SC_TRACK, GR_NONE, {P_FTYPE, P_E4, P_E5, P_E7}},   /* ANALOG only (2.6, Felucca 1.5): TYPE CUT
                                                                           * RES KTR (page_shown) */
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
+    {"SCALE", FAM_EDIT, SC_TRACK, GR_SCALE, {P_ROOT, P_SCALE, P_QUANT, P_CHORD}},
+    {"SCALE 2", FAM_EDIT, SC_TRACK, GR_SCALE, {P_TRANS, P_STRUM, P_VLEAD, 0xFF}},   /* (2.4: the chords played) */
     /* K-GLITCH DRUMS (kg_drum.c): EDIT on the drum track; the model's pages with its kit (page_shown) */
     {"KIT", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KDKIT, G_KDSND, G_KDLVL, G_KDINIT}},
     {"FM TONE", FAM_EDIT, SC_GLOBAL, GR_NONE, {G_KMPIT, G_KMRAT, G_KMIDX, G_KMIDEC}},
@@ -552,6 +554,7 @@ static const page_t PAGES[] = {
                                                                            * setting in these two pages (IN and OUT on
                                                                            * SYSTEM too, the drums' channel on DRUMS) */
     {"MIDI 3", FAM_GLO, SC_GLOBAL, GR_NONE, {G_FXCH, G_DRMAP, G_RMCH, G_CLKOUT}},   /* 2.7: the punch-in FX over MIDI */
+    {"MPC", FAM_GLO, SC_GLOBAL, GR_KG, {G_KTGT, G_KCCCH, G_KCLR, G_KCTGT}},
     {"TEXTURE", FAM_GLO, SC_GLOBAL, GR_NONE, {G_TXSRC, G_TXLVL, G_TXTONE, G_TXMOVE}},   /* 2.6: the bed under the mix */
     {"TEXTURE 2", FAM_GLO, SC_GLOBAL, GR_NONE, {G_TXRATE, G_TXWHEN, G_TXDUCK, 0xFF}},
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: PRESETS knob / KNOB 1 */

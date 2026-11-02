@@ -149,6 +149,7 @@ void emu_init(void)
     kr_generate(KS_JUNGLE);                             /* a break to destroy at once (the ORIGINAL) */
     song.g[G_BPM] = GP[G_BPM].def;                      /* (K-GLITCH's tempo at power-on: 98, not the style's) */
     usb.config = 1;                                     /* (the MIDI out queue runs: the page reads it) */
+    song.batt_raw = 597;                                /* (80 %) */
     sloop_splash();
 }
 void emu_home(void) { go_home(); ui.force = 1; }

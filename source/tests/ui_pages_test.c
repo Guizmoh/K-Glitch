@@ -145,6 +145,18 @@ static void frame(void)
     ui_input(); ui_leds(); ui_draw(); fm1_ms += 16;
 }
 static void frames(uint32_t n) { while (n--) frame(); }
+static void go_title(const char *t, uint32_t fam)       /* (K-GLITCH: a page by its name and family) */
+{
+    uint32_t j;
+    for (j = 0; j < NPAGES; j++)
+        if (PAGES[j].fam == fam && !strcmp(PAGES[j].title, t)) {
+            ui.page = (uint8_t)j, ui.home = 0, ui.fam_last[fam] = (uint8_t)j;
+            page_entered();
+            frame();
+            return;
+        }
+    printf("ui: no page %s\n", t);
+}
 static uint32_t BT(uint32_t b) { return 1u << panel.btn[b]; }
 static void press(uint32_t b) { edges_btn |= BT(b); fm1_in.buttons |= BT(b); frame(); }
 static void release(uint32_t b) { fm1_in.buttons &= ~BT(b); frame(); }
@@ -273,7 +285,7 @@ int main(int argc, char **argv)
         TDRUM->p[P_E0] = kit0; pen_lane = lane0; song.sel = (uint8_t)sel; go_home(); frame();
     }
     open_family(FAM_FX); ui.force = 1; frame(); ppm("page-destroy");   /* K-GLITCH: FX opens on DESTROY */
-    check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: FX opens on DESTROY (CHAOS DENS MOVE CLEAR)");
+    check(!strcmp(cur_page()->title, "PADS"), "K-GLITCH: FX opens on DESTROY (CHAOS DENS MOVE CLEAR)");
     {   /* K-GLITCH: the main screen (pads, ALGORITHM, PRESETS), DRUMS, CHOP, SEQ, BANK, CHAOS, SETUP, CLEAR */
         uint32_t j, sig0, bpm0 = (uint32_t)song.g[G_BPM];
         static track_t drum0;                           /* (the drum track as SLOOP's tests below expect it) */
@@ -300,8 +312,8 @@ int main(int argc, char **argv)
         fm1_in.notes = 0; frame();
         song.g[G_KBANK] = 1; frame();
         check(kg_sel == DD_SCRBAR - DD_BANK, "K-GLITCH BANK DESTROY: the selection back in its bank");
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-FILTER"), "K-GLITCH: SELECT: FILTER (TYPE, FREQ, RESO, MOVE)");
+        go_title("FILTER", FAM_SCL);
+        check(!strcmp(cur_page()->title, "FILTER"), "K-GLITCH: SELECT: FILTER (TYPE, FREQ, RESO, MOVE)");
         {   /* FILTER: TYPE through the eleven, a key tunes FREQ, a screen of each type */
             static const char *const FN[12] = {"off", "lp", "hp", "bp", "notch", "drive", "combp", "combn", "metal", "vowel",
                                                "phaser", "reson"};
@@ -322,8 +334,8 @@ int main(int argc, char **argv)
             check(song.g[G_KFTYPE] == KF_OFF && kf.cur == KF_OFF, "K-GLITCH FILTER: OFF: back to the dry mix");
             song.g[G_KFMOD] = 0;
         }
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-DRUMS"), "K-GLITCH: SELECT: DRUMS");
+        go_title("GEN", FAM_FX);
+        check(!strcmp(cur_page()->title, "GEN"), "K-GLITCH: SELECT: DRUMS");
         sig0 = kr_sig();
         song.g[G_KSTYLE] = KS_DRILL;
         encs[panel.enc[EN_K4]] = 1; frame();
@@ -331,8 +343,8 @@ int main(int argc, char **argv)
               "K-GLITCH DRUMS: GENERATE writes a DRILL pattern, 142 BPM, the ORIGINAL kept");
         check(kg_pads == 0u, "K-GLITCH DRUMS: the keys play the drums");
         ui.force = 1; frame(); ppm("page-k-drums");
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-CHOP"), "K-GLITCH: SELECT: CHOP");
+        go_title("CHOP", FAM_FX);
+        check(!strcmp(cur_page()->title, "CHOP"), "K-GLITCH: SELECT: CHOP");
         sig0 = kr_sig();
         encs[panel.enc[EN_K1]] = 1; frame();
         check(kr.mutated && kr_sig() != sig0 && kr.recipe[0], "K-GLITCH CHOP: DICE rolls a recipe and mutates the rhythm");
@@ -346,8 +358,8 @@ int main(int argc, char **argv)
         {   /* LOOP: REC records a bar of what plays (the delay's line), then LOOP; a key plays a slice; SLICE: reverse,
              * retrigger, DICE (OCT+), in order again (OCT-); GRAIN; MODE OFF gives the line back */
             uint32_t idm = 1;
-            encs[panel.enc[EN_SELECT]] = 1; frame();
-            check(!strcmp(cur_page()->title, "D-LOOP"), "K-GLITCH: SELECT: LOOP (REC, BARS, MODE, SOURCE)");
+            go_title("LOOP", FAM_SCL);
+            check(!strcmp(cur_page()->title, "LOOP"), "K-GLITCH: SELECT: LOOP (REC, BARS, MODE, SOURCE)");
             encs[panel.enc[EN_K1]] = 1; frame();
             check(kl.st == KLS_ARMED && kl_line(), "K-GLITCH LOOP: REC: armed for the next bar (the delay's line lent)");
             ui.force = 1; frame(); ppm("page-k-loop-armed");
@@ -360,8 +372,8 @@ int main(int argc, char **argv)
             check(kl.pad == 3 && punch.req == -1, "K-GLITCH LOOP: a white key plays slice 4 (not an effect)");
             fm1_in.notes = 0; frame();
             check(kl.pad == -1, "K-GLITCH LOOP: the key up: the loop again");
-            encs[panel.enc[EN_SELECT]] = 1; frame();
-            check(!strcmp(cur_page()->title, "D-SLICE"), "K-GLITCH: SELECT: SLICE (SLICE, PLAYS, REVERSE, RETRIG)");
+            go_title("SLICE", FAM_SCL);
+            check(!strcmp(cur_page()->title, "SLICE"), "K-GLITCH: SELECT: SLICE (SLICE, PLAYS, REVERSE, RETRIG)");
             song.g[G_KLMODE] = KL_SLICE;
             encs[panel.enc[EN_K3]] = 1; frame();
             encs[panel.enc[EN_K4]] = 1; frame();
@@ -375,8 +387,8 @@ int main(int argc, char **argv)
             press(B_OCTDN); frames(3); release(B_OCTDN);
             for (j = 0, idm = 1; j < KL_NS; j++) idm &= kl.map[j] == j && !kl.rev[j] && kl.ret[j] == 1u;
             check(idm && song.octave == 0, "K-GLITCH SLICE: OCT- puts them back in order");
-            encs[panel.enc[EN_SELECT]] = 1; frame();
-            check(!strcmp(cur_page()->title, "D-GRAIN"), "K-GLITCH: SELECT: GRAIN (POS, SIZE, DENS, PITCH)");
+            go_title("GRAIN", FAM_SCL);
+            check(!strcmp(cur_page()->title, "GRAIN"), "K-GLITCH: SELECT: GRAIN (POS, SIZE, DENS, PITCH)");
             song.g[G_KLMODE] = KL_GRAIN;
             encs[panel.enc[EN_K1]] = 40; frame();
             frames(20);
@@ -386,8 +398,8 @@ int main(int argc, char **argv)
             check(kl.st == KLS_EMPTY && !kl_line(), "K-GLITCH LOOP: MODE OFF lets the loop go, the delay has its line");
             encs[panel.enc[EN_SELECT]] = 2; frame();
         }
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-SEQ"), "K-GLITCH: SELECT: SEQ");
+        go_title("FX SEQ", FAM_FX);
+        check(!strcmp(cur_page()->title, "FX SEQ"), "K-GLITCH: SELECT: SEQ");
         tap(B_OCTUP);
         for (j = 0; j < 16u && kg.seq[j] < 0; j++) {}
         check(j < 16u, "K-GLITCH SEQ: OCT+ (DICE) writes an effect sequence");
@@ -430,8 +442,8 @@ int main(int argc, char **argv)
         }
         for (j = 0; j < 40u && kg.now < 0; j++) frame();
         ui.force = 1; frame(); ppm("page-k-seq");
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-BANK"), "K-GLITCH: SELECT: BANK (BANK, INTENSITY, HOLD, MULTI)");
+        go_title("BANK", FAM_FX);
+        check(!strcmp(cur_page()->title, "BANK"), "K-GLITCH: SELECT: BANK (BANK, INTENSITY, HOLD, MULTI)");
         {   /* MULTI: three pads held: three effects at once (the DRUM DESTROYER slots); SOLO: the last one only */
             uint32_t s2, busy = 0;
             encs[panel.enc[EN_K4]] = 1; frame();
@@ -446,21 +458,21 @@ int main(int argc, char **argv)
             check(!song.g[G_KMULTI] && kg.nfx == 1u && busy == 1u, "K-GLITCH SOLO: the last pad only");
             fm1_in.notes = 0; frames(2);
         }
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-CHAOS"), "K-GLITCH: SELECT: CHAOS");
+        go_title("CHAOS", FAM_FX);
+        check(!strcmp(cur_page()->title, "CHAOS"), "K-GLITCH: SELECT: CHAOS");
         encs[panel.enc[EN_K1]] = 1; frame();
         sig0 = kr.out_sig;
         for (j = 0; j < 400u; j++) frame();
         check(song.g[G_KCMODE] && kr.mutated, "K-GLITCH CHAOS: CHAOS mode mutates the rhythm on the bar");
         ui.force = 1; frame(); ppm("page-k-chaos");
-        encs[panel.enc[EN_SELECT]] = 1; frame();
-        check(!strcmp(cur_page()->title, "D-SETUP"), "K-GLITCH: SELECT: SETUP (OUT, CH, CLEAR)");
+        go_title("MPC", FAM_GLO);
+        check(!strcmp(cur_page()->title, "MPC"), "K-GLITCH: SELECT: SETUP (OUT, CH, CLEAR)");
         encs[panel.enc[EN_K1]] = 1; frame();
         check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH SETUP: KNOB 1: OUT MPC");
         ui.force = 1; frame(); ppm("page-k-setup");
         encs[panel.enc[EN_K1]] = -1; frame();
-        encs[panel.enc[EN_SELECT]] = -10; frame();
-        check(!strcmp(cur_page()->title, "DESTROY"), "K-GLITCH: back to DESTROY");
+        go_title("PADS", FAM_FX);
+        check(!strcmp(cur_page()->title, "PADS"), "K-GLITCH: back to DESTROY");
         song.g[G_KHOLD] = 1; punch.req = (int8_t)(PUNCH_NFX + DD_FUZZ);
         encs[panel.enc[EN_K4]] = 1; frame();
         encs[panel.enc[EN_K4]] = 1; frame();
@@ -900,7 +912,25 @@ int main(int argc, char **argv)
     key(key_of_white(12)); check(arrangement_enabled == 0u, "again: loop mode");
     release(B_SAVE);
     check(!on_song_page() && saves == 0, "SAVE held and let go: no song page, no save");
-    tap(B_SAVE); check(on_song_page(), "SAVE tapped on TRACKS: the song page");
+    tap(B_SAVE); check(!ui.home && cur_page()->fam == FAM_SAVE, "K-GLITCH: SAVE tapped on TRACKS: the SAVE pages");
+    {   /* K-GLITCH: FX tapped: the PADS; FX held + ALGORITHM: the picker (the most visited first), let go: that page */
+        uint32_t j, rev = 0;
+        tap(B_FX); frames(2);
+        check(!strcmp(cur_page()->title, "PADS"), "K-GLITCH: FX tapped: the 16 PADS");
+        for (j = 0; j < NPAGES; j++) if (PAGES[j].fam == FAM_FX && !strcmp(PAGES[j].title, "REV/CHO")) rev = j;
+        page_visits[rev] = 50;                          /* (REV/CHO the most visited) */
+        go_home(); frames(20);
+        press(B_FX); frames(4);
+        encs[panel.enc[EN_ALGO]] = 1; frames(2);
+        encs[panel.enc[EN_ALGO]] = -1; frames(2);
+        check(pick.on && pick.idx[0] == rev && pick.sel == 0, "K-GLITCH: FX held + ALGO: the picker, the most visited first");
+        ui.force = 1; frame(); ppm("page-picker");
+        release(B_FX); frames(4);
+        check(!pick.on && ui.page == rev && !punch.hold, "K-GLITCH: FX let go: REV/CHO opens (no punch-in, no tap)");
+        go_home(); frames(20);
+    }
+    press(B_SAVE); frames(4); key(key_of_white(15)); release(B_SAVE); frames(2);
+    check(on_song_page(), "SAVE + the 16th white key: the song page");
     ui.force = 1; frame(); ppm("page-song");
 
     /* ---- the drum screen */
@@ -1210,10 +1240,10 @@ int main(int argc, char **argv)
             open_family(FAM_SEQ); frame();            /* (round to STEP again: SEQ opens there, as before) */
             go_home(); frame();
             open_family(FAM_GLO); frame();
-            (void)page_pos(&n);                       /* GLO: its nine pages */
+            (void)page_pos(&n);                       /* GLO: its ten pages (K-GLITCH: + MPC) */
             go_home(); frame();
             ui.menu = (uint8_t)menu0, ui.menu_sel = (uint8_t)sel0, ui.force = 1; frame();
-            ok &= k1 == 1u && n1 == 2u && k2 == 2u && n2 == 2u && k3 == 3u && n3 == 3u && n == 9u;
+            ok &= k1 == 1u && n1 == 2u && k2 == 2u && n2 == 2u && k3 == 3u && n3 == 3u && n == 10u;
             if (!ok)
                 printf("ui:   counter: STEP %u/%u PATTERN %u/%u SONG %u/%u GLO /%u\n", k1, n1, k2, n2, k3, n3, n);
             check(ok, "page counter (2.7): as SELECT walks them: STEP 1/2, PATTERN 2/2 (SONG, its own screen, not counted)");
@@ -1514,7 +1544,7 @@ int main(int argc, char **argv)
         tap(B_EDIT); SEL(-9);
         check(!strcmp(PT(), "EDIT 1"), "SELECT on EDIT: back to the first page");
         SEL(9);
-        check(!strcmp(PT(), "VOICE 2"), "SELECT on EDIT: up to VOICE 2");
+        check(!strcmp(PT(), "SCALE 2"), "SELECT on EDIT: up to SCALE 2 (K-GLITCH: the scale pages are EDIT's last)");
         tap(B_SEQ); SEL(9);
         check(!strcmp(PT(), "PATTERN"), "SELECT on SEQ: STEP <-> PATTERN, not into the SONG screen");
         tap(B_ENV);
@@ -1996,7 +2026,7 @@ int main(int argc, char **argv)
         check(mlu.on == 1u && !mlu.pick, "GLO + F#3: MIDI LEARN on");
         open_family(FAM_FX); frame();
         for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */
-        for (j = 0; j < 11u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 11): KNOB 1 = DIST */
+        for (j = 0; j < 6u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 6): KNOB 1 = DIST */
         frames(16);
         ui.force = 1; frame(); ppm("header-learn");
         K(EN_K1, 1);

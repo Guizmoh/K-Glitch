@@ -2,7 +2,7 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.8**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.9**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
 ## Essayer : l'émulateur
 
@@ -16,19 +16,29 @@ Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cib
 
 Tout SLOOP est conservé (4 pistes, 12 moteurs, kits, samples, séquenceur, 27 effets punch-in, MIDI…). Le bouton **FX** ouvre K-GLITCH : onze pages dessinées en plein écran dans le style « Ribbon classique » de K-WASUB (SELECT passe de l'une à l'autre). Ce thème est aussi celui de **tout le logiciel** : avec la palette **RIBBON** (par défaut), les pages de SLOOP ont les mêmes onglets (les pages de la famille, celle affichée en pastille orange, le temps et le tempo à droite), les valeurs en cartes, le graphe sur un panneau, les filets orange ; les écrans TRACKS, DRUMS et REC ont les onglets TRACKS / DRUMS / SONG et des cartes pour les potards. MENU > COLOR garde les autres palettes, avec la mise en page d'origine de SLOOP.
 
+Les pages K-GLITCH sont rangées par bouton (0.9) :
+
+- **FX** (un appui : les **16 PADS**, un autre appui : la page suivante) : PADS, FX SEQ, BANK, CHAOS, GEN (générateur DRUMS), CHOP, puis les effets de SLOOP (FX, FILTER de piste, SLICER, INSERT, DLY, REV/CHO).
+- **SEL** : le **FILTER** créatif et le sampler **LOOP**, **SLICE**, **GRAIN** (les anciennes pages SEL de gamme sont à la fin d'**EDIT** : SCALE, SCALE 2).
+- **GLO** : … et **MPC** (sortie MIDI vers la MPC).
+- **SAVE** (un appui, même depuis HOME) : les pages SAVE ; l'écran SONG : SAVE maintenu + 16e touche blanche.
+- **Sélecteur de pages** : bouton d'une section maintenu (FX, EDIT, ARP, SEQ, SEL, GLO, SAVE) + **ALGO** : la liste de ses pages, **les plus visitées en premier** (étoile) ; on relâche le bouton : la page choisie s'ouvre.
+- **Bandeau du haut** : les pages de la section en onglets, la page affichée en pastille orange au milieu de ses voisines (un triangle quand il y en a d'autres à gauche ou à droite) ; à droite le tempo et la batterie en petit chiffre (USB : alimenté).
+- **Annuler / rétablir** : **SAVE (ou EDIT) + OCT-** annule la dernière modification des motifs (enregistrement, effacement, pas, outils…), autant de fois que l'historique en contient ; **+ OCT+** rétablit.
+
 | Page | Rôle | K1 | K2 | K3 | K4 |
 | --- | --- | --- | --- | --- | --- |
-| **DESTROY** | écran principal : les 16 pads | CHAOS | DENSITY | MOVEMENT | CLEAR (retour au son original) |
-| **FILTER** | filtre créatif sur tout le mix | TYPE | FREQ (une note) | RESO | MOVE (LFO) |
-| **DRUMS** | mode 1 : génération de percussions | STYLE | VARIATION | SWING | GO |
-| **CHOP** | mode 2 : découpage / mutation du rythme | DICE | MUTATE | RESTORE | EVERY (auto) |
-| **LOOP** | sampler : enregistre ce qui joue | REC | BARS 1 / 2 / 4 | MODE OFF / LOOP / SLICE / GRAIN | SOURCE : pistes MUTE / MIX |
-| **SLICE** | les 16 slices de la boucle | la slice | laquelle elle joue | à l'envers | RETRIG x1 … x8 |
-| **GRAIN** | la boucle en granulaire | POSITION | SIZE | DENSITY | PITCH |
-| **SEQ** | séquenceur / automation d'effets | le pas | son effet | sa probabilité | longueur OFF / 16 / 32 / 64 |
-| **BANK** | les pads | banque SLOOP / DESTROY / BEAT | INTENSITÉ | HOLD | FX : SOLO / MULTI |
-| **CHAOS** | mode 3 : performance imprévisible | MODE | AUTO | LFO | CHAOS |
-| **SETUP** | MPC | OUT : FM-1 / MPC / BOTH | canal MIDI | effacer la séquence | CHOP : DRUMS / ALL |
+| **PADS** (FX) | écran principal : les 16 pads | CHAOS | DENSITY | MOVEMENT | CLEAR (retour au son original) |
+| **FILTER** (SEL) | filtre créatif sur tout le mix | TYPE | FREQ (une note) | RESO | MOVE (LFO) |
+| **GEN** (FX) | mode 1 : génération de percussions | STYLE | VARIATION | SWING | GO |
+| **CHOP** (FX) | mode 2 : découpage / mutation du rythme | DICE | MUTATE | RESTORE | EVERY (auto) |
+| **LOOP** (SEL) | sampler : enregistre ce qui joue | REC | BARS 1 / 2 / 4 | MODE OFF / LOOP / SLICE / GRAIN | SOURCE : pistes MUTE / MIX |
+| **SLICE** (SEL) | les 16 slices de la boucle | la slice | laquelle elle joue | à l'envers | RETRIG x1 … x8 |
+| **GRAIN** (SEL) | la boucle en granulaire | POSITION | SIZE | DENSITY | PITCH |
+| **FX SEQ** (FX) | séquenceur / automation d'effets | le pas | son effet | sa probabilité | longueur OFF / 16 / 32 / 64 |
+| **BANK** (FX) | les pads | banque SLOOP / DESTROY / BEAT | INTENSITÉ | HOLD | FX : SOLO / MULTI |
+| **CHAOS** (FX) | mode 3 : performance imprévisible | MODE | AUTO | LFO | CHAOS |
+| **MPC** (GLO) | sortie vers la MPC | OUT : FM-1 / MPC / BOTH | canal MIDI | effacer la séquence | CHOP : DRUMS / ALL |
 
 ### Jouer en direct
 - Sur les pages K-GLITCH, **les 16 touches blanches sont des pads** : maintenir = l'effet agit, relâcher = le son revient (punch-in). Ailleurs : FX maintenu + touche.

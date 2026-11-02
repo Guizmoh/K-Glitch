@@ -126,9 +126,20 @@ UI_SMALL static void ui_say(const char *a, const char *b)
 
 UI_SMALL static void ui_message(const char *s) { ui_say(s, ""); }
 
+/* K-GLITCH: the page picker. A section's button held (FX, EDIT, ARP, SEQ, SEL, GLO, SAVE) and ALGORITHM turned: its
+ * pages as a list, the ones visited most first (the "smart" ones: wherever they are in the section); the button let go,
+ * the page picked opens (ui_input.c layers_input, ui_draw.c pick_draw) */
+static uint8_t page_visits[96];                  /* (each page's visits, saturating) */
+static struct {
+    uint8_t on, layer, fam, n, sel;
+    uint8_t idx[24];
+} pick;
+UI_SMALL static void pick_build(uint32_t fam);
 UI_SMALL static void page_entered(void)
 {
     const page_t *pg = cur_page();
+    if (!ui.home && ui.page < sizeof page_visits && page_visits[ui.page] < 255u)
+        page_visits[ui.page]++;
     song.seq_mode = !ui.home && pg->fam == FAM_SEQ;
     if (!ui.home && pg->fam == FAM_GLO && pg->id[0] == G_CH1 && song.g[G_ROUTE]) {   /* (2.6) GLO > MIDI while MIDI 2 >
                                                                                    * IN sets the channels aside */

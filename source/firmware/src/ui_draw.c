@@ -37,17 +37,18 @@ UI_SMALL static int32_t batt_shown(void)
 }
 
 /* top bar: transport, BPM, octave | USB, battery, CPU; messages replace it */
-/* K-GLITCH (the RIBBON palette): the head as K-GLITCH's pages have it, the pages of the family as tabs (the one shown an
- * orange pill), then the beat and the tempo; a message in their place */
-UI_SMALL static void draw_head_ribbon(uint32_t rec)
+/* K-GLITCH (the RIBBON palette): the tab bar of every page (SLOOP's and K-GLITCH's own, kg_ui.c), its top at y in the
+ * canvas: the pages of the family as tabs, the one shown an orange pill in the middle of as many of its neighbours
+ * as fit (a triangle where more go on, left or right); at the right the tempo, then the battery's charge, small (USB:
+ * powered). A message takes the tabs' place */
+UI_SMALL static void ribbon_bar(int32_t y, uint32_t rec)
 {
     const page_t *pg = cur_page();
     const engine_t *e = ENGINES[TSEL->eng_req % NENGINES];
-    char b[16];
+    char b[16], bt[8];
     const char *tl[24];
-    int32_t pos[24], w[24], tot = 0, off = 0, x;
+    int32_t w[24], x, xr, lo, hi, used;
     uint32_t i, n = 0, cur = 0;
-    cv_begin(240, H_HEAD, C_BLACK);
     if (ui.home) {
         tl[n++] = "HOME";
     } else {
@@ -59,33 +60,58 @@ UI_SMALL static void draw_head_ribbon(uint32_t rec)
                 tl[n++] = pt ? pt : PAGES[i].title;
             }
     }
-    if (ui.msg_t) {
-        cv_text(4, 4, &FONT_T, ui.msg, C_WHITE);
-    } else {
-        for (i = 0; i < n; i++) { w[i] = text_w(&FONT_T, tl[i]) + 12; pos[i] = tot; tot += w[i] + 3; }
-        off = pos[cur] + w[cur] / 2 - 80;
-        if (off > tot - 160) off = tot - 160;
-        if (off < 0) off = 0;
-        for (i = 0; i < n; i++) {
-            int32_t tx = 3 + pos[i] - off;
-            if (tx < 1 || tx + w[i] > 168) continue;   /* (whole tabs only) */
-            if (i == cur) cv_card(tx, 3, w[i], 14, C_WHITE, C_WHITE);
-            cv_text(tx + 6, 4, &FONT_T, tl[i], i == cur ? C_BLACK : C_GRAY);
-        }
-    }
+    /* the right: the battery's charge (or USB), then the tempo before it */
+    if (usb.config && !usb.suspended)
+        str_cpy(bt, "USB", sizeof bt);
+    else
+        fmt_int(bt, clamp(((int32_t)song.batt_raw - 501) * 100 / 120, 0, 100));
+    if (!song.batt_raw && !(usb.config && !usb.suspended))
+        bt[0] = 0;                                    /* (not measured yet: nothing) */
+    xr = 238 - text_w(&FONT_T, bt);
+    cv_text(xr, y + 2, &FONT_T, bt, batt_level() <= 0 && !(usb.config && !usb.suspended) ? TE_RED : C_DIM);
     fmt_int(b, song.g[G_BPM]);
-    x = 236 - text_w(&FONT_T, b);
-    cv_text(x, 4, &FONT_T, b, ui.bpm_t ? C_WHITE : C_AMB);
-    x -= 27;
-    for (i = 0; i < 4u; i++)                          /* the beat: four dots, the bar's first orange */
-        cv_rect(x + (int32_t)i * 6, 8, 4, 4, song.playing && (clk_beat & 3u) == i ? (i ? C_AMB : C_WHITE) : C_LINE);
-    if (rec) te_disc(x - 7, 10, 3, rec == 2u ? TE_RED : C_GRAY);
-    if (mlu.on) cv_text(x - 44, 4, &FONT_T, "LEARN", C_WHITE);
+    xr -= text_w(&FONT_T, b) + 6;
+    cv_text(xr, y + 2, &FONT_T, b, ui.bpm_t ? C_WHITE : C_AMB);
+    if (song.playing)                                 /* (playing: a small triangle) */
+        for (i = 0; i < 5u; i++) cv_rect(xr - 7 + (int32_t)i, y + 4 + (int32_t)i / 2, 1, 7 - (int32_t)(i / 2u) * 2, C_WHITE);
+    if (rec) te_disc(xr - 13, y + 8, 3, rec == 2u ? TE_RED : C_GRAY);
+    if (mlu.on) { xr -= 34; cv_text(xr, y + 2, &FONT_T, "LEARN", C_WHITE); }
     else if (song.octave) {
         str_cpy(b, song.octave > 0 ? "+" : "", 4);
         fmt_int(b + str_len(b), song.octave);
-        cv_text(x - 14 - text_w(&FONT_T, b), 4, &FONT_T, b, C_WHITE);
+        xr -= 16 + text_w(&FONT_T, b);
+        cv_text(xr, y + 2, &FONT_T, b, C_WHITE);
     }
+    xr -= rec || song.playing ? 18 : 6;
+    if (ui.msg_t) {
+        cv_text(4, y + 2, &FONT_T, ui.msg, C_WHITE);
+        return;
+    }
+    /* the tabs: from the one shown, outwards, while they fit between 7 and xr - 7 */
+    for (i = 0; i < n; i++) w[i] = text_w(&FONT_T, tl[i]) + 10;
+    lo = hi = (int32_t)cur;
+    used = w[cur];
+    for (;;) {
+        int grew = 0;
+        if (hi + 1 < (int32_t)n && used + w[hi + 1] + 2 <= xr - 14) { hi++; used += w[hi] + 2; grew = 1; }
+        if (lo > 0 && used + w[lo - 1] + 2 <= xr - 14) { lo--; used += w[lo] + 2; grew = 1; }
+        if (!grew) break;
+    }
+    x = 7;
+    if (lo > 0)                                       /* more on the left */
+        for (i = 0; i < 4u; i++) cv_rect(1 + (int32_t)i, y + 7 - (int32_t)i, 1, 1 + 2 * (int32_t)i, C_GRAY);
+    if (hi + 1 < (int32_t)n)                          /* more on the right */
+        for (i = 0; i < 4u; i++) cv_rect(xr - 5 + (int32_t)i, y + 4 + (int32_t)i, 1, 7 - 2 * (int32_t)i, C_GRAY);
+    for (i = (uint32_t)lo; i <= (uint32_t)hi; i++) {
+        if (i == cur) cv_card(x, y + 1, w[i], 14, C_WHITE, C_WHITE);
+        cv_text(x + 5, y + 2, &FONT_T, tl[i], i == cur ? C_BLACK : C_GRAY);
+        x += w[i] + 2;
+    }
+}
+UI_SMALL static void draw_head_ribbon(uint32_t rec)
+{
+    cv_begin(240, H_HEAD, C_BLACK);
+    ribbon_bar(2, rec);
     cv_blit(0, Y_HEAD);
 }
 UI_SMALL static void draw_head(void)
@@ -97,8 +123,8 @@ UI_SMALL static void draw_head(void)
     uint32_t sig = (uint32_t)song.playing * 3u + rec * 5u + (uint32_t)(song.octave + 8) * 11u + song.sel * 13131u +
                    (ui.msg_t ? str_hash(7u, ui.msg) : 0u) + (uint32_t)song.g[G_BPM] * 101u + (ui.bpm_t != 0) * 31u +
                    (uint32_t)batt_shown() * 7777u + (usb.config && !usb.suspended) * 99991u + mlu.on * 7919u;
-    if (pal_ribbon)                                   /* (the tabs: the page; the beat's dots) */
-        sig += (uint32_t)ui.page * 2654435761u + ui.home * 977u + (song.playing ? (clk_beat & 3u) + 1u : 0u) * 40503u;
+    if (pal_ribbon)                                   /* (the tabs: the page; the battery's figure) */
+        sig += (uint32_t)ui.page * 2654435761u + ui.home * 977u + (uint32_t)song.batt_raw * 40503u;
     if (!ui.force && sig == ui.head_sig)
         return;
     ui.head_sig = sig;
@@ -1145,6 +1171,40 @@ UI_SMALL static void draw_columns(void)
 }
 
 
+/* K-GLITCH: the page picker: the section's pages, the most visited first, the one ALGORITHM is on an orange card */
+UI_SMALL static void pick_draw(void)
+{
+    static const char *const FN[FAM_COUNT] = {"HOME", "ENV", "LFO", "FX", "SEL", "EDIT", "GLO", "SAVE", "ARP", "SEQ", "TRACKS"};
+    static uint32_t last;
+    uint32_t sig = pick.sel * 131u + pick.n * 7u + pick.fam * 1009u + 1u, band, i, top;
+    if (!ui.force && sig == last)
+        return;
+    last = sig;
+    top = pick.sel > 5u ? pick.sel - 5u : 0u;
+    for (band = 0; band < 2u; band++) {
+        cv_begin(240, 120, C_BLACK);
+        cv_oy = -(int32_t)band * 120;
+        cv_card(3, 2, 60, 15, C_WHITE, C_WHITE);
+        cv_text(9, 3, &FONT_T, "GO TO", C_BLACK);
+        cv_text(70, 1, &FONT_S, FN[pick.fam % FAM_COUNT], C_AMB);
+        cv_rect(0, 21, 240, 1, C_WHITE);
+        for (i = top; i < pick.n && i < top + 8u; i++) {
+            int32_t y = 26 + (int32_t)(i - top) * 24, on = i == pick.sel;
+            const page_t *pg = &PAGES[pick.idx[i]];
+            const char *t = pg->scope == SC_ENGINE ? ENGINES[TSEL->eng_req % NENGINES]->page_title[pg->id[0] != P_E0] : pg->title;
+            cv_card(6, y, 228, 21, on ? C_WHITE : pal_card, on ? C_WHITE : pal_card);
+            cv_text(14, y + 2, &FONT_S, t, on ? C_BLACK : C_HI);
+            if (page_visits[pick.idx[i]] >= 3u)       /* (often visited: a star) */
+                cv_text(210, y + 4, &FONT_T, "*", on ? C_BLACK : C_WHITE);
+            if (pick.idx[i] == ui.page && !ui.home)
+                cv_text(170, y + 4, &FONT_T, "HERE", on ? C_BLACK : C_DIM);
+        }
+        cv_text(10, 222, &FONT_T, "ALGO: PICK  /  LET GO: OPEN", C_GRAY);
+        cv_oy = 0;
+        cv_blit(0, band * 120u);
+    }
+}
+
 /* the UI's timers, once a frame whatever the screen (a message, the BPM highlight, an armed GO, the
  * white value of the knob just turned) */
 UI_SMALL static void ui_timers(void)
@@ -1190,6 +1250,13 @@ UI_SMALL static void ui_draw(void)
         er_flash = 0;
         if (!ui.msg_t)
             ui_message("ERASED");
+    }
+    if (pick.on && !ui.menu) {                          /* K-GLITCH: the page picker (a section's button held, ALGORITHM) */
+        pick_draw();
+        layer_shown = 1;                                /* (let go: the page drawn whole again) */
+        ui_timers();
+        ui.force = 0;
+        return;
     }
     if (!ui.menu && (ui.layer != LY_PLAY || ui.hold_kind)) {   /* a layer held / a hold to confirm */
         if (ui.hold_kind)

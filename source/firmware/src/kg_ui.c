@@ -273,8 +273,6 @@ UI_SMALL static void kg_filterview(void)
 
 UI_SMALL static void kg_paint(void)
 {
-    static const char *const TAB[KG_NPG] = {"DESTROY", "FILTER", "DRUMS", "CHOP", "LOOP", "SLICE", "GRAIN", "SEQ", "BANK", "CHAOS",
-                                            "SETUP"};
     static const char *const TITLE[KG_NPG] = {"DRUM DESTROYER", "FILTER", "DRUMS", "CHOP / MUTATE", "LOOP SAMPLER", "SLICES",
                                               "GRAINS", "EFFECT SEQUENCE", "THE 16 PADS", "CHAOS", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
@@ -290,28 +288,7 @@ UI_SMALL static void kg_paint(void)
     int32_t now = kg.now, play = song.playing ? (int32_t)kg.step : -1, cur = pn == KP_SEQ ? (int32_t)song.g[G_KSTEP] - 1 : -1, x;
     char s[48], k[64];
     cv_rect(0, 0, 240, 240, KG_BG);
-    /* the ribbon: the seven pages as tabs, scrolled so the one shown (an orange pill) stays in sight */
-    {
-        int32_t pos[KG_NPG], w[KG_NPG], tot = 0, off;
-        for (i = 0; i < KG_NPG; i++) { w[i] = kg_t5w(TAB[i]) + 14; pos[i] = tot; tot += w[i] + 3; }
-        off = pos[pn] + w[pn] / 2 - 86;
-        if (off > tot - 174) off = tot - 174;
-        if (off < 0) off = 0;
-        for (i = 0; i < KG_NPG; i++) {
-            int32_t tx = 4 + pos[i] - off;
-            if (tx < 2 || tx + w[i] > 176) continue;   /* (only whole tabs; the beat and the tempo after) */
-            if (i == pn) kg_rbox(tx, 2, w[i], 13, KG_ACC, KG_ACC);
-            kg_t5(tx + 7, 5, TAB[i], i == pn ? KG_BG : KG_MUTE);
-        }
-    }
-    kg_u2a(s, (uint32_t)song.g[G_BPM]);
-    kg_t5(224 - kg_t5w(s), 5, s, KG_INK);
-    for (i = 0; i < 4u; i++) {                         /* the beat: four dots, the one playing lit (the bar's first orange) */
-        int32_t bx = 224 - kg_t5w(s) - 26 + (int32_t)i * 6, on = song.playing && (clk_beat & 3u) == i;
-        cv_rect(bx, 7, 4, 4, on ? (i ? KG_INK : KG_ACC) : KG_RULE);
-    }
-    if (song.playing) for (i = 0; i < 7u; i++) cv_rect(229, 5 + (int32_t)i, (int32_t)(i < 4u ? i + 1u : 7u - i), 1, KG_ACC);
-    else cv_rect(229, 6, 6, 6, KG_MUTE);
+    ribbon_bar(1, (song.rec >> song.sel) & 1u ? 2u : song.rec != 0u);   /* (ui_draw.c: the family's pages as tabs) */
     /* the card: title, the orange line under it (or the last message), the tags */
     kg_rbox(3, 19, 234, 219, KG_CARD, kg_mix(KG_CARD, KG_ACC, 150));
     {   /* (DESTROY: the bank on the pads names it) */

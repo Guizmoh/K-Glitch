@@ -872,7 +872,9 @@ UI_SMALL static uint32_t btn_hold(uint32_t *t0, uint32_t label, uint32_t now, in
 UI_SMALL static void layer_tap(uint32_t layer)
 {
     switch (layer) {
-    case LY_FX:
+    case LY_FX:                                           /* K-GLITCH: FX opens the 16 PADS; on the FX pages, the next one */
+        if (ui.home || cur_page()->fam != FAM_FX)
+            ui.fam_last[FAM_FX] = 0;
         open_family(FAM_FX);
         break;
     case LY_ERASE:
@@ -909,13 +911,10 @@ UI_SMALL static void layer_tap(uint32_t layer)
     case LY_MIX:
         open_family(FAM_GLO);
         break;
-    case LY_SONG:                                         /* SAVE tapped: TRACKS -> the song, else the SAVE pages */
+    case LY_SONG:                                         /* SAVE tapped: the SAVE pages, from anywhere (K-GLITCH: from TRACKS
+                                                           * too; the SONG screen: SAVE + the 16th white key) */
         if (on_song_page())
             arrangement_save();
-        else if (!ui.home && cur_page()->scope == SC_TRK)
-            studio_open(SC_SONG);
-        else if (on_drum_page())
-            studio_open(SC_SONG);
         else
             open_family(FAM_SAVE);
         break;
@@ -947,6 +946,23 @@ UI_SMALL static int ly_quiet(void)
         ly_quiet_t = 0;
     return ly_quiet_t != 0;
 }
+/* K-GLITCH: the page picker's list: the section's pages, the ones visited most first (ui.c pick) */
+UI_SMALL static void pick_build(uint32_t fam)
+{
+    uint32_t i, j;
+    pick.n = 0;
+    pick.fam = (uint8_t)fam;
+    for (i = 0; i < NPAGES && pick.n < 24u; i++)
+        if (PAGES[i].fam == fam && page_shown(&PAGES[i]) && PAGES[i].scope != SC_SONG && PAGES[i].scope != SC_DRUM &&
+            !(is_drum(TSEL) && !page_for_drum(&PAGES[i])))
+            pick.idx[pick.n++] = (uint8_t)i;
+    for (i = 1; i < pick.n; i++)                      /* (stable: the most visited first, else in the section's order) */
+        for (j = i; j > 0u && page_visits[pick.idx[j]] > page_visits[pick.idx[j - 1u]]; j--) {
+            uint8_t x = pick.idx[j];
+            pick.idx[j] = pick.idx[j - 1u], pick.idx[j - 1u] = x;
+        }
+    pick.sel = 0;
+}
 /* the layers, once a frame: which one is held (or locked), the taps on release, its keys and knobs.
  * Returns 1 while one is held or locked (the page does not take the knobs then) */
 UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_t home)
@@ -972,7 +988,16 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
         }
         if (d && note_edges)
             used[l] = 1;                                  /* a key while held: not a tap */
-        if (!d && down[l] && !used[l] && now - t0[l] < TAP_MS && !ui.menu && !ui.confirm)
+        if (!d && down[l] && pick.on && pick.layer == l) {   /* K-GLITCH: the page picked opens */
+            pick.on = 0;
+            if (pick.n) {
+                ui.page = pick.idx[pick.sel % pick.n];
+                ui.home = 0;
+                ui.fam_last[pick.fam] = ui.page;
+                page_entered();
+            }
+            ui.force = 1;
+        } else if (!d && down[l] && !used[l] && now - t0[l] < TAP_MS && !ui.menu && !ui.confirm)
             layer_tap(l);
         if (!d && down[l] && l == LY_SONG)
             chain_release();                              /* SAVE let go: the section taps of the hold (ui_layers.c) */
@@ -990,7 +1015,24 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
         held = ly_lock;
         used[held] = 1;
     }
-    punch.hold = (uint8_t)(held == LY_FX);
+    if (held != LY_PLAY && ly_lock == LY_PLAY && !(held == LY_STEP && ui.step_held)) {   /* K-GLITCH: ALGORITHM, a section's
+                                                                                         * button held: the page picker */
+        static const uint8_t FAM_OF[LY_COUNT] = {0, FAM_FX, FAM_EDIT, FAM_ARP, FAM_SEQ, FAM_SCL, FAM_GLO, FAM_SAVE};
+        int32_t s = panel_enc(EN_ALGO);
+        if (s) {
+            if (!pick.on || pick.layer != held) {
+                pick_build(FAM_OF[held]);
+                pick.layer = (uint8_t)held;
+                pick.on = 1;
+            } else if (pick.n) {
+                pick.sel = (uint8_t)clamp((int32_t)pick.sel + s, 0, (int32_t)pick.n - 1);
+            }
+            used[held] = 1;
+            ui.force = 1;
+        }
+    } else if (held == LY_PLAY)
+        pick.on = 0;
+    punch.hold = (uint8_t)(held == LY_FX && !pick.on);
     if (held != LY_PLAY && held != ui.layer && ui.layer != LY_PLAY)
         ui.layer = (uint8_t)held;                         /* (from one layer straight to another) */
     if (held == LY_PLAY) {

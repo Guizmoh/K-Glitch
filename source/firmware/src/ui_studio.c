@@ -204,7 +204,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     uint32_t sig = studio_hash((uint32_t)song.g[G_BPM] * 7u + playing * 3u + (song.rec != 0) * 1999u +
                                (playing ? beat * 131u + TSEL->seq_idx * 7919u : 0u) + (uint32_t)song.g[G_CLOCK] * 77u +
                                arrangement_enabled * 5u + (ui.bpm_t != 0) * 104729u + song.solo * 37u, title);
-    sig = sig * 31u + tc;
+    sig = sig * 31u + tc + (uint32_t)song.batt_raw * 7u;
     sig = sig * 31u + (uint32_t)(sect + 1) * 211u;    /* (2.7.2) the section A..D badge */
     if (!ui.force && sig == *cache)
         return;
@@ -226,12 +226,17 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
             cv_text(x + 6, 4, &FONT_T, t, on ? C_BLACK : C_GRAY);
             x += tw + 3;
         }
-        fmt_int(b, song.g[G_BPM]);
-        x = 236 - text_w(&FONT_T, b);
-        cv_text(x, 4, &FONT_T, b, ui.bpm_t ? C_WHITE : C_AMB);
-        x -= 27;
-        for (k = 0; k < 4u; k++)
-            cv_rect(x + (int32_t)k * 6, 8, 4, 4, playing && beat % 4u == k ? (k ? C_AMB : C_WHITE) : C_LINE);
+        {   /* the battery's charge, small, at the right (USB: powered); the tempo before it */
+            char bt[8];
+            if (usb.config && !usb.suspended) str_cpy(bt, "USB", sizeof bt);
+            else if (song.batt_raw) fmt_int(bt, clamp(((int32_t)song.batt_raw - 501) * 100 / 120, 0, 100));
+            else bt[0] = 0;
+            x = 238 - text_w(&FONT_T, bt);
+            cv_text(x, 4, &FONT_T, bt, C_DIM);
+            fmt_int(b, song.g[G_BPM]);
+            x -= text_w(&FONT_T, b) + 6;
+            cv_text(x, 4, &FONT_T, b, ui.bpm_t ? C_WHITE : C_AMB);
+        }
         te_play_icon(4, 22, (int)playing);
         if (playing) loop_pos(TSEL, b);
         else str_cpy(b, arrangement_enabled ? "song" : "loop", sizeof b);
@@ -747,7 +752,7 @@ UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t
             ui.msg_t = 0;
             ui.force = 1;
         } else if (b == B_SAVE) {
-            studio_open(SC_SONG);
+            open_family(FAM_SAVE);                    /* (K-GLITCH: the SAVE pages, as from everywhere) */
             return;
         }
     }
