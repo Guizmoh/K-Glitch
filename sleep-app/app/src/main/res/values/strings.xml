@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Police du Dodo</string>
+    <string name="widget_description">L\'agent du Dodo et le bouton Commencer la nuit</string>
 </resources>

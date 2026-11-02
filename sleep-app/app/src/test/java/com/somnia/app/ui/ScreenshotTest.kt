@@ -166,4 +166,13 @@ class ScreenshotTest {
             }
         }
     }
+
+    @Test fun widget() {
+        val v = paparazzi.inflate<android.view.View>(com.somnia.app.R.layout.widget_dodo)
+        v.layoutParams = android.view.ViewGroup.LayoutParams((280 * 2.625f).toInt(), (120 * 2.625f).toInt())
+        val frame = android.widget.FrameLayout(paparazzi.context).apply {
+            setBackgroundColor(0xFF5A6C8C.toInt()); setPadding(40, 40, 40, 40); addView(v)
+        }
+        paparazzi.snapshot(frame)
+    }
 }

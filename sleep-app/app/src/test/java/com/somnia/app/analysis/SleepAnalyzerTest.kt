@@ -30,4 +30,12 @@ class SleepAnalyzerTest {
     @Test fun emptyNight() {
         assertEquals(0, SleepAnalyzer.analyze(emptyList()).score)
     }
+
+    @Test fun baselineMakesRestlessNightLessDeep() {
+        // Nuit agitée partout : sans calibration, l'agitation devient « la normale ».
+        val input = (0 until 300).map { m -> MinuteInput(m, if (m % 3 == 0) 4f else 2f, 0, false) }
+        val alone = SleepAnalyzer.analyze(input, 480)
+        val calibrated = SleepAnalyzer.analyze(input, 480, baselineMedian = 0.2f)
+        assertTrue(calibrated.awakeMinutes >= alone.awakeMinutes)
+    }
 }

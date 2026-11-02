@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/widget_agent"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:contentDescription="Police du Dodo"
+        android:scaleType="fitCenter"
+        android:src="@drawable/agent_awake" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_line"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_bubble"
+            android:maxLines="3"
+            android:ellipsize="end"
+            android:paddingStart="10dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="6dp"
+            android:textColor="#FF14204A"
+            android:textSize="14sp"
+            android:fontFamily="serif"
+            android:text="Profitez bien de votre soirée." />
+
+        <TextView
+            android:id="@+id/widget_button"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/widget_button"
+            android:gravity="center"
+            android:textColor="#FF13305F"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:text="Commencer la nuit" />
+    </LinearLayout>
+</LinearLayout>

@@ -22,6 +22,11 @@ interface SleepDao {
     @Query("SELECT * FROM sessions WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
     suspend fun openSession(): SleepSession?
 
+    @Query("SELECT movementMedian FROM sessions WHERE movementMedian IS NOT NULL AND id != :exclude ORDER BY startTime DESC LIMIT 14")
+    suspend fun recentMovementMedians(exclude: Long): List<Float>
+
+    @Query("SELECT * FROM events WHERE id = :id") suspend fun event(id: Long): SoundEventEntity?
+
     @Insert suspend fun insertEvent(e: SoundEventEntity): Long
     @Update suspend fun updateEvent(e: SoundEventEntity)
     @Delete suspend fun deleteEvent(e: SoundEventEntity)

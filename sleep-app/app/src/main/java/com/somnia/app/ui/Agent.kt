@@ -34,6 +34,7 @@ object Agent {
     /** Change de policier dans l'appli et sur l'icône du téléphone. */
     fun set(context: Context, agent: Int) {
         SettingsRepository.get(context).update { it.copy(agent = agent) }
+        com.somnia.app.widget.DodoWidget.refresh(context)
         val pm = context.packageManager
         for (i in 0 until COUNT) {
             val state = if (i == agent) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED

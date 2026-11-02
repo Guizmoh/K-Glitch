@@ -51,6 +51,7 @@ import com.somnia.app.ui.theme.TextSoft
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleWidgetIntent(intent)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(AColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(AColor.TRANSPARENT),
@@ -135,6 +136,22 @@ class MainActivity : ComponentActivity() {
                             }
 }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleWidgetIntent(intent)
+    }
+
+    /** Bouton « Commencer la nuit » du widget : on démarre si le micro est autorisé. */
+    private fun handleWidgetIntent(intent: android.content.Intent?) {
+        if (intent?.action != com.somnia.app.widget.DodoWidget.ACTION_START_NIGHT) return
+        intent.action = null
+        if (com.somnia.app.service.TrackingState.state.value != null) return
+        val ok = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (ok) com.somnia.app.service.SleepTrackingService.start(this)
+        else android.widget.Toast.makeText(this, "Autorisez le micro avec le bouton « Commencer la nuit ».", android.widget.Toast.LENGTH_LONG).show()
     }
 
     override fun onStop() {

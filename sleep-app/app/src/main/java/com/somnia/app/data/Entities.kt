@@ -27,6 +27,10 @@ data class SleepSession(
     val morningMood: Int = 0,
     val notes: String = "",
     val classifierName: String = "",
+    /** Activité médiane de la nuit (sert à calibrer les nuits suivantes). */
+    val movementMedian: Float? = null,
+    /** Nombre de nuits précédentes utilisées pour calibrer l'analyse. */
+    val calibrationNights: Int = 0,
 )
 
 @Entity(
@@ -52,6 +56,10 @@ data class SoundEventEntity(
     /** Version où la voix est isolée du bruit ambiant. */
     val enhancedPath: String?,
     val favorite: Boolean = false,
+    /** Paroles transcrites (hors ligne). */
+    val transcript: String? = null,
+    /** Type corrigé à la main par l'utilisateur. */
+    val userCorrected: Boolean = false,
 )
 
 /** Statistiques minute par minute : mouvement (accéléromètre) et son. */

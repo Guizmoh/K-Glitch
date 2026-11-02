@@ -38,12 +38,18 @@ data class SleepAnalysis(
 object SleepAnalyzer {
     private val WEIGHTS = floatArrayOf(0.04f, 0.06f, 0.1f, 0.2f, 0.4f, 0.1f, 0.04f) // m-4 .. m+2
 
-    fun analyze(input: List<MinuteInput>, goalMinutes: Int = 480): SleepAnalysis {
+    /**
+     * [baselineMedian] : activité médiane habituelle de la personne, apprise sur
+     * les nuits précédentes. Elle stabilise les seuils : une nuit agitée n'est
+     * plus jugée « normale » simplement parce qu'elle est agitée partout.
+     */
+    fun analyze(input: List<MinuteInput>, goalMinutes: Int = 480, baselineMedian: Float? = null): SleepAnalysis {
         val n = input.size
         if (n == 0) return SleepAnalysis(emptyList(), null, null, 0, 0, 0, 0, 0, 0)
         val act = FloatArray(n) { input[it].movement + 2f * input[it].disturbances }
         val sorted = act.sorted()
-        val median = sorted[n / 2]
+        val nightMedian = sorted[n / 2]
+        val median = if (baselineMedian != null) (nightMedian + baselineMedian) / 2f else nightMedian
         val p25 = sorted[n / 4]
         val awakeThr = maxOf(median * 3f, 1.5f)
 

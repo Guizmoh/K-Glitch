@@ -42,6 +42,18 @@ Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 - Si deux catégories ont des scores proches, l'ordre de priorité est le suivant : cris, pleurs, rires, puis paroles.
 - Si le modèle ne se charge pas, un classifieur acoustique simple prend le relais. Il s'appuie sur la hauteur de la voix, les basses fréquences et le rythme des syllabes.
 
+### Écrire ce qui a été dit (transcription)
+- Réglages > « Transcription des paroles » : installer le modèle français **Vosk** (42 Mo, une seule fois).
+- Ensuite, les paroles et les cris sont transcrits automatiquement, **sur le téléphone**, et affichés sous chaque son (« … »). Un bouton « Écrire ce qui est dit » transcrit aussi les anciens sons.
+- Internet ne sert qu'à ce téléchargement ; aucun son n'est jamais envoyé.
+
+### L'appli apprend
+- **Calibration** : l'activité habituelle de chaque nuit est mémorisée ; à partir de 3 nuits, l'analyse des phases s'appuie sur la médiane des 14 dernières nuits (indiqué « Calibré sur vos N nuits précédentes »).
+- **Corrections** : bouton « Corriger » sur chaque son (« c'était quoi, en vrai ? »). Le type est corrigé et la sensibilité s'ajuste d'un cran : moins pour la catégorie qui s'est trompée, plus pour la bonne.
+
+### Widget
+- Widget d'écran d'accueil avec l'agent, sa phrase du moment et le bouton « Commencer la nuit » / « Je me réveille ».
+
 ### Isoler la voix du bruit ambiant
 Pour les paroles, cris, rires et pleurs, l'application crée une deuxième version du fichier :
 1. Elle mesure le spectre du bruit juste **avant** l'événement.
@@ -66,6 +78,19 @@ Pour les paroles, cris, rires et pleurs, l'application crée une deuxième versi
 3. Appuyer sur **Installer**. Si Play Protect prévient que l'appli est inconnue : **Plus de détails > Installer quand même**.
 4. Ouvrir **Police du Dodo**, suivre le tuto, puis accepter le **micro** et les **notifications**.
 5. Conseillé : **Paramètres > Applis > Police du Dodo > Batterie > Non restreinte**, pour que l'écoute ne soit pas coupée la nuit.
+
+## Version finale (signée et optimisée)
+- `./gradlew assembleRelease` → `app/build/outputs/apk/release/police-du-dodo-release.apk` (APK à installer)
+- `./gradlew bundleRelease` → `app/build/outputs/bundle/release/app-release.aab` (fichier pour le Play Store)
+- La signature lit `keystore.properties` à la racine de `sleep-app/` (jamais versionné) :
+  ```
+  storeFile=/chemin/vers/police-du-dodo.jks
+  storePassword=…
+  keyAlias=police-du-dodo
+  keyPassword=…
+  ```
+- Code optimisé par R8 (règles dans `app/proguard-rules.pro`), seulement les téléphones ARM (arm64-v8a, armeabi-v7a).
+- Pour le Play Store, il faudra aussi : une politique de confidentialité (micro, données locales), des captures d'écran, et justifier l'autorisation de réveil (`USE_EXACT_ALARM`) ou la remplacer par `SCHEDULE_EXACT_ALARM`.
 
 ## Compiler
 
@@ -120,4 +145,5 @@ app/src/main/java/com/somnia/app/
 ## Crédits
 - Police du titre et du gros bouton : **Fredoka** (Google Fonts), licence SIL Open Font License 1.1.
 - Modèle de reconnaissance des sons : **YAMNet** (Google), licence Apache 2.0.
+- Transcription : **Vosk** et modèle `vosk-model-small-fr-0.22` (Alpha Cephei), licence Apache 2.0.
 - Police du gros bouton : **Quicksand** (Google Fonts), licence SIL Open Font License 1.1.

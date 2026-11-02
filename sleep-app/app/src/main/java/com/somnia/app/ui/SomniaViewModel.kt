@@ -42,6 +42,21 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
         dao.session(sessionId)?.let { if (it.tags.isEmpty()) dao.updateSession(it.copy(tags = pendingTags.joinToString(","))) }
     }
 
+    /** Corrige le type d'un son et ajuste la sensibilité ; renvoie le message à afficher. */
+    fun correctEvent(e: SoundEventEntity, right: com.somnia.app.audio.SoundType): String? {
+        val wrong = com.somnia.app.audio.SoundType.fromName(e.type)
+        viewModelScope.launch { dao.updateEvent(e.copy(type = right.name, userCorrected = true)) }
+        var msg: String? = null
+        settingsRepo.update { st -> com.somnia.app.analysis.Feedback.adjust(st, wrong, right).also { msg = it.second }.first }
+        return msg
+    }
+
+    fun transcribe(e: SoundEventEntity) = viewModelScope.launch {
+        val path = e.enhancedPath ?: e.audioPath ?: return@launch
+        val text = com.somnia.app.transcribe.Transcriber.transcribe(getApplication(), path) ?: "(rien de compréhensible)"
+        dao.event(e.id)?.let { dao.updateEvent(it.copy(transcript = text)) }
+    }
+
     fun toggleFavorite(e: SoundEventEntity) = viewModelScope.launch { dao.updateEvent(e.copy(favorite = !e.favorite)) }
 
     fun deleteEvent(e: SoundEventEntity) = viewModelScope.launch {

@@ -139,6 +139,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 detectionStartsAt = startTime + settings.startDelayMin * 60_000L,
                 classifierName = c.name, alarmTarget = alarmTarget,
             )
+            com.somnia.app.widget.DodoWidget.refresh(this@SleepTrackingService)
             if (settings.trackMovement) startMovement()
             startProcessing(c)
             startAudio()
@@ -227,7 +228,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         enhanced = e.absolutePath
                     }
                 }
-                dao.insertEvent(
+                val eventId = dao.insertEvent(
                     SoundEventEntity(
                         sessionId = sessionId, timestamp = ts, durationMs = ev.durationMs,
                         type = cls.type.name, confidence = cls.confidence, peakDb = ev.peakDb,
@@ -237,6 +238,13 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         audioPath = audio, enhancedPath = enhanced,
                     ),
                 )
+                // Paroles et cris : transcription en texte si le modèle est installé
+                if (cls.type == SoundType.SPEECH || cls.type == SoundType.NIGHT_TERROR) {
+                    (enhanced ?: audio)?.let { path ->
+                        runCatching { com.somnia.app.transcribe.Transcriber.transcribe(this@SleepTrackingService, path) }
+                            .getOrNull()?.let { text -> dao.event(eventId)?.let { dao.updateEvent(it.copy(transcript = text)) } }
+                    }
+                }
                 synchronized(lock) { minuteEvents++ }
                 TrackingState.live.value = TrackingState.live.value?.let { s ->
                     s.copy(
@@ -332,6 +340,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 cleanupOldRecordings()
             }
             TrackingState.live.value = null
+            com.somnia.app.widget.DodoWidget.refresh(this@SleepTrackingService)
             classifier?.close()
             wakeLock?.let { if (it.isHeld) it.release() }
             ServiceCompat.stopForeground(this@SleepTrackingService, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -357,7 +366,11 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
         val input = minutes.map {
             MinuteInput(it.minute, it.movement, disturbing[it.minute] ?: 0, it.minute in snoring)
         }
-        val a = SleepAnalyzer.analyze(input, settings.sleepGoalMin)
+        // Calibration : activité habituelle apprise sur les nuits précédentes
+        val past = dao.recentMovementMedians(id)
+        val baseline = if (past.size >= 3) past.sorted()[past.size / 2] else null
+        val nightMedian = minutes.map { it.movement }.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
+        val a = SleepAnalyzer.analyze(input, settings.sleepGoalMin, baseline)
         dao.upsertMinutes(minutes.mapIndexed { i, m ->
             m.copy(stage = when (a.stages.getOrNull(i)) { Stage.DEEP -> 0; Stage.AWAKE -> 2; else -> 1 })
         })
@@ -370,6 +383,8 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 score = if (minutes.size >= 30) a.score else null,
                 deepMinutes = a.deepMinutes, lightMinutes = a.lightMinutes, awakeMinutes = a.awakeMinutes,
                 snoringMinutes = a.snoringMinutes, awakenings = a.awakenings,
+                movementMedian = if (settings.trackMovement) nightMedian else null,
+                calibrationNights = if (baseline != null) past.size else 0,
             ),
         )
     }

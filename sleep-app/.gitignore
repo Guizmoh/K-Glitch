@@ -6,3 +6,6 @@ local.properties
 captures/
 .kotlin/
 app/src/main/assets/yamnet.tflite
+keystore.properties
+*.jks
+*.keystore

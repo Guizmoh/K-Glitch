@@ -160,6 +160,10 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         item {
             GlassCard(title = "Phases de la nuit", icon = "🌙") {
                 Hypnogram(minutes, events, s.startTime)
+                if (s.calibrationNights > 0) Text(
+                    "Calibré sur vos ${s.calibrationNights} nuits précédentes.",
+                    style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 4.dp),
+                )
                 Text(
                     "Estimation à partir des mouvements et des sons, pas un examen médical.",
                     style = MaterialTheme.typography.labelSmall, color = TextSoft,
@@ -266,6 +270,26 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
                 )
             }
         }
+        // Paroles transcrites
+        val ctx = LocalContext.current
+        val modelReady = remember { com.somnia.app.transcribe.Transcriber.isReady(ctx) }
+        var transcribing by remember(e.id) { mutableStateOf(false) }
+        if (e.transcript != null) {
+            Text(
+                "« ${e.transcript} »",
+                Modifier.padding(top = 10.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x22FFFFFF)).padding(12.dp),
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
+            )
+        } else if ((t == SoundType.SPEECH || t == SoundType.NIGHT_TERROR) && e.audioPath != null) {
+            if (modelReady) {
+                ToggleChip(if (transcribing) "Transcription…" else "Écrire ce qui est dit", false) {
+                    if (!transcribing) { transcribing = true; vm.transcribe(e) }
+                }
+            } else {
+                Text("Activez « Transcription des paroles » dans Réglages pour lire ce qui est dit.", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp))
+            }
+        }
+
         // Choix de la version écoutée : original ou voix isolée
         var useEnhanced by remember(e.id) { mutableStateOf(false) }
         val path = if (useEnhanced) e.enhancedPath ?: e.audioPath else e.audioPath
@@ -304,11 +328,42 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
         } else {
             Text("Audio non conservé", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp))
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        var correcting by remember(e.id) { mutableStateOf(false) }
+        if (correcting) CorrectDialog(t, onPick = { right ->
+            correcting = false
+            vm.correctEvent(e, right)?.let { android.widget.Toast.makeText(ctx, it, android.widget.Toast.LENGTH_LONG).show() }
+        }, onClose = { correcting = false })
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            if (e.userCorrected) Text("corrigé ", style = MaterialTheme.typography.labelSmall, color = TextSoft)
+            TextButton(onClick = { correcting = true }) { Text("Corriger") }
             (e.enhancedPath ?: e.audioPath)?.let { p -> IconButton(onClick = { onShare(p) }) { Icon(Icons.Filled.Share, "Partager", tint = TextSoft) } }
             IconButton(onClick = { vm.deleteEvent(e) }) { Icon(Icons.Filled.Delete, "Supprimer", tint = TextSoft) }
         }
     }
+}
+
+/** « Ce n'était pas ça » : choisir le bon type de son. */
+@Composable
+private fun CorrectDialog(current: SoundType, onPick: (SoundType) -> Unit, onClose: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("C'était quoi, en vrai ?") },
+        text = {
+            Column {
+                Text("L'appli s'ajuste à chaque correction.", style = MaterialTheme.typography.bodySmall, color = TextSoft)
+                SoundType.entries.filter { it != current }.forEach { ty ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onPick(ty) }.padding(vertical = 10.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(ty.icon(), null, tint = ty.color(), modifier = Modifier.size(22.dp))
+                        Text("  " + if (ty == SoundType.NOISE) "Rien d'important (drap, bruit…)" else ty.label)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text("Annuler") } },
+    )
 }
 
 private fun fmtMs(ms: Int): String = "%d:%02d".format(ms / 60_000, (ms / 1000) % 60)

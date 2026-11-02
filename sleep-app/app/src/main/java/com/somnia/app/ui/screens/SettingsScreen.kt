@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.clickable
@@ -96,6 +97,8 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             )
         }
 
+        TranscriptionCard()
+
         ExpandableCard("Réglage fin par type de son", "🎛️", "Sensibilité du micro et intensité pour rires, pleurs, cris…") {
             Text("Micro : ${s.micSensitivity}/10", style = MaterialTheme.typography.titleSmall)
             Text("Écart nécessaire avec le bruit de fond : +${"%.0f".format(23f - 1.9f * s.micSensitivity)} dB", style = MaterialTheme.typography.bodySmall, color = TextSoft)
@@ -158,10 +161,45 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
         }
 
         GlassCard(title = "Mes données", icon = "🔒") {
-            Text("Tout reste sur le téléphone : aucun son n'est envoyé sur Internet.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+            Text("Tout reste sur le téléphone : aucun son n'est envoyé sur Internet. Internet ne sert qu'à télécharger le modèle de transcription, si vous l'installez.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = { vm.exportCsv(ctx) }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Exporter mes nuits (CSV)") }
         }
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+/** Installer / supprimer le modèle de transcription des paroles. */
+@Composable
+private fun TranscriptionCard() {
+    val ctx = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val state by com.somnia.app.transcribe.Transcriber.state.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) { com.somnia.app.transcribe.Transcriber.refresh(ctx) }
+    GlassCard(title = "Transcription des paroles", icon = "🗣️") {
+        Text(
+            "Écrit ce qui est dit pendant la nuit, directement sur le téléphone : aucun son n'est envoyé sur Internet.",
+            style = MaterialTheme.typography.bodySmall, color = TextSoft,
+        )
+        Spacer(Modifier.height(8.dp))
+        when (val st = state) {
+            is com.somnia.app.transcribe.Transcriber.State.Ready -> {
+                Text("Installée : les paroles seront écrites automatiquement.", color = com.somnia.app.ui.theme.Good)
+                OutlinedButton(onClick = { com.somnia.app.transcribe.Transcriber.delete(ctx) }, Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    Text("Supprimer (libère 50 Mo)")
+                }
+            }
+            is com.somnia.app.transcribe.Transcriber.State.Downloading -> {
+                Text("Téléchargement… ${(st.progress * 100).toInt()} %")
+                androidx.compose.material3.LinearProgressIndicator({ st.progress }, Modifier.fillMaxWidth().padding(top = 6.dp))
+            }
+            else -> {
+                if (st is com.somnia.app.transcribe.Transcriber.State.Failed) Text(st.message, color = MaterialTheme.colorScheme.error)
+                OutlinedButton(
+                    onClick = { scope.launch { com.somnia.app.transcribe.Transcriber.download(ctx) } },
+                    Modifier.fillMaxWidth().padding(top = 6.dp),
+                ) { Text("Installer le français (42 Mo, une seule fois, Wi-Fi conseillé)") }
+            }
+        }
     }
 }
 
