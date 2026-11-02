@@ -20,6 +20,7 @@
 - [x] Sampler : enregistrer une boucle de ce qui joue, SLICE (réorganisation, reverse, retrigger, DICE), GRAIN (0.4).
 - [x] SOLO / MULTI, probabilité par pas, longueur 16/32/64 lisible, moteur GLITCH, police lissée, correctif écrans noirs de l'émulateur (0.4).
 - [x] Filtre créatif : LP, HP, BP, NOTCH, DRIVE, COMB±, METAL, VOWEL, PHASER, RESONATOR, accordable au clavier, LFO (0.6).
+- [x] Automation du filtre (FREQ, TYPE, RESO par pas), effacée par CLEAR, sauvegardée (0.7).
 - [ ] Sauvegarder une boucle dans un slot de sample utilisateur (flash) et la recharger.
 - [ ] Charger de vrais breaks (samples utilisateur) dans le sampler.
 - [ ] Éditeur web : vérifier la compatibilité (le moteur GLITCH ajoute un numéro de moteur).

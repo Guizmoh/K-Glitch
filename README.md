@@ -2,7 +2,7 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.6**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.7**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
 
 ## Essayer : l'émulateur
 
@@ -50,6 +50,8 @@ Un filtre sur tout le mix (boucle du sampler comprise, avant son enregistrement)
 - **RESONATOR** : trois passe-bandes très étroits sur la note, son octave et sa quinte : le mix sonne en accord.
 
 FREQ se règle en notes (les types accordés restent justes) ; sur la page FILTER, **les touches accordent le filtre** sur leur note (OCT± décale). MOVE fait bouger la fréquence jusqu'à ±3 octaves au rythme du LFO (vitesse = MOVEMENT). L'écran dessine la forme du filtre. Mémoire : 4 Ko pour les peignes.
+
+**Automation du filtre** : avec REC + PLAY, toucher le filtre (un potard ou une touche) écrit FREQ, TYPE et RESO sur le pas en cours ; un potard tourné pendant la lecture dessine une courbe. À la relecture, un pas enregistré impose ses valeurs jusqu'au suivant ; toucher le filtre reprend la main ; CLEAR (OCT- tenu) efface aussi cette automation au passage. La page FILTER montre la bande d'automation (une barre par pas : hauteur = la note, couleur = le type) ; sur SEQ, un petit carré violet marque les pas qui portent le filtre. Sauvegardé avec le reste.
 
 ### Boutons OCT- / OCT+ sur les pages K-GLITCH
 - **OCT+ = DICE** : sur SEQ, une séquence d'effets ; sur LOOP / SLICE / GRAIN, les slices réorganisées ; ailleurs, le rythme.

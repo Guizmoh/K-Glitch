@@ -263,7 +263,7 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KPROB] = {"PROB", F_INT, 0, 100, 100, 0, "%"},
     [G_KMULTI] = PE("FX", N_KMULTI, 0),
     [G_KFTYPE] = PE("TYPE", N_KFTYPE, 0),
-    [G_KFCUT] = PD("FREQ", F_NOTE, 24, 120, 84),
+    [G_KFCUT] = PD("FREQ", F_KNOTE, 24, 120, 84),
     [G_KFRES] = PD("RESO", F_PCT, 0, 127, 64),
     [G_KFMOD] = {"MOVE", F_INT, 0, 100, 0, 0, "%"},
 };
@@ -419,6 +419,10 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         break;
     case F_NOTE:
         str_cpy(val, N_NOTE[v % 12], 6);
+        break;
+    case F_KNOTE:                                       /* (K-GLITCH) C4, F#5 */
+        str_cpy(val, N_NOTE[(v < 0 ? 0 : v) % 12], 6);
+        fmt_int(val + str_len(val), (v < 0 ? 0 : v) / 12 - 1);
         break;
     case F_ONOFF:
         str_cpy(val, N_ONOFF[v ? 1 : 0], 6);

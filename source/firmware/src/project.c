@@ -1034,6 +1034,8 @@ UI_SMALL static void settings_save(void)
 }
 
 #ifdef KGLITCH_VERSION
+_Static_assert(sizeof(persist_t) + sizeof(dsu_bank_t) + MIDI_PART <= ST_TAIL_OFF - ST_PAYLOAD_OFF,
+               "the settings' payload ends before K-GLITCH's tail record");
 /* K-GLITCH: its state saved with the settings, 3 s after its last change, the transport stopped (no erase while
  * playing: the flash stalls the code); unchanged, nothing written. Main loop (ui_input.c) */
 static void kg_store_poll(void)

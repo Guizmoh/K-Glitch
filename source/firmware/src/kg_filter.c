@@ -55,7 +55,8 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
     static const int16_t VF1[5] = {78 * 256 + 26, 72 * 256 + 154, 61 * 256 + 0, 73 * 256 + 230, 62 * 256 + 205};   /* A E I O U */
     static const int16_t VF2[5] = {85 * 256 + 26, 93 * 256 + 179, 97 * 256 + 128, 79 * 256 + 128, 80 * 256 + 26};
     static const uint16_t MR[4] = {32768, 23921, 19005, 13435};   /* METAL: the combs' lengths, Q15 (inharmonic) */
-    int32_t want = song.g[G_KFTYPE], res = song.g[G_KFRES], note8, ch;
+    int32_t want = kf_amode & 15u ? (int32_t)(kf_amode & 15u) - 1 : song.g[G_KFTYPE];   /* (the automation, else the knobs) */
+    int32_t res = kf_amode ? (int32_t)(kf_amode >> 4) * 8 + 4 : song.g[G_KFRES], note8, ch;
     uint32_t i;
     kf_c c, c2, c3;
     if (kf.cur == KF_OFF && want == KF_OFF)
@@ -68,7 +69,7 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
         kf.fbk[0] = kf.fbk[1] = 0;
         memset(kf_buf, 0, sizeof kf_buf);
     }
-    note8 = (int32_t)song.g[G_KFCUT] << 8;
+    note8 = (int32_t)(kf_anote ? kf_anote : (uint32_t)song.g[G_KFCUT]) << 8;
     if (song.g[G_KFMOD])                           /* MOVE: +-3 octaves at 100 % */
         note8 += sine_i(kg_lfo_ph) * (int32_t)song.g[G_KFMOD] * 36 / 100 / 128;
     note8 = clamp(note8, 12 << 8, 124 << 8);
@@ -77,7 +78,7 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
         kf_coef(&c, note8, 40 + res * 80 / 127);
         break;
     case KF_VOWEL: {
-        int32_t p = (int32_t)song.g[G_KFCUT] * 4 * 256 / 127, v = p >> 8, f = p & 255;
+        int32_t p = (note8 >> 8) * 4 * 256 / 127, v = p >> 8, f = p & 255;
         if (v > 3) v = 3, f = 255;
         kf_coef(&c, VF1[v] + (((VF1[v + 1] - VF1[v]) * f) >> 8), 70 + res * 50 / 127);
         kf_coef(&c2, VF2[v] + (((VF2[v + 1] - VF2[v]) * f) >> 8), 70 + res * 50 / 127);

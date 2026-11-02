@@ -19,7 +19,7 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.6"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.7"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */
@@ -56,6 +56,8 @@ static struct {
     volatile int8_t seq2[KG_STEPS];   /* the lane's second layer (MULTI: two effects recorded on a step) */
     volatile uint8_t sint[KG_STEPS];  /* each step's INTENSITY as recorded, + 1 (0: the effect's own) */
     volatile uint8_t prob[KG_STEPS];  /* each step's probability, 0..100 % */
+    volatile uint8_t fnote[KG_STEPS]; /* the FILTER's automation: FREQ on the step (a note), 0 none */
+    volatile uint8_t fmode[KG_STEPS]; /* .. TYPE + 1 (bits 0..3, 0 none), RESO / 8 (bits 4..7) */
     uint8_t pass;                     /* this 16th's step plays (its probability rolled) */
     volatile uint8_t nfx;             /* ISR: how many effects play now (MULTI) */
     volatile int8_t list[4];          /* .. the first four (the screen) */
@@ -86,6 +88,9 @@ static void kg_hold_del(int32_t fx)
     for (i = 0; i < 4u; i++) if (kg_held[i] == fx) kg_held[i] = -1;
 }
 static void kg_hold_clear(void) { kg_held[0] = kg_held[1] = kg_held[2] = kg_held[3] = -1; }
+static volatile uint8_t kf_touch;                 /* UI: the FILTER was touched (a knob, a key): REC writes it, else it
+                                                   * takes over from the automation */
+static volatile uint8_t kf_anote, kf_amode;       /* ISR: the automation in force (as fnote, fmode; 0 none) */
 static volatile uint8_t kg_erase;                 /* UI: CLEAR (OCT- on the K-GLITCH pages) held: the steps passing are erased */
 static volatile uint8_t kg_recd;                  /* ISR: an effect was recorded (the screen: REC FX) */
 /* the effect sequence's length: SEQ OFF, 16, 32, 64 */
@@ -169,6 +174,8 @@ static int32_t kg_route(int32_t key)
             kg.last16 = s16;
             kg.step = (uint8_t)(s16 % (len ? len : 16u));
             kg.pass = (uint8_t)(kg_rand(&kg.rnd) % 100u < kg.prob[kg.step]);   /* (the step's probability) */
+            if (kg.fnote[kg.step] && !kg_erase && !kf_touch)   /* the FILTER's automation: from this step on */
+                kf_anote = kg.fnote[kg.step], kf_amode = kg.fmode[kg.step];
             if (kg.auto_left)
                 kg.auto_left--;
             if (!kg.auto_left) {
@@ -183,6 +190,19 @@ static int32_t kg_route(int32_t key)
         kg.last16 = 0xFFFFFFFFu;
         kg.auto_fx = -1;
         kg.auto_left = 0;
+        kf_anote = kf_amode = 0;                      /* (stopped: the knobs) */
+    }
+    if (song.playing && kg_erase) {                   /* CLEAR: the FILTER's automation of the steps passing too */
+        kg.fnote[kg.step] = kg.fmode[kg.step] = 0;
+    } else if (kf_touch) {                            /* the FILTER touched: REC writes it; else the knobs take over */
+        if (song.playing && song.rec) {
+            kg.fnote[kg.step] = (uint8_t)song.g[G_KFCUT];
+            kg.fmode[kg.step] = (uint8_t)(((uint32_t)song.g[G_KFTYPE] + 1u) | ((uint32_t)song.g[G_KFRES] >> 3) << 4);
+            kg_recd = 1;
+            if (!song.g[G_KSEQ]) song.g[G_KSEQ] = 1;
+        }
+        kf_anote = kf_amode = 0;
+        kf_touch = 0;
     }
     /* what plays now, first first: SOLO one effect (a key, else the lane, else AUTO); MULTI all of them stacked (the
      * keys held, the lane's two layers, AUTO). SLOOP's effects: one at a time (punch.c); DRUM DESTROYER: KD_SLOTS */
@@ -321,6 +341,7 @@ static void kg_clear(void)
         kg.seq[i] = kg.seq2[i] = -1;
         kg.sint[i] = 0;
         kg.prob[i] = 100;
+        kg.fnote[i] = kg.fmode[i] = 0;
     }
 }
 /* CLEAR (FX > DESTROY, KNOB 4): back to the original sound. Every effect let go (a held one too), AUTO, the effect
@@ -342,17 +363,18 @@ static void kg_clean(void)
 /* ---- the K-GLITCH state kept in flash (storage.c's tail record of the settings object; project.c saves it 3 s after a
  * change, stopped, and takes it back at power-on): the effect lane (both layers, intensities, probabilities), each
  * effect's INTENSITY, the slices' map, and K-GLITCH's settings. The loop's sound itself is RAM only */
-#define KG_BLOB_MAGIC 0x314C474Bu                 /* "KGL1" */
+#define ST_TAIL_MAX_KG 1024u                     /* (storage.c ST_TAIL_MAX) */
+#define KG_BLOB_MAGIC 0x324C474Bu                 /* "KGL2" (0.7: the FILTER's automation) */
 typedef struct {
     uint32_t magic;
     uint16_t ng, ver;
     int8_t seq[KG_STEPS], seq2[KG_STEPS];
-    uint8_t sint[KG_STEPS], prob[KG_STEPS];
+    uint8_t sint[KG_STEPS], prob[KG_STEPS], fnote[KG_STEPS], fmode[KG_STEPS];
     uint8_t dint[DD_N], map[KL_NS], rev[KL_NS], ret[KL_NS];
     int16_t g[G_COUNT - G_KCHAOS];
     uint32_t sum;
 } kg_blob_t;
-_Static_assert(sizeof(kg_blob_t) <= 512u, "the tail record holds it");
+_Static_assert(sizeof(kg_blob_t) <= ST_TAIL_MAX_KG, "the tail record holds it");
 static kg_blob_t kg_blob;
 static uint32_t kg_blob_sum(const kg_blob_t *b)
 {
@@ -369,7 +391,8 @@ static void kg_pack(kg_blob_t *b)                 /* (main loop) */
     b->ng = (uint16_t)(G_COUNT - G_KCHAOS);
     b->ver = 1;
     for (i = 0; i < KG_STEPS; i++)
-        b->seq[i] = kg.seq[i], b->seq2[i] = kg.seq2[i], b->sint[i] = kg.sint[i], b->prob[i] = kg.prob[i];
+        b->seq[i] = kg.seq[i], b->seq2[i] = kg.seq2[i], b->sint[i] = kg.sint[i], b->prob[i] = kg.prob[i],
+        b->fnote[i] = kg.fnote[i], b->fmode[i] = kg.fmode[i];
     for (i = 0; i < DD_N; i++) b->dint[i] = kd_int[i];
     for (i = 0; i < KL_NS; i++) b->map[i] = kl.map[i], b->rev[i] = kl.rev[i], b->ret[i] = kl.ret[i];
     for (i = 0; i < (uint32_t)(G_COUNT - G_KCHAOS); i++) b->g[i] = song.g[G_KCHAOS + i];
@@ -385,6 +408,8 @@ static int kg_unpack(const kg_blob_t *b)          /* 0: taken, -1: not one (noth
         kg.seq2[i] = b->seq2[i] < (int8_t)KG_NFX ? b->seq2[i] : -1;
         kg.sint[i] = b->sint[i] <= 101u ? b->sint[i] : 0u;
         kg.prob[i] = b->prob[i] <= 100u ? b->prob[i] : 100u;
+        kg.fnote[i] = b->fnote[i] >= 24u && b->fnote[i] <= 120u ? b->fnote[i] : 0u;
+        kg.fmode[i] = kg.fnote[i] && (b->fmode[i] & 15u) <= KF_N ? b->fmode[i] : 0u;
     }
     for (i = 0; i < DD_N; i++) kd_int[i] = b->dint[i] <= 100u ? b->dint[i] : 50u;
     for (i = 0; i < KL_NS; i++) {

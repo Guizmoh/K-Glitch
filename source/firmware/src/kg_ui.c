@@ -231,7 +231,9 @@ UI_SMALL static void kg_filterview(void)
     int32_t t = song.g[G_KFTYPE], x0 = 14, w = 212, ytop = 54, h = 40, xc, x, prev = -1, mv = (int32_t)song.g[G_KFMOD];
     int32_t res = song.g[G_KFRES], pk = 4 + res * 18 / 127;
     uint16_t col = t == KF_OFF ? KG_RULE : t <= KF_NOTCH ? KG_CYAN : t == KF_DRIVE ? KG_RED : t <= KF_METAL ? KG_AMB : KG_VIO;
-    xc = x0 + (song.g[G_KFCUT] - 24) * w / 96;
+    xc = x0 + ((kf_anote ? (int32_t)kf_anote : song.g[G_KFCUT]) - 24) * w / 96;
+    if (kf_amode & 15u) t = (int32_t)(kf_amode & 15u) - 1;
+    col = t == KF_OFF ? KG_RULE : t <= KF_NOTCH ? KG_CYAN : t == KF_DRIVE ? KG_RED : t <= KF_METAL ? KG_AMB : KG_VIO;
     if (mv) cv_rect(clamp(xc - mv * w / 270, x0, x0 + w), ytop, clamp(mv * w / 135, 2, w), h + 2, kg_mix(KG_PANEL, col, 40));
     cv_rect(x0, ytop + h, w, 1, KG_RULE);
     for (x = 0; x < w; x++) {
@@ -275,7 +277,7 @@ UI_SMALL static void kg_paint(void)
     static const char *const TITLE[KG_NPG] = {"DRUM DESTROYER", "FILTER", "DRUMS", "CHOP / MUTATE", "LOOP SAMPLER", "SLICES",
                                               "GRAINS", "EFFECT SEQUENCE", "THE 16 PADS", "CHAOS", "SETUP / MPC"};
     static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
-    static const char *const HINT[KG_NPG] = {"ALGO FX / PRESETS INTENS / OCT+ DICE", "THE KEYS TUNE FREQ / MOVE: THE LFO",
+    static const char *const HINT[KG_NPG] = {"ALGO FX / PRESETS INTENS / OCT+ DICE", "KEYS TUNE / REC: AUTOMATION",
                                              "K4 GENERATE / KEYS PLAY THE DRUMS",
                                              "K1 DICE / K2 MUTATE / K3 RESTORE", "K1 REC: NEXT BAR / KEYS: SLICES",
                                              "KEYS: SLICES / OCT+ DICE / OCT- ORDER", "KEYS: POSITION / CHAOS: SPRAY",
@@ -440,6 +442,8 @@ UI_SMALL static void kg_paint(void)
                 cv_rect(cx + 11, cy + 8, 2, 2, (i & 3u) == 0u ? KG_MUTE : KG_RULE);
             }
             if (kg.sint[at]) cv_rect(cx, cy + 16, (int32_t)(kg.sint[at] - 1u) / 4, 2, KG_INK);   /* (recorded INTENSITY) */
+            if (kg.fnote[at])                           /* (the FILTER automated on the step: a violet tick) */
+                cv_rect(cx + 1, cy + 14, 3, 3, KG_VIO);
             if (kg.seq2[at] >= 0)                       /* (a second effect on the step: its colour, a corner) */
                 for (x = 0; x < 6; x++) cv_rect(cx + 19 + x, cy, 6 - x, 1, kg_fam(kg.seq2[at])), cv_rect(cx + 19 + x, cy + x, 1, 1, KG_INK);
             if (kg.prob[at] < 100u && fx >= 0) {        /* (a probability: a white bar along the top, its share) */
@@ -454,7 +458,18 @@ UI_SMALL static void kg_paint(void)
     {
         int32_t ok = now >= 0 && now < (int32_t)KG_NFX;
         const char *n = ok ? kg_name(now) : song.playing ? "READY" : "STOPPED";
-        if (pn == KP_LOOP || pn == KP_SLICE || pn == KP_GRAIN) {   /* (the loop view uses the panel) */
+        if (pn == KP_FILTER) {                         /* FILTER: its automation, the page of 16 steps playing */
+            uint32_t pg0 = song.playing ? (kg.step / 16u) * 16u : 0u, st;
+            for (st = 0; st < 16u; st++) {
+                uint32_t at = pg0 + st, fm = kg.fmode[at];
+                int32_t bx = 14 + (int32_t)st * 13, hh = kg.fnote[at] ? 2 + ((int32_t)kg.fnote[at] - 24) * 16 / 96 : 0;
+                uint16_t cc = (fm & 15u) <= 1u ? KG_RULE : (fm & 15u) <= 5u ? KG_CYAN : (fm & 15u) == 6u ? KG_RED
+                                                         : (fm & 15u) <= 9u ? KG_AMB : KG_VIO;
+                cv_rect(bx, 119, 11, 1, KG_RULE);
+                if (hh) cv_rect(bx, 119 - hh, 11, hh, cc);
+                if (song.playing && at == kg.step) cv_rect(bx, 101, 11, 1, KG_INK);
+            }
+        } else if (pn == KP_LOOP || pn == KP_SLICE || pn == KP_GRAIN) {   /* (the loop view uses the panel) */
         } else if (kg.nfx > 1u) {                      /* MULTI: the effects stacked, named */
             x = 14;
             for (i = 0; i < 4u && kg.list[i] >= 0; i++) {
@@ -541,11 +556,15 @@ UI_SMALL static uint32_t kg_signature(void)
     h ^= (song.playing ? (clk_beat & 3u) + 1u : 0u) * 0x2545F491u;
     h ^= (uint32_t)song.g[G_BPM] * 104729u + (ui.hot_t ? ui.hot_col + 1u : 0u) * 13u + kg_sel * 7u + (uint32_t)song.g[G_SWING];
     for (i = 0; i < KL_NS; i++) h = (h ^ (uint32_t)kl.map[i] ^ (uint32_t)kl.rev[i] << 5 ^ (uint32_t)kl.ret[i] << 6) * 16777619u;
-    for (i = 0; i < KG_STEPS; i++) h = (h ^ (uint32_t)(kg.seq2[i] + 2) ^ (uint32_t)kg.prob[i] << 8) * 16777619u;
+    for (i = 0; i < KG_STEPS; i++)
+        h = (h ^ (uint32_t)(kg.seq2[i] + 2) ^ (uint32_t)kg.prob[i] << 8 ^ (uint32_t)kg.fnote[i] << 16 ^ (uint32_t)kg.fmode[i] << 24) * 16777619u;
+    h ^= (uint32_t)kf_anote * 0x01000193u;
     for (i = 0; i < 4u; i++) h = (h ^ (uint32_t)(kg.list[i] + 2)) * 16777619u;
     h ^= kl.st * 0x3C6EF372u + kl.w / 2048u * 0x85EBCA6Bu + (uint32_t)(kl.pad + 2) * 0x27D4EB2Fu + kl.ov_new;
     if (kg_pageno() >= KP_LOOP && kg_pageno() <= KP_GRAIN && song.playing && kl.st == KLS_HAS)   /* (the playhead moves) */
         h ^= (clk_beat * 8u + clk_pos / ((uint32_t)FS * 60u / 8u)) * 0x9E3779B1u;
+    if (kg_pageno() == KP_FILTER && song.playing)       /* (the band's playhead) */
+        h ^= (kg.step + 1u) * 0x61C88647u;
     if (kg_pageno() == KP_DRUMS || kg_pageno() == KP_CHOP || kg_pageno() == KP_CHAOS)   /* the drum grid: the pattern, the 16th playing */
         h ^= kr_sig() + (song.playing ? TDRUM->seq_idx + 1u : 0u) * 31337u + kr.changed + (uint32_t)TDRUM->p[P_E0] * 7u;
     if (ui.msg_t) h = str_hash(h ^ 0x9E37u, ui.msg);
@@ -560,6 +579,7 @@ UI_SMALL static void kg_screen_draw(void)
     if (kg_keynote) {                                   /* FILTER: a key tuned FREQ to its note */
         song.g[G_KFCUT] = (int16_t)clamp(kg_keynote - 1, 24, 120);
         kg_keynote = 0;
+        kf_touch = 1;
     }
     if (kg_keystep) {                                   /* SEQ: a white key picked the step (on the page shown) */
         uint32_t at = kg_seqpage() * 16u + kg_keystep - 1u;
@@ -589,6 +609,6 @@ UI_SMALL static void kg_screen_draw(void)
             cv_blit(0, band * 120u);
         }
     }
-    if ((ui.frame & 1u) && !(pn >= KP_LOOP && pn <= KP_GRAIN))   /* (the loop pages: the waveform is the view) */
+    if ((ui.frame & 1u) && !(pn >= KP_LOOP && pn <= KP_GRAIN) && pn != KP_FILTER)   /* (their own views) */
         kg_scope();
 }

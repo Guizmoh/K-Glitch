@@ -53,7 +53,7 @@ static void reset(void)
     song.g[G_KMULTI] = 0;
     kg.sent_cc = 0;
     kl.st = KLS_EMPTY, song.g[G_KLMODE] = 0;
-    song.g[G_KFTYPE] = 0, kf.cur = KF_OFF;
+    song.g[G_KFTYPE] = 0, kf.cur = KF_OFF, kf_anote = kf_amode = 0, kf_touch = 0;
     clk_beat = 0, clk_pos = 0;
     song.playing = 1;
     usb.config = 1;
@@ -540,6 +540,33 @@ int main(int argc, char **argv)
         }
     }
     printf("kglitch: FILTER: the 11 types change the mix, bounded; COMB+ and RESON in tune; OFF exact ok\n");
+    /* 20. the FILTER's automation: REC + the FILTER touched writes its step (FREQ, TYPE, RESO); played back from that
+     * step on; the knobs touched take over; CLEAR erases it; stopped, the knobs again */
+    {
+        reset();
+        song.g[G_KFTYPE] = KF_COMBP, song.g[G_KFCUT] = 69, song.g[G_KFRES] = 80;
+        song.rec = 1;
+        run(S16 * 2u + S16 / 2u, -1, 0, 0, ol, or_);    /* (on step 2) */
+        kf_touch = 1;
+        { int32_t l2[CTL] = {0}, r2[CTL] = {0}; punch_process(l2, r2, CTL); }
+        song.rec = 0;
+        assert(kg.fnote[2] == 69u && (kg.fmode[2] & 15u) == KF_COMBP + 1u && (kg.fmode[2] >> 4) == 10u);
+        song.g[G_KFTYPE] = KF_LP, song.g[G_KFCUT] = 40;   /* (the knobs moved since, without a touch) */
+        clk_beat = 4, clk_pos = 0, kg.last16 = 0xFFFFFFFFu;
+        run(S16 * 2u + S16 / 2u, -1, 0, 0, ol, or_);
+        if (getenv("KGDBG")) printf("anote %u amode %u cur %d step %u fnote2 %u\n", kf_anote, kf_amode, kf.cur, kg.step, kg.fnote[2]);
+        assert(kf_anote == 69u && (kf_amode & 15u) == KF_COMBP + 1u);
+        kf_touch = 1;                                    /* the knob touched: it takes over */
+        { int32_t l2[CTL] = {0}, r2[CTL] = {0}; punch_process(l2, r2, CTL); }
+        assert(kf_anote == 0u);
+        clk_beat = 8, clk_pos = 0, kg.last16 = 0xFFFFFFFFu;
+        kg_erase = 1;
+        run(S16 * 4u, -1, 0, 0, ol, or_);
+        kg_erase = 0;
+        assert(kg.fnote[2] == 0u);
+        song.g[G_KFTYPE] = KF_OFF;
+    }
+    printf("kglitch: FILTER automation: REC writes the step, played back, a touch takes over, CLEAR    ok\n");
     printf("kglitch_test: passed\n");
     return 0;
 }

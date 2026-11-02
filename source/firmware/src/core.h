@@ -35,6 +35,7 @@ enum {
     F_INT, F_PCT, F_BIPCT, F_TIME, F_LFOHZ, F_CUTOFF, F_DB, F_SEMI, F_ENUM, F_BPM, F_NOTE,
     F_ONOFF, F_OCT, F_STEPS,
     F_SWING,                    /* 0..100: MPC swing, 50 % (straight) .. 75 % */
+    F_KNOTE,                    /* K-GLITCH: a MIDI note with its octave, C4 = 60 (the FILTER's FREQ) */
     F_FILT                      /* -64..63: the DJ filter, LP <- OFF -> HP */
 };
 
