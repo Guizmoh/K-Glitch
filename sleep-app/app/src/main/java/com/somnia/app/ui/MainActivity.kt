@@ -9,6 +9,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Insights
@@ -81,7 +83,12 @@ class MainActivity : ComponentActivity() {
                         OnboardingScreen { prefs.edit().putBoolean("tuto_done", true).apply(); showTuto = false }
                         return@NightBackground
                     }
+                    androidx.compose.foundation.layout.Box(
+                        androidx.compose.ui.Modifier.fillMaxSize(),
+                        contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+                    ) {
                     Scaffold(
+                        modifier = androidx.compose.ui.Modifier.widthIn(max = 600.dp),
                         containerColor = Color.Transparent,
                         bottomBar = {
                             NavigationBar(containerColor = Color(0xE01C2A5E), tonalElevation = 0.dp) {
@@ -122,6 +129,7 @@ class MainActivity : ComponentActivity() {
                                 SessionScreen(vm, it.arguments?.getLong("id") ?: 0L) { nav.popBackStack() }
                             }
                         }
+                    }
                     }
                 }
                             }

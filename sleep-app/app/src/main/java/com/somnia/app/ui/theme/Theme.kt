@@ -117,11 +117,16 @@ private val shapes = Shapes(
 fun SomniaTheme(content: @Composable () -> Unit) =
     MaterialTheme(colorScheme = scheme, typography = typography, shapes = shapes) {
         // Texte clair par défaut, même hors d'une Surface (fonds dégradés).
-        // Texte agrandi d'environ 12 % (en plus du réglage de taille du téléphone).
+        // Adaptation à la taille de l'écran : l'interface est dessinée pour un écran de
+        // référence (411 x 860 dp, type Pixel 6) puis agrandie ou réduite à l'identique.
+        // Les petits téléphones gardent tout à l'écran, les grands n'ont pas l'air vides.
         val d = androidx.compose.ui.platform.LocalDensity.current
+        val conf = androidx.compose.ui.platform.LocalConfiguration.current
+        val scale = uiScale(conf.screenWidthDp, conf.screenHeightDp)
         CompositionLocalProvider(
             LocalContentColor provides scheme.onBackground,
-            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale * 1.12f),
+            // Texte agrandi d'environ 12 % (en plus du réglage de taille du téléphone).
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density * scale, d.fontScale * 1.12f),
             content = content,
         )
     }
@@ -135,4 +140,18 @@ fun SoundType.icon(): androidx.compose.ui.graphics.vector.ImageVector = when (th
     SoundType.COUGH -> Icons.Rounded.Sick
     SoundType.BREATHING -> Icons.Rounded.Air
     SoundType.NOISE -> Icons.Rounded.GraphicEq
+}
+
+/**
+ * Facteur d'échelle de l'interface selon la taille de l'écran (en dp réels).
+ * Base 411 dp de large ; on tient aussi compte des écrans très courts.
+ * Borné entre 0,78 (très petits téléphones) et 1,30 (grands écrans, tablettes).
+ */
+fun uiScale(widthDp: Int, heightDp: Int): Float {
+    if (widthDp <= 0 || heightDp <= 0) return 1f
+    val portraitW = minOf(widthDp, heightDp)
+    val portraitH = maxOf(widthDp, heightDp)
+    val byWidth = portraitW / 411f
+    val byHeight = portraitH / 780f
+    return minOf(byWidth, byHeight).coerceIn(0.78f, 1.30f)
 }
