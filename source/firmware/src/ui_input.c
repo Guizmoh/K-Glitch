@@ -946,6 +946,110 @@ UI_SMALL static int ly_quiet(void)
         ly_quiet_t = 0;
     return ly_quiet_t != 0;
 }
+/* K-GLITCH: SEQ held + PRESETS: a tool on the selected track's pattern, OCT+ does it (OCT- undoes it). Every tool is
+ * one undo. COPY keeps the pattern (its steps, nudges, length) for PASTE, on a track of the same kind (synth / drums) */
+static struct { step_t st[NSTEP]; int8_t micro[NSTEP]; int16_t len; uint8_t has, drum; } seq_clip;
+UI_SMALL static void seq_rand_step(track_t *t, uint32_t i, uint32_t dens)   /* a random step: a hit / a note, or nothing */
+{
+    if (is_drum(t)) {
+        dstep_t *d = &t->dstep[i];
+        uint32_t l = pen_lane & 15u;
+        dstep_clr(d, l);
+        if (rng() % 100u < dens)
+            dstep_set(d, l, rng() % 5u == 0u ? LV_GHOST : rng() % 6u == 0u ? LV_HARD : LV_NORM, rng() % 10u == 0u ? 1u : 0u);
+        return;
+    }
+    {
+        step_t *st = &t->step[i];
+        uint32_t mask = SCALE_MASK[(uint32_t)t->p[P_SCALE] % (sizeof SCALE_MASK / sizeof SCALE_MASK[0])], k, deg = 0, n;
+        memset(st, 0, sizeof *st);
+        st->time = ST_REST;
+        if (rng() % 100u >= dens)
+            return;
+        for (k = 0; k < 12u; k++) deg += mask >> k & 1u;
+        n = rng() % (deg * 2u + 1u);                  /* (two octaves of the scale, from the root, C3 up) */
+        for (k = 0; ; k++)
+            if (mask >> (k % 12u) & 1u) { if (!n--) break; }
+        st->note[0] = (uint8_t)(48u + (uint32_t)t->p[P_ROOT] + k);
+        st->n = 1;
+        st->time = ST_NOTE;
+        st->vel = 100;
+        if (rng() % 6u == 0u) st->flags |= SF_ACCENT;
+    }
+}
+UI_SMALL static void seq_tool_do(uint32_t tool)
+{
+    track_t *t = TSEL;
+    uint32_t len = trk_len(t), i;
+    static step_t tmp[NSTEP];
+    static int8_t tm[NSTEP];
+    if (tool == ST_COPY) {
+        memcpy(seq_clip.st, t->step, sizeof seq_clip.st);
+        memcpy(seq_clip.micro, t->micro, sizeof seq_clip.micro);
+        seq_clip.len = t->p[P_SLEN];
+        seq_clip.has = 1;
+        seq_clip.drum = (uint8_t)is_drum(t);
+        ui_message("PATTERN COPIED");
+        return;
+    }
+    if (tool == ST_PASTE && (!seq_clip.has || seq_clip.drum != (uint8_t)is_drum(t))) {
+        ui_message(seq_clip.has ? "COPIED FROM THE OTHER KIND" : "NOTHING COPIED");
+        return;
+    }
+    undo_mark(t, (undo_sess += 4u) | 3u);
+    fm1_irq_off();
+    memcpy(tmp, t->step, sizeof tmp);
+    memcpy(tm, t->micro, sizeof tm);
+    switch (tool) {
+    case ST_RANDOM:                                   /* (the drums: the sound picked; a synth: notes in its scale) */
+        for (i = 0; i < len; i++) seq_rand_step(t, i, is_drum(t) ? (i % 4u == 0u ? 60u : 25u) : 45u);
+        break;
+    case ST_MUTATE:                                   /* a quarter of the steps drawn again */
+        for (i = 0; i < len; i++) if (rng() % 4u == 0u) seq_rand_step(t, i, 40u);
+        break;
+    case ST_PASTE:
+        memcpy(t->step, seq_clip.st, sizeof seq_clip.st);
+        memcpy(t->micro, seq_clip.micro, sizeof seq_clip.micro);
+        t->p[P_SLEN] = seq_clip.len;
+        break;
+    case ST_CLEAR:
+        track_defaults_steps(t);
+        break;
+    case ST_DOUBLE:                                   /* twice as long, the second half a copy */
+        if (len * 2u <= NSTEP) {
+            for (i = 0; i < len; i++) t->step[len + i] = tmp[i], t->micro[len + i] = tm[i];
+            t->p[P_SLEN] = (int16_t)(len * 2u);
+        }
+        break;
+    case ST_HALF:
+        if (len >= 2u) t->p[P_SLEN] = (int16_t)(len / 2u);
+        break;
+    case ST_SHL:
+    case ST_SHR:
+        for (i = 0; i < len; i++) {
+            uint32_t from = tool == ST_SHL ? (i + 1u) % len : (i + len - 1u) % len;
+            t->step[i] = tmp[from], t->micro[i] = tm[from];
+        }
+        break;
+    case ST_REVERSE:
+        for (i = 0; i < len; i++) t->step[i] = tmp[len - 1u - i], t->micro[i] = 0;
+        break;
+    case ST_THIN:                                     /* one step in three emptied (the drums: the sound picked) */
+        for (i = 0; i < len; i++)
+            if (rng() % 3u == 0u) {
+                if (is_drum(t)) dstep_clr(&t->dstep[i], pen_lane & 15u);
+                else memset(&t->step[i], 0, sizeof(step_t)), t->step[i].time = ST_REST;
+            }
+        break;
+    default:
+        break;
+    }
+    fm1_irq_on();
+    sync_reload = 1;
+    ui.force = 1;
+    ui_say(SEQ_TOOL[tool], " DONE");
+}
+
 /* K-GLITCH: the page picker's list: the section's pages, the ones visited most first (ui.c pick) */
 UI_SMALL static void pick_build(uint32_t fam)
 {
@@ -1055,6 +1159,7 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
             ui.force = 1;                                 /* the page comes back */
         }
         ui.step_sess = 0;
+        seq_tool_on = 0;                                  /* (K-GLITCH: SEQ let go: the next hold starts without a tool) */
         return 0;
     }
     ui.layer_used = used[held];
@@ -1103,12 +1208,25 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
         static uint32_t prev;
         uint32_t b = fm1_in.buttons & (ob | pb), press = b & ~prev, pages = (trk_len(TSEL) + 15u) / 16u;
         prev = b;
+        if (!ui.step_held) {                              /* K-GLITCH: PRESETS a tool (RANDOM, COPY, PASTE, CLEAR...) */
+            int32_t st = panel_enc(EN_PRESET);
+            if (st) {
+                seq_tool = (uint8_t)(seq_tool_on ? clamp((int32_t)seq_tool + st, 0, ST_N - 1) : seq_tool);
+                seq_tool_on = 1;
+                used[held] = 1;
+                ui_say("OCT+: ", SEQ_TOOL[seq_tool]);
+            }
+        }
         if (press) {
             used[held] = 1;
             if ((press & ob) && ui.step_held)
                 steps_held_clear();
             else if ((press & pb) && ui.step_held)
                 steps_held_fill();
+            else if (seq_tool_on && (press & pb))
+                seq_tool_do(seq_tool);                    /* (a tool picked: OCT+ does it, OCT- undoes it) */
+            else if (seq_tool_on && (press & ob))
+                ui_message(undo_swap(0) ? "UNDO" : "NOTHING TO UNDO");
             else
                 ui.step_page = (uint8_t)((ui.step_page + ((press & pb) ? 1u : pages - 1u)) % pages);
         }

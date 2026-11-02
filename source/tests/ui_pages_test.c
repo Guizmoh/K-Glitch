@@ -216,11 +216,47 @@ int main(int argc, char **argv)
         TDRUM->p[P_TFLT] = f0; song.sel = (uint8_t)sel; ui.lock_par = lp; go_home(); frame();
     }
     open_family(FAM_EDIT); ui.force = 1; frame(); ppm("page-edit");
+    {   /* K-GLITCH: SEQ held + PRESETS: the pattern tools; OCT+ does it, OCT- undoes it */
+        track_t *t = &trk[0];
+        static step_t keep[NSTEP];
+        uint32_t qb = 1u << panel.btn[B_SEQ], pb = 1u << panel.btn[B_OCTUP], ob = 1u << panel.btn[B_OCTDN], j, n = 0;
+        int16_t len0 = t->p[P_SLEN];
+        int ok;
+#define TOOL(k) do { fm1_in.buttons = qb; frames(2); encs[panel.enc[EN_PRESET]] = 1; frames(2); \
+                     encs[panel.enc[EN_PRESET]] = (k) - (int32_t)seq_tool; frames(2); fm1_in.buttons = qb | pb; frames(2); \
+                     fm1_in.buttons = qb; frames(2); fm1_in.buttons = 0; frames(30); } while (0)
+        song.sel = 0; go_home(); frames(20);
+        memcpy(keep, t->step, sizeof keep);
+        t->p[P_SLEN] = 16;
+        TOOL(ST_RANDOM);
+        for (j = 0; j < 16u; j++) n += step_on(&t->step[j]);
+        ok = n > 0u && n < 16u;
+        TOOL(ST_COPY);
+        TOOL(ST_DOUBLE);
+        ok &= t->p[P_SLEN] == 32 && !memcmp(&t->step[0], &t->step[16], 16 * sizeof(step_t));
+        TOOL(ST_CLEAR);
+        for (j = n = 0; j < 32u; j++) n += step_on(&t->step[j]);
+        ok &= n == 0u;
+        TOOL(ST_PASTE);
+        ok &= t->p[P_SLEN] == 16 && !memcmp(&t->step[0], &t->step[16], 0) && seq_clip.has;
+        for (j = n = 0; j < 16u; j++) n += step_on(&t->step[j]);
+        ok &= n > 0u;
+        fm1_in.buttons = qb; frames(2); encs[panel.enc[EN_PRESET]] = 1; frames(2);
+        ui.force = 1; frame(); ppm("layer-seq-tools");
+        fm1_in.buttons = qb | ob; frames(2); fm1_in.buttons = qb; frames(2); fm1_in.buttons = 0; frames(30);
+        for (j = n = 0; j < 32u; j++) n += step_on(&t->step[j]);
+        ok &= n == 0u;                                   /* (OCT-: the PASTE undone: empty again) */
+        check(ok, "K-GLITCH: SEQ + PRESETS tools: RANDOM, COPY, DOUBLE, CLEAR, PASTE, OCT- undoes");
+#undef TOOL
+        memcpy(t->step, keep, sizeof keep); t->p[P_SLEN] = len0;
+        go_home(); frames(20);
+    }
     {   /* K-GLITCH: undo / redo many steps back: SAVE + OCT- three times, SAVE + OCT+ twice */
         track_t *t = &trk[0];
         static step_t keep[NSTEP];
         uint32_t sb = 1u << panel.btn[B_SAVE], ob = 1u << panel.btn[B_OCTDN], pb = 1u << panel.btn[B_OCTUP], j;
         int ok;
+        uh.n = uh.cur = 0, undo.open = 0;               /* (an empty history: a fourth OCT- finds nothing) */
         memcpy(keep, t->step, sizeof keep);
         for (j = 0; j < 3u; j++) {                      /* three edits, three sessions */
             undo_mark(t, (undo_sess += 4u) | 3u);

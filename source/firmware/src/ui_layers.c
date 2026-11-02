@@ -21,6 +21,11 @@
  * The keys' part runs in the audio ISR (seq.c layer_now: no lag, no lost press); the SEQ, SEL and
  * GLO keys come to the UI through seq.c lk_q. HOLD: REC held clears the track, SAVE held saves the
  * project (a ring fills; let go before and nothing happens). */
+/* K-GLITCH: SEQ held + PRESETS: the pattern tools (ui_input.c seq_tool_do) */
+enum { ST_RANDOM, ST_MUTATE, ST_COPY, ST_PASTE, ST_CLEAR, ST_DOUBLE, ST_HALF, ST_SHL, ST_SHR, ST_REVERSE, ST_THIN, ST_N };
+static const char *const SEQ_TOOL[ST_N] = {"RANDOM", "MUTATE", "COPY", "PASTE", "CLEAR", "DOUBLE", "HALF", "SHIFT <",
+                                           "SHIFT >", "REVERSE", "THIN OUT"};
+static uint8_t seq_tool, seq_tool_on;                /* (on: PRESETS turned in this SEQ hold) */
 static const uint8_t LAYER_BTN[LY_COUNT] = {NB, B_FX, B_EDIT, B_ARP, B_SEQ, B_SCL, B_GLO, B_SAVE};
 static const char *const LAYER_NAME[LY_COUNT] = {"", "punch", "erase", "roll", "steps", "key", "mix", "song"};
 static void section_store(uint32_t s);                  /* project.c */
@@ -864,6 +869,12 @@ UI_SMALL static void layer_screen_draw(void)
                 str_cpy(sub + 8, "  oct: page", sizeof sub - 8u);   /* (2.7.1: the black keys are the sounds) */
         } else if (is_drum(t)) {
             str_cpy(sub, "black keys: sound", sizeof sub);
+        } else {
+            str_cpy(sub, "presets: tools", sizeof sub);
+        }
+        if (seq_tool_on) {                              /* (K-GLITCH: the tool PRESETS picked, OCT+ does it) */
+            str_cpy(sub, "oct+ ", sizeof sub);
+            str_cpy(sub + 5, SEQ_TOOL[seq_tool % ST_N], sizeof sub - 5u);
         }
         lab[0] = is_drum(t) ? "sound" : "note";
         if (is_drum(t))
