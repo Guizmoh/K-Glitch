@@ -216,6 +216,23 @@ int main(int argc, char **argv)
         TDRUM->p[P_TFLT] = f0; song.sel = (uint8_t)sel; ui.lock_par = lp; go_home(); frame();
     }
     open_family(FAM_EDIT); ui.force = 1; frame(); ppm("page-edit");
+    {   /* K-GLITCH: REC + PLAY: an EDIT knob turned is written as a lock on the step playing */
+        track_t *t = &trk[0];
+        uint32_t k, n = 0;
+        uint8_t lp0 = ui.lock_par;
+        int16_t e1 = t->p[P_E1];
+        song.sel = 0; go_home(); frames(20);
+        for (k = 0; k < NLOCK; k++) t->lock[k].step = LOCK_FREE;
+        open_family(FAM_EDIT); frames(2);
+        song.rec = 1; tap(B_PLAY); frames(10);
+        encs[panel.enc[EN_K2]] = 5; frames(2);
+        for (k = 0; k < NLOCK; k++) n += t->lock[k].step != LOCK_FREE && t->lock[k].param == P_E1;
+        check(n == 1u, "K-GLITCH: REC: an EDIT knob turned (K2) is recorded as automation on its step");
+        tap(B_PLAY); song.rec = 0; frames(4);
+        for (k = 0; k < NLOCK; k++) t->lock[k].step = LOCK_FREE;
+        t->p[P_E1] = e1, ui.lock_par = lp0, t->seq_idx = 0;
+        go_home(); frames(20);
+    }
     {   /* K-GLITCH: SEQ held + PRESETS: the pattern tools; OCT+ does it, OCT- undoes it */
         track_t *t = &trk[0];
         static step_t keep[NSTEP];

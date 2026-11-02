@@ -393,7 +393,12 @@ static int djf_block(djf_t *f, int32_t v, tsvf_t *c, int32_t reso)
     }
     if (!f->mode)
         return 0;
-    to = f->mode < 0 ? (v < 0 ? (127 << 8) + v * 90 * 4 : 127 << 8) : (v > 0 ? v * 90 * 4 : 0);
+    {   /* K-GLITCH: the first turns already heard (a square-root law: 1/8 of the way is a third of the range), down to
+         * ~45 Hz low-pass, up to ~11 kHz high-pass, where SLOOP's straight law kept the first half in the top octaves */
+        static const uint8_t SQ[65] = {0, 14, 20, 24, 28, 31, 34, 37, 39, 42, 44, 46, 48, 50, 52, 54, 56, 57, 59, 60, 62, 64, 65, 67, 68, 69, 71, 72, 73, 75, 76, 77, 78, 80, 81, 82, 83, 84, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 107, 108, 109, 110, 111};   /* 111 sqrt(k / 64) */
+        int32_t a = SQ[v < 0 ? (-v > 64 ? 64 : -v) : (v > 64 ? 64 : v)] << 8;
+        to = f->mode < 0 ? (v < 0 ? (127 << 8) - a : 127 << 8) : (v > 0 ? a : 0);
+    }
     f->cut += clamp(to - f->cut, -384, 384);            /* ~1.5 index a block */
     if (!v && f->cut == to) {
         f->mode = 0;                                    /* fully open again: off */

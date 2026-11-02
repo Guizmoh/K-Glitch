@@ -564,6 +564,17 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         ui.lock_par = (uint8_t)id;                        /* the SEQ layer's lock parameter: the last one touched */
     if (pg->scope != SC_GLOBAL)
         ml_knob(TSEL, id);                                /* MIDI LEARN: this parameter (2.6) */
+    if (pg->scope != SC_GLOBAL && song.playing && ((song.rec >> song.sel) & 1u) && p_lockable(id)) {
+        /* K-GLITCH: REC while playing: a sound knob turned (EDIT's DCW, CUT..., ENV, LFO, the sends, the filter) is
+         * written on the step playing as a lock: the automation plays it back each pass */
+        track_t *t = TSEL;
+        int ok;
+        fm1_irq_off();
+        ok = lock_set(t, t->seq_idx % trk_len(t), id, v);
+        fm1_irq_on();
+        if (!ok)
+            ui_message("AUTOMATION FULL (24)");
+    }
     if (pg->scope == SC_GLOBAL && id == G_KHOLD && !v && !punch.keybit) {   /* K-GLITCH: HOLD off lets a held effect go */
         punch.req = -1;
         kg_hold_clear();
