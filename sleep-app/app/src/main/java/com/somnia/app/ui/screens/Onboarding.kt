@@ -281,7 +281,7 @@ private fun StepsArt(t: Float) {
     )
     val cycle = t % 6f
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        PoliceLogoFrame(110.dp, 0f, zzzPhase = (t % 2.6f) / 2.6f)
+        PoliceLogoFrame(110.dp, 0f, zzzPhase = (t % 2.6f) / 2.6f, sleepFrame = ((t / 0.45f).toInt() % 6))
         Spacer(Modifier.height(16.dp))
         steps.forEachIndexed { i, (e, s) ->
             val a = smooth((cycle - i * 0.8f) / 0.4f)
@@ -306,7 +306,7 @@ private fun WakeArt(t: Float) {
     val open = smooth((cycle - 1.2f) / 0.6f) * blink(t)
     val score = smooth((cycle - 2f) / 1.5f)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-        PoliceLogoFrame(150.dp, open, zzzPhase = if (open < 0.3f) (t % 2.6f) / 2.6f else null)
+        PoliceLogoFrame(150.dp, open, zzzPhase = if (open < 0.3f) (t % 2.6f) / 2.6f else null, sleepFrame = ((t / 0.45f).toInt() % 6))
         Box(contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(110.dp)) {
                 val st = 11.dp.toPx()

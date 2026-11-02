@@ -9,11 +9,27 @@ import com.somnia.app.data.SettingsRepository
 /** Personnage affiché : 0 = l'agent moustachu, 1 = le gros agent au nez rouge. */
 val LocalAgent = compositionLocalOf { 0 }
 
+/** Heure utilisée pour l'humeur de l'agent (null = heure actuelle). */
+val LocalHour = compositionLocalOf<Int?> { null }
+
 /** Action quand on touche la tête du policier (null = pas cliquable). */
 val LocalAgentToggle = compositionLocalOf<(() -> Unit)?> { null }
 
 object Agent {
     const val COUNT = 2
+
+    /** Humeur du gros agent selon l'heure : sourire de 8 h à minuit, neutre de minuit à 1 h, en colère ensuite. */
+    fun awakeDrawable(hour: Int): Int = when (hour) {
+        in 8..23 -> com.somnia.app.R.drawable.agent2_smile
+        0 -> com.somnia.app.R.drawable.agent2_neutral
+        else -> com.somnia.app.R.drawable.agent2_angry
+    }
+
+    /** Animation de la bave : images 4, 5, 6, 6, 5, 4 en boucle. */
+    val SLEEP_SEQUENCE = intArrayOf(
+        com.somnia.app.R.drawable.agent2_sleep1, com.somnia.app.R.drawable.agent2_sleep2, com.somnia.app.R.drawable.agent2_sleep3,
+        com.somnia.app.R.drawable.agent2_sleep3, com.somnia.app.R.drawable.agent2_sleep2, com.somnia.app.R.drawable.agent2_sleep1,
+    )
 
     /** Change de policier dans l'appli et sur l'icône du téléphone. */
     fun set(context: Context, agent: Int) {

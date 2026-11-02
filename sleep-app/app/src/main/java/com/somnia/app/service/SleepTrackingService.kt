@@ -163,6 +163,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
             val detector = SoundEventDetector().apply { setSensitivity(settings.micSensitivity) }
             val delayUntil = startTime + settings.startDelayMin * 60_000L
             record.startRecording()
+            TrackingState.live.value = TrackingState.live.value?.copy(micInfo = rec.describe())
             var uiTick = 0
             try {
                 while (isActive && !stopping) {
@@ -196,7 +197,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 }
                 detector.flush()?.let { events.trySend(it) }
             } finally {
-                record.stop(); record.release()
+                rec.release()
             }
         }
     }

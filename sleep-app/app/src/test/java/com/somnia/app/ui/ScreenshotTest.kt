@@ -115,10 +115,21 @@ class ScreenshotTest {
             }
         }
     }
-    @Test fun agent2Asleep() = paparazzi.snapshot {
+    @Test fun agent2Moods() = paparazzi.snapshot {
         SomniaTheme {
-            androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1) {
-                NightBackground { com.somnia.app.ui.components.PoliceLogoFrame(300.dp, 0f, 0.4f) }
+            NightBackground {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp)) {
+                    androidx.compose.foundation.layout.Row {
+                        for (h in listOf(15, 0, 3)) androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1, LocalHour provides h) {
+                            com.somnia.app.ui.components.PoliceLogoFrame(120.dp, 1f)
+                        }
+                    }
+                    androidx.compose.foundation.layout.Row {
+                        for (f in listOf(0, 1, 2)) androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1) {
+                            com.somnia.app.ui.components.PoliceLogoFrame(120.dp, 0f, 0.4f, sleepFrame = f)
+                        }
+                    }
+                }
             }
         }
     }

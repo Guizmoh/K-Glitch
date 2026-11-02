@@ -120,7 +120,7 @@ fun TonightIdle(
     onStart: () -> Unit,
     onOpen: (Long) -> Unit,
     hour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
-) {
+) = androidx.compose.runtime.CompositionLocalProvider(com.somnia.app.ui.LocalHour provides hour) {
     Column(
         Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -215,6 +215,7 @@ fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp =
             LevelMeter(l.levelDb, l.noiseFloorDb, l.thresholdDb, l.capturing)
             Spacer(Modifier.height(6.dp))
             Text("Gris : bruit de fond · Jaune : seuil de déclenchement", style = MaterialTheme.typography.labelSmall, color = TextSoft)
+            if (l.micInfo.isNotBlank()) Text("Micro : ${l.micInfo}", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 4.dp))
         }
         Spacer(Modifier.height(12.dp))
         GradientButton("Je me réveille", brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop)

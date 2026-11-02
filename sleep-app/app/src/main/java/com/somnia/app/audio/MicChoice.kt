@@ -54,7 +54,53 @@ object MicChoice {
         (BUILT_IN + externalOptions(context)).firstOrNull { it.key == key }?.label ?: "Automatique"
 
     /** Un enregistreur prêt à démarrer + le nombre de canaux à mélanger. */
-    class Recorder(val record: AudioRecord, val channels: Int)
+    class Recorder(val record: AudioRecord, val channels: Int) {
+        private val effects = ArrayList<android.media.audiofx.AudioEffect>()
+
+        /**
+         * Le chemin « appel » active d'habitude anti-écho, anti-bruit et gain
+         * automatique : on les coupe pour garder ronflements et chuchotements.
+         */
+        fun disableVoiceProcessing() {
+            val id = record.audioSessionId
+            runCatching { android.media.audiofx.NoiseSuppressor.create(id)?.let { it.enabled = false; effects += it } }
+            runCatching { android.media.audiofx.AcousticEchoCanceler.create(id)?.let { it.enabled = false; effects += it } }
+            runCatching { android.media.audiofx.AutomaticGainControl.create(id)?.let { it.enabled = false; effects += it } }
+        }
+
+        /** Description du micro réellement utilisé (après startRecording). */
+        fun describe(): String {
+            val parts = ArrayList<String>()
+            record.routedDevice?.let { d ->
+                parts += when (d.type) {
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC -> "micro intégré" + (d.address.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET -> "micro filaire"
+                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "micro Bluetooth"
+                    else -> d.productName?.toString() ?: "micro externe"
+                }
+            }
+            if (Build.VERSION.SDK_INT >= 29) runCatching {
+                record.activeMicrophones.forEach { m ->
+                    val where = when {
+                        m.description.contains("bottom", true) -> "bas"
+                        m.description.contains("back", true) -> "arrière"
+                        m.description.contains("top", true) -> "haut"
+                        m.description.contains("front", true) -> "avant"
+                        else -> m.description
+                    }
+                    if (where.isNotBlank()) parts += "capteur $where"
+                }
+            }
+            if (channels > 1) parts += "$channels micros mélangés"
+            return parts.distinct().joinToString(" · ").ifBlank { "micro du téléphone" }
+        }
+
+        fun release() {
+            effects.forEach { runCatching { it.release() } }
+            runCatching { record.stop() }
+            record.release()
+        }
+    }
 
     @SuppressLint("MissingPermission")
     fun open(context: Context, key: String): Recorder {
@@ -73,8 +119,17 @@ object MicChoice {
         val unprocessed = if (Build.VERSION.SDK_INT >= 24) MediaRecorder.AudioSource.UNPROCESSED else MediaRecorder.AudioSource.MIC
 
         val result: Recorder? = when {
-            key == "bottom" -> make(MediaRecorder.AudioSource.VOICE_RECOGNITION, false)?.also { r -> builtIn("bottom")?.let { r.preferredDevice = it } }?.let { Recorder(it, 1) }
-            key == "back" -> (make(MediaRecorder.AudioSource.CAMCORDER, false))?.also { r -> builtIn("back")?.let { r.preferredDevice = it } }?.let { Recorder(it, 1) }
+            // Micro des appels : la vraie source « communication » (celle des appels),
+            // dirigée vers l'utilisateur, avec le micro du bas si le téléphone le nomme.
+            key == "bottom" -> make(MediaRecorder.AudioSource.VOICE_COMMUNICATION, false)?.also { r ->
+                builtIn("bottom")?.let { r.preferredDevice = it }
+                if (Build.VERSION.SDK_INT >= 29) runCatching { r.setPreferredMicrophoneDirection(android.media.MicrophoneDirection.MIC_DIRECTION_TOWARDS_USER) }
+            }?.let { Recorder(it, 1).apply { disableVoiceProcessing() } }
+            // Micro de la caméra : source « caméscope » (micro arrière), dirigée vers la pièce.
+            key == "back" -> make(MediaRecorder.AudioSource.CAMCORDER, false)?.also { r ->
+                builtIn("back")?.let { r.preferredDevice = it }
+                if (Build.VERSION.SDK_INT >= 29) runCatching { r.setPreferredMicrophoneDirection(android.media.MicrophoneDirection.MIC_DIRECTION_AWAY_FROM_USER) }
+            }?.let { Recorder(it, 1) }
             key == "all" -> (make(unprocessed, true) ?: make(MediaRecorder.AudioSource.MIC, true))?.let { Recorder(it, 2) }
             key.startsWith("dev:") -> {
                 val id = key.removePrefix("dev:").toIntOrNull()

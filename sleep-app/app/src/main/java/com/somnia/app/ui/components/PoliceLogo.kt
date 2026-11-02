@@ -47,8 +47,13 @@ private val GOLD = Color(0xFFE0B656)
 fun PoliceLogo(size: Dp = 56.dp, awake: Boolean = true, animated: Boolean = true) {
     val inf = rememberInfiniteTransition(label = "agent")
     val t by inf.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing), RepeatMode.Restart), label = "t")
+    // Image de l'animation « bave » (6 images de 450 ms)
+    val f by inf.animateFloat(0f, 6f, infiniteRepeatable(tween(6 * 450, easing = LinearEasing), RepeatMode.Restart), label = "frame")
     Crossfade(awake, label = "eyes") { a ->
-        PoliceLogoFrame(size, if (a) 1f else 0f, if (!a) (if (animated) t else 0.4f) else null, awakeBob = if (a && animated) t else null)
+        PoliceLogoFrame(
+            size, if (a) 1f else 0f, if (!a) (if (animated) t else 0.4f) else null,
+            awakeBob = if (a && animated) t else null, sleepFrame = if (animated) f.toInt().coerceIn(0, 5) else 0,
+        )
     }
 }
 
@@ -57,7 +62,7 @@ fun PoliceLogo(size: Dp = 56.dp, awake: Boolean = true, animated: Boolean = true
  * [zzzPhase] = position des « Zzz » (0..1) ou null.
  */
 @Composable
-fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Float? = null) {
+fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Float? = null, sleepFrame: Int = 0) {
     val awake = open > 0.5f
     val agent = com.somnia.app.ui.LocalAgent.current
     val toggle = com.somnia.app.ui.LocalAgentToggle.current
@@ -71,14 +76,16 @@ fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Fl
             Image(
                 painterResource(
                     when {
-                        agent == 1 && awake -> R.drawable.agent2_awake
-                        agent == 1 -> R.drawable.agent2_asleep
+                        agent == 1 && awake -> com.somnia.app.ui.Agent.awakeDrawable(
+                            com.somnia.app.ui.LocalHour.current ?: java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+                        )
+                        agent == 1 -> com.somnia.app.ui.Agent.SLEEP_SEQUENCE[sleepFrame.coerceIn(0, 5)]
                         awake -> R.drawable.agent_awake
                         else -> R.drawable.agent_asleep
                     },
                 ),
                 if (awake) "L'agent du Dodo, éveillé" else "L'agent du Dodo endormi",
-                Modifier.size(size).scale(1.18f).offset(y = size * 0.06f)
+                Modifier.size(size).scale(if (agent == 1) 0.96f else 1.18f).offset(y = size * (if (agent == 1) 0.07f else 0.06f))
                     .rotate(awakeBob?.let { sin(it * 2 * Math.PI).toFloat() * 2f } ?: 0f),
                 contentScale = ContentScale.Fit,
             )

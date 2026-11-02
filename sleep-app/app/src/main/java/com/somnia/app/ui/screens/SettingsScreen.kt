@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
@@ -72,6 +73,12 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
                     }
                 }
             }
+            var testing by remember { androidx.compose.runtime.mutableStateOf(false) }
+            OutlinedButton(
+                onClick = { testing = true }, enabled = live == null,
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            ) { Text(if (live == null) "Tester ce micro" else "Test impossible pendant la nuit") }
+            if (testing) MicTestDialog(s.micSource, com.somnia.app.audio.MicChoice.label(ctx, s.micSource)) { testing = false }
             Text(
                 "Branchez un micro externe (casque, USB) puis revenez ici pour le voir apparaître. Selon le téléphone, certains choix utilisent le micro le plus proche disponible.",
                 style = MaterialTheme.typography.bodySmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp),

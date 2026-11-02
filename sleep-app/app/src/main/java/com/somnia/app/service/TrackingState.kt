@@ -20,6 +20,8 @@ data class LiveState(
     val classifierName: String = "",
     val alarmTarget: Long? = null,
     val movementLastMin: Float = 0f,
+    /** Micro réellement utilisé (type, emplacement). */
+    val micInfo: String = "",
 )
 
 object TrackingState {
