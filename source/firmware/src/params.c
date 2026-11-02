@@ -508,21 +508,18 @@ static const page_t PAGES[] = {
     {"LFO", FAM_LFO, SC_TRACK, GR_LFO, {P_LRATE, P_LWAVE, P_LPHASE, P_LFADE}},
     {"LFO 2", FAM_LFO, SC_TRACK, GR_LFO, {P_LSYNC, P_LTRIG, P_LPOL, 0xFF}},   /* 2.6 (Felucca 1.4): SYNC TRIG POL */
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
+    {"SENDS", FAM_LFO, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},
+    {"DLY", FAM_LFO, SC_GLOBAL, GR_NONE, {G_DTIME, G_DFDBK, G_DCOLOR, G_DMIX}},
+    {"REV/CHO", FAM_LFO, SC_GLOBAL, GR_NONE, {G_RSIZE, G_RDAMP, G_CRATE, G_CDEPTH}},
     /* K-GLITCH (kg_ui.c draws them whole): DESTROY the main screen (ALGORITHM: the effect, PRESETS: its INTENSITY, the
      * white keys: the pads), then its three modes DRUMS, CHOP, CHAOS, and the effect sequencer, the bank, the setup */
     {"PADS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCHAOS, G_KDENS, G_KMOVE, G_KCLEAR}},
     {"FX SEQ", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTEP, G_KSFX, G_KPROB, G_KSEQ}},   /* (OCT+: DICE) */
     {"BANK", FAM_FX, SC_GLOBAL, GR_KG, {G_KBANK, G_KINT, G_KHOLD, G_KMULTI}},
-    {"CHAOS", FAM_FX, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
-    {"GEN", FAM_FX, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
-    {"CHOP", FAM_FX, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
-    {"FX", FAM_FX, SC_TRACK, GR_FX, {P_DIST, P_CHOR, P_DLY, P_REV}},
     {"FILTER", FAM_FX, SC_TRACK, GR_NONE, {P_TFLT, 0xFF, 0xFF, 0xFF}},   /* the track's filter (drum track too) */
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},   /* drum track too */
     {"INSERT", FAM_FX, SC_TRACK, GR_INS, {P_ITYPE, P_IA, P_IB, P_IC}},   /* 2.6 (Felucca 1.5): the track's INSERT (fx.c), */
     {"INSERT 2", FAM_FX, SC_TRACK, GR_INS, {P_IMIX, 0xFF, 0xFF, 0xFF}},  /* .. its dry / wet; the drum track too */
-    {"DLY", FAM_FX, SC_GLOBAL, GR_NONE, {G_DTIME, G_DFDBK, G_DCOLOR, G_DMIX}},
-    {"REV/CHO", FAM_FX, SC_GLOBAL, GR_NONE, {G_RSIZE, G_RDAMP, G_CRATE, G_CDEPTH}},
     /* K-GLITCH: SEL is the FILTER and the LOOP sampler (the scale pages: EDIT > SCALE, SCALE 2) */
     {"FILTER", FAM_SCL, SC_GLOBAL, GR_KG, {G_KFTYPE, G_KFCUT, G_KFRES, G_KFMOD}},   /* (kg_filter.c; the keys: FREQ) */
     {"LOOP", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */
@@ -564,6 +561,9 @@ static const page_t PAGES[] = {
     {"ARP", FAM_ARP, SC_TRACK, GR_NONE, {P_AMODE, P_ARATE, P_AOCT, P_AGATE}},   /* (2.7.2: its values large, as ARP 2:
                                                        * GR_ARP was never drawn, the middle stayed empty) */
     {"ARP 2", FAM_ARP, SC_TRACK, GR_NONE, {P_ASWING, P_APROB, P_AHOLD, P_AORDER}},
+    {"CHAOS", FAM_ARP, SC_GLOBAL, GR_KG, {G_KCMODE, G_KAUTO, G_KLFO, G_KCHAOS}},
+    {"GEN", FAM_ARP, SC_GLOBAL, GR_KG, {G_KSTYLE, G_KVAR, G_SWING, G_KGEN}},
+    {"CHOP", FAM_ARP, SC_GLOBAL, GR_KG, {G_KDICE, G_KMUTR, G_KREST, G_KEVERY}},
     {"NOTES", FAM_SEQ, SC_STEP, GR_ROLL, {0, 1, 2, 3}},   /* (2.7.2: the NOTES editor; "STEP" before) */
     {"PATTERN", FAM_SEQ, SC_TRACK, GR_STEPS, {P_SLEN, P_SDIV, P_SSWING, P_SGATE}},
     {"SONG", FAM_SEQ, SC_SONG, GR_NONE, {0xFF, 0xFF, 0xFF, 0xFF}},

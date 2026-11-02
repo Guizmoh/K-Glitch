@@ -56,12 +56,12 @@ static uint32_t scope_w;
 #include "../firmware/src/ui.c"
 static uint32_t saves, loads, erases;
 static void open_family(uint32_t f);
-static void open_fx(void)                           /* K-GLITCH: the FX family opens on DESTROY; SLOOP's FX page, as before */
+static void open_fx(void)                           /* K-GLITCH: SLOOP's FX page (the sends) is LFO's SENDS */
 {
     uint32_t i;
-    open_family(FAM_FX);
+    open_family(FAM_LFO);
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == FAM_FX && !strcmp(PAGES[i].title, "FX"))
+        if (PAGES[i].fam == FAM_LFO && !strcmp(PAGES[i].title, "SENDS"))
             ui.page = (uint8_t)i;
     ui.force = 1;
 }
@@ -334,7 +334,7 @@ int main(int argc, char **argv)
             check(song.g[G_KFTYPE] == KF_OFF && kf.cur == KF_OFF, "K-GLITCH FILTER: OFF: back to the dry mix");
             song.g[G_KFMOD] = 0;
         }
-        go_title("GEN", FAM_FX);
+        go_title("GEN", FAM_ARP);
         check(!strcmp(cur_page()->title, "GEN"), "K-GLITCH: SELECT: DRUMS");
         sig0 = kr_sig();
         song.g[G_KSTYLE] = KS_DRILL;
@@ -343,7 +343,7 @@ int main(int argc, char **argv)
               "K-GLITCH DRUMS: GENERATE writes a DRILL pattern, 142 BPM, the ORIGINAL kept");
         check(kg_pads == 0u, "K-GLITCH DRUMS: the keys play the drums");
         ui.force = 1; frame(); ppm("page-k-drums");
-        go_title("CHOP", FAM_FX);
+        go_title("CHOP", FAM_ARP);
         check(!strcmp(cur_page()->title, "CHOP"), "K-GLITCH: SELECT: CHOP");
         sig0 = kr_sig();
         encs[panel.enc[EN_K1]] = 1; frame();
@@ -458,7 +458,7 @@ int main(int argc, char **argv)
             check(!song.g[G_KMULTI] && kg.nfx == 1u && busy == 1u, "K-GLITCH SOLO: the last pad only");
             fm1_in.notes = 0; frames(2);
         }
-        go_title("CHAOS", FAM_FX);
+        go_title("CHAOS", FAM_ARP);
         check(!strcmp(cur_page()->title, "CHAOS"), "K-GLITCH: SELECT: CHAOS");
         encs[panel.enc[EN_K1]] = 1; frame();
         sig0 = kr.out_sig;
@@ -917,7 +917,7 @@ int main(int argc, char **argv)
         uint32_t j, rev = 0;
         tap(B_FX); frames(2);
         check(!strcmp(cur_page()->title, "PADS"), "K-GLITCH: FX tapped: the 16 PADS");
-        for (j = 0; j < NPAGES; j++) if (PAGES[j].fam == FAM_FX && !strcmp(PAGES[j].title, "REV/CHO")) rev = j;
+        for (j = 0; j < NPAGES; j++) if (PAGES[j].fam == FAM_FX && !strcmp(PAGES[j].title, "INSERT 2")) rev = j;
         page_visits[rev] = 50;                          /* (REV/CHO the most visited) */
         go_home(); frames(20);
         press(B_FX); frames(4);
@@ -926,7 +926,7 @@ int main(int argc, char **argv)
         check(pick.on && pick.idx[0] == rev && pick.sel == 0, "K-GLITCH: FX held + ALGO: the picker, the most visited first");
         ui.force = 1; frame(); ppm("page-picker");
         release(B_FX); frames(4);
-        check(!pick.on && ui.page == rev && !punch.hold, "K-GLITCH: FX let go: REV/CHO opens (no punch-in, no tap)");
+        check(!pick.on && ui.page == rev && !punch.hold, "K-GLITCH: FX let go: INSERT 2 opens (no punch-in, no tap)");
         go_home(); frames(20);
     }
     press(B_SAVE); frames(4); key(key_of_white(15)); release(B_SAVE); frames(2);
@@ -1520,13 +1520,14 @@ int main(int argc, char **argv)
         ui.force = 1; frame(); ppm("page-lfo2");
         SEL(1);
         check(!strcmp(PT(), "LFO DEST") && song.g[G_BPM] == bpm, "SELECT: then LFO DEST");
-        SEL(1);
-        check(!strcmp(PT(), "LFO DEST") && song.g[G_BPM] == bpm, "SELECT: stops at the last page of the family");
+        SEL(9);
+        check(!strcmp(PT(), "REV/CHO") && song.g[G_BPM] == bpm, "SELECT: stops at the last page of the family (K-GLITCH: REV/CHO)");
+        SEL(-3);
         SEL(-1);
         check(!strcmp(PT(), "LFO 2"), "SELECT left: the page before");
         SEL(-1);
         check(!strcmp(PT(), "LFO"), "SELECT left: LFO");
-        open_fx(); frame(); SEL(1);                      /* (K-GLITCH: from SLOOP's FX page, after DESTROY) */
+        go_title("BANK", FAM_FX); SEL(1);                  /* (K-GLITCH: FX: PADS, FX SEQ, BANK, then FILTER) */
         check(!strcmp(PT(), "FILTER"), "SELECT on FX: next page, the track FILTER");
         TSEL->p[P_TFLT] = -32; ui.force = 1; frames(2); ppm("page-filter");
         check(!strcmp(ui.big_l[0], "FILT") && !strcmp(ui.big_v[0], "LP50") && !ui.big_l[1][0],
@@ -1540,7 +1541,7 @@ int main(int argc, char **argv)
         }
         TSEL->p[P_TFLT] = 0;
         SEL(9);
-        check(!strcmp(PT(), "REV/CHO"), "SELECT on FX: on to the last page, REV/CHO");
+        check(!strcmp(PT(), "INSERT 2"), "SELECT on FX: on to the last page, INSERT 2");
         tap(B_EDIT); SEL(-9);
         check(!strcmp(PT(), "EDIT 1"), "SELECT on EDIT: back to the first page");
         SEL(9);
@@ -1567,7 +1568,7 @@ int main(int argc, char **argv)
          * edits the page under the layer */
         int16_t r0, w0;
         song.playing = 0; song.sel = 0; go_home(); ui.force = 1; frames(3);
-        tap(B_LFO); frames(2);
+        go_title("LFO", FAM_LFO); frames(2);
         r0 = trk[0].p[P_LRATE]; w0 = trk[0].p[P_LWAVE];
         press(B_FX); frames(10);
         encs[panel.enc[EN_K2]] = 3; frame();
@@ -1816,7 +1817,7 @@ int main(int argc, char **argv)
         check(!vis_shown() && !vis_on, "visualiser: HOME again closes it");
         tap(B_HOME); frames(2);
         tap(B_LFO); frames(2);
-        check(!vis_shown() && !vis_on && !strcmp(PAGES[ui.page].title, "LFO"), "visualiser: a page button closes it and opens its page");
+        check(!vis_shown() && !vis_on && PAGES[ui.page].fam == FAM_LFO, "visualiser: a page button closes it and opens its page");
         transport_req = 2; frames(4);
         for (j = 0; j < NTRK; j++) steps_clear(&trk[j]);
         vis_style = 0; song.sel = 0; go_home(); frames(20);
@@ -2025,8 +2026,7 @@ int main(int argc, char **argv)
         release(B_GLO); frames(16);
         check(mlu.on == 1u && !mlu.pick, "GLO + F#3: MIDI LEARN on");
         open_family(FAM_FX); frame();
-        for (j = 0; j < 20u; j++) { encs[panel.enc[EN_SELECT]] = -1; frame(); }   /* (to the first page: K-GLITCH adds 7) */
-        for (j = 0; j < 6u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* the FX page (after K-GLITCH's 6): KNOB 1 = DIST */
+        open_fx(); frame();                             /* the SENDS page (LFO's): KNOB 1 = DIST */
         frames(16);
         ui.force = 1; frame(); ppm("header-learn");
         K(EN_K1, 1);
