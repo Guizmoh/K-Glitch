@@ -9,9 +9,11 @@
 #define memset felucca_memset
 #define memcpy felucca_memcpy
 #define memcmp felucca_memcmp
+#define memmove felucca_memmove
 #include "../src/libc.c"
 #undef memset
 #undef memcpy
+#undef memmove
 #undef memcmp
 #include "felucca_tables.h"
 static uint8_t user_flash[4][0x14000];
