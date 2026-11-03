@@ -237,4 +237,21 @@ class ScreenshotTest {
     @Test fun themeViolet() = themed(com.somnia.app.ui.theme.Themes.VIOLET, "violet")
     @Test fun themeRose() = themed(com.somnia.app.ui.theme.Themes.ROSE, "rose")
     @Test fun themeBleu() = themed(com.somnia.app.ui.theme.Themes.BLEU, "bleu")
+
+    @Test fun nightArtMockup() = paparazzi.snapshot {
+        SomniaTheme {
+            androidx.compose.foundation.layout.Box {
+                com.somnia.app.ui.components.NightBackdrop()
+                TonightLive(
+                    LiveState(
+                        sessionId = 1, startTime = t0, levelDb = -42f, noiseFloorDb = -55f, thresholdDb = -44f,
+                        eventCount = 9, counts = mapOf(SoundType.SNORING to 5, SoundType.SPEECH to 2, SoundType.LAUGHTER to 1, SoundType.CRYING to 1),
+                        lastEvent = SoundType.SPEECH, lastEventTime = t0 + 3_000_000L, alarmTarget = t0 + 30_000_000L,
+                    ),
+                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 230.dp, previewFrame = 3,
+                ) {}
+                com.somnia.app.ui.components.NightFoliage()
+            }
+        }
+    }
 }
