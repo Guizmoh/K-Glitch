@@ -240,7 +240,7 @@ class ScreenshotTest {
 
     @Test fun nightArtMockup() = paparazzi.snapshot {
         SomniaTheme {
-            androidx.compose.foundation.layout.Box {
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.padding(top = 40.dp, bottom = 80.dp)) {
                 com.somnia.app.ui.components.NightBackdrop()
                 TonightLive(
                     LiveState(
@@ -248,7 +248,7 @@ class ScreenshotTest {
                         eventCount = 9, counts = mapOf(SoundType.SNORING to 5, SoundType.SPEECH to 2, SoundType.LAUGHTER to 1, SoundType.CRYING to 1),
                         lastEvent = SoundType.SPEECH, lastEventTime = t0 + 3_000_000L, alarmTarget = t0 + 30_000_000L,
                     ),
-                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 230.dp, previewFrame = 3,
+                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 128.dp, previewFrame = 3,
                 ) {}
                 com.somnia.app.ui.components.NightFoliage()
             }

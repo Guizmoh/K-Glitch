@@ -270,11 +270,11 @@ fun AppTitle(subtitle: String? = null) {
 
 /** Pendant l'écoute : anneau fin indiquant le niveau sonore autour du contenu. */
 @Composable
-fun ListeningOrb(levelDb: Float, floorDb: Float, capturing: Boolean, center: @Composable () -> Unit) {
+fun ListeningOrb(levelDb: Float, floorDb: Float, capturing: Boolean, orbSize: Dp = 240.dp, center: @Composable () -> Unit) {
     val level = ((levelDb - floorDb) / 30f).coerceIn(0f, 1f)
     val color = if (capturing) Color(0xFFE08A7E) else Badge
-    Box(Modifier.size(240.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.size(224.dp)) {
+    Box(Modifier.size(orbSize), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.size(orbSize - 16.dp)) {
             val st = 4.dp.toPx()
             val tl = Offset(st / 2, st / 2)
             val sz = Size(size.width - st, size.height - st)

@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -183,55 +186,59 @@ fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp =
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp, previewFrame: Int?, onStop: () -> Unit) {
-    Column(
-        Modifier.verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = topInset),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        ScreenHeader("Surveillance en cours", "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone")
-
-        ListeningOrb(l.levelDb, l.noiseFloorDb, l.capturing) {
+    // L'écran tient en entier : le bouton « Je me réveille » se pose dans le creux
+    // entre les feuillages du bas (~85 % de la hauteur), le reste au-dessus.
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val h = maxHeight
+        Column(
+            Modifier.verticalScroll(rememberScrollState()).heightIn(min = h)
+                .padding(start = 20.dp, end = 20.dp, top = topInset, bottom = h * 0.155f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                com.somnia.app.ui.components.NightAgentAnimation(132.dp, frame = previewFrame)
-                Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(
-                    when {
-                        now < l.detectionStartsAt -> "Endormissement… ${((l.detectionStartsAt - now) / 60_000) + 1} min"
-                        l.capturing -> "J'enregistre"
-                        else -> "J'écoute…"
-                    },
-                    color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center,
-                )
+                ScreenHeader("Surveillance en cours", "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone")
+                ListeningOrb(l.levelDb, l.noiseFloorDb, l.capturing, orbSize = 180.dp) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        com.somnia.app.ui.components.NightAgentAnimation(96.dp, frame = previewFrame)
+                        Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(
+                            when {
+                                now < l.detectionStartsAt -> "Endormissement… ${((l.detectionStartsAt - now) / 60_000) + 1} min"
+                                l.capturing -> "J'enregistre"
+                                else -> "J'écoute…"
+                            },
+                            color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+                l.alarmTarget?.let { Pill("⏰ Réveil au plus tard à ${Fmt.time(it)}", Badge) }
+                if (l.tvOn || l.ignoredMedia + l.ignoredVoices > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    Pill(
+                        "📺 " + (if (l.tvOn) "Télé détectée : ignorée" else "Télé éteinte") +
+                            (if (l.ignoredMedia + l.ignoredVoices > 0) " · ${l.ignoredMedia + l.ignoredVoices} ignoré(s)" else ""),
+                        TextSoft,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                // Un seul cadre, un peu en retrait des bords (feuillages sur les côtés)
+                GlassCard(Modifier.padding(horizontal = 18.dp), title = "Sons relevés : ${l.eventCount}", icon = "🚨") {
+                    if (l.counts.isEmpty()) Text("Rien à signaler pour l'instant.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        l.counts.forEach { (t, n) -> Pill("${t.label} · $n", t.color(), Modifier.padding(bottom = 6.dp)) }
+                    }
+                    LevelMeter(l.levelDb, l.noiseFloorDb, l.thresholdDb, l.capturing)
+                    Text(
+                        "Niveau sonore · gris : fond · jaune : seuil" + if (l.micInfo.isNotBlank()) "\nMicro : ${l.micInfo}" else "",
+                        style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
             }
-        }
-
-        l.alarmTarget?.let { Pill("⏰ Réveil au plus tard à ${Fmt.time(it)}", Badge) }
-        if (l.tvOn || l.ignoredMedia + l.ignoredVoices > 0) {
-            Spacer(Modifier.height(6.dp))
-            Pill(
-                "📺 " + (if (l.tvOn) "Télé détectée : ignorée" else "Télé éteinte") +
-                    (if (l.ignoredMedia + l.ignoredVoices > 0) " · ${l.ignoredMedia + l.ignoredVoices} son(s) ignoré(s)" else ""),
-                com.somnia.app.ui.theme.TextSoft,
+            GradientButton(
+                "Je me réveille", Modifier.padding(top = 10.dp).width(172.dp),
+                brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop,
             )
         }
-        Spacer(Modifier.height(8.dp))
-
-        GlassCard(title = "Sons relevés : ${l.eventCount}", icon = "🚨") {
-            if (l.counts.isEmpty()) Text("Rien à signaler pour l'instant.", color = TextSoft)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                l.counts.forEach { (t, n) -> Pill("${t.label} · $n", t.color(), Modifier.padding(bottom = 6.dp)) }
-            }
-            l.lastEvent?.let {
-                Text("Dernier : ${it.label.lowercase()} à ${Fmt.time(l.lastEventTime ?: 0)}", style = MaterialTheme.typography.bodySmall, color = TextSoft)
-            }
-        }
-        GlassCard(title = "Niveau sonore", icon = "🎚️") {
-            LevelMeter(l.levelDb, l.noiseFloorDb, l.thresholdDb, l.capturing)
-            Spacer(Modifier.height(6.dp))
-            Text("Gris : bruit de fond · Jaune : seuil de déclenchement", style = MaterialTheme.typography.labelSmall, color = TextSoft)
-            if (l.micInfo.isNotBlank()) Text("Micro : ${l.micInfo}", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 4.dp))
-        }
-        Spacer(Modifier.height(12.dp))
-        GradientButton("Je me réveille", brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop)
-        Spacer(Modifier.height(16.dp))
     }
 }
