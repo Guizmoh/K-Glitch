@@ -110,9 +110,11 @@ fun TonightScreen(vm: SomniaViewModel, openSession: (Long) -> Unit) {
     } else {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
         LaunchedEffect(Unit) { while (true) { delay(1000); now = System.currentTimeMillis() } }
+        // Fond illustré (tous thèmes), interface, puis feuillages au premier plan
         Box {
-            NightScene()
-            TonightLive(l, now, topInset = 150.dp) { SleepTrackingService.stop(ctx); openSession(l.sessionId) }
+            com.somnia.app.ui.components.NightBackdrop()
+            TonightLive(l, now, topInset = 44.dp) { SleepTrackingService.stop(ctx); openSession(l.sessionId) }
+            com.somnia.app.ui.components.NightFoliage()
         }
     }
 }

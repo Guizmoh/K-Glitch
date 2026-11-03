@@ -54,7 +54,7 @@ object MicChoice {
         (BUILT_IN + externalOptions(context)).firstOrNull { it.key == key }?.label ?: "Automatique"
 
     /** Un enregistreur prêt à démarrer + le nombre de canaux à mélanger. */
-    class Recorder(val record: AudioRecord, val channels: Int) {
+    class Recorder(val record: AudioRecord, val channels: Int, val rate: Int = AudioMath.SAMPLE_RATE) {
         private val effects = ArrayList<android.media.audiofx.AudioEffect>()
 
         /**
@@ -103,8 +103,19 @@ object MicChoice {
     }
 
     @SuppressLint("MissingPermission")
-    fun open(context: Context, key: String): Recorder {
-        val sr = AudioMath.SAMPLE_RATE
+    /**
+     * [hiRes] : enregistre en 48 kHz (qualité CD) si le téléphone le permet,
+     * sinon en 16 kHz. L'analyse se fait toujours en 16 kHz.
+     */
+    fun open(context: Context, key: String, hiRes: Boolean = false): Recorder {
+        if (hiRes) openAt(context, key, 48_000)?.let { return it }
+        return openAt(context, key, AudioMath.SAMPLE_RATE)
+            ?: error("Aucun micro disponible")
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun openAt(context: Context, key: String, sr: Int): Recorder? {
+        val factor = sr / AudioMath.SAMPLE_RATE
         val am = context.getSystemService(AudioManager::class.java)
         val inputs = am.getDevices(AudioManager.GET_DEVICES_INPUTS)
         fun builtIn(address: String) = inputs.firstOrNull {
@@ -113,7 +124,7 @@ object MicChoice {
         fun make(source: Int, stereo: Boolean): AudioRecord? = runCatching {
             val ch = if (stereo) AudioFormat.CHANNEL_IN_STEREO else AudioFormat.CHANNEL_IN_MONO
             val min = AudioRecord.getMinBufferSize(sr, ch, AudioFormat.ENCODING_PCM_16BIT)
-            AudioRecord(source, sr, ch, AudioFormat.ENCODING_PCM_16BIT, maxOf(min, AudioMath.FRAME * 8 * (if (stereo) 2 else 1)))
+            AudioRecord(source, sr, ch, AudioFormat.ENCODING_PCM_16BIT, maxOf(min, AudioMath.FRAME * factor * 8 * (if (stereo) 2 else 1)))
                 .takeIf { it.state == AudioRecord.STATE_INITIALIZED }
         }.getOrNull()
         val unprocessed = if (Build.VERSION.SDK_INT >= 24) MediaRecorder.AudioSource.UNPROCESSED else MediaRecorder.AudioSource.MIC
@@ -124,22 +135,22 @@ object MicChoice {
             key == "bottom" -> make(MediaRecorder.AudioSource.VOICE_COMMUNICATION, false)?.also { r ->
                 builtIn("bottom")?.let { r.preferredDevice = it }
                 if (Build.VERSION.SDK_INT >= 29) runCatching { r.setPreferredMicrophoneDirection(android.media.MicrophoneDirection.MIC_DIRECTION_TOWARDS_USER) }
-            }?.let { Recorder(it, 1).apply { disableVoiceProcessing() } }
+            }?.let { Recorder(it, 1, sr).apply { disableVoiceProcessing() } }
             // Micro de la caméra : source « caméscope » (micro arrière), dirigée vers la pièce.
             key == "back" -> make(MediaRecorder.AudioSource.CAMCORDER, false)?.also { r ->
                 builtIn("back")?.let { r.preferredDevice = it }
                 if (Build.VERSION.SDK_INT >= 29) runCatching { r.setPreferredMicrophoneDirection(android.media.MicrophoneDirection.MIC_DIRECTION_AWAY_FROM_USER) }
-            }?.let { Recorder(it, 1) }
-            key == "all" -> (make(unprocessed, true) ?: make(MediaRecorder.AudioSource.MIC, true))?.let { Recorder(it, 2) }
+            }?.let { Recorder(it, 1, sr) }
+            key == "all" -> (make(unprocessed, true) ?: make(MediaRecorder.AudioSource.MIC, true))?.let { Recorder(it, 2, sr) }
             key.startsWith("dev:") -> {
                 val id = key.removePrefix("dev:").toIntOrNull()
                 val dev = inputs.firstOrNull { it.id == id }
-                make(MediaRecorder.AudioSource.VOICE_RECOGNITION, false)?.also { r -> dev?.let { r.preferredDevice = it } }?.let { Recorder(it, 1) }
+                make(MediaRecorder.AudioSource.VOICE_RECOGNITION, false)?.also { r -> dev?.let { r.preferredDevice = it } }?.let { Recorder(it, 1, sr) }
             }
             else -> null
         }
         return result
-            ?: make(MediaRecorder.AudioSource.VOICE_RECOGNITION, false)?.let { Recorder(it, 1) }
+            ?: make(MediaRecorder.AudioSource.VOICE_RECOGNITION, false)?.let { Recorder(it, 1, sr) }
             ?: Recorder(make(MediaRecorder.AudioSource.MIC, false)!!, 1)
     }
 }

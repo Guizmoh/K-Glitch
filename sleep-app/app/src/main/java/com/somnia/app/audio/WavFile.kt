@@ -19,6 +19,17 @@ object WavFile {
         file.writeBytes(bb.array())
     }
 
+    /** Fréquence d'échantillonnage écrite dans l'en-tête (16 kHz par défaut). */
+    fun rate(file: File): Int = runCatching {
+        RandomAccessFile(file, "r").use { raf ->
+            raf.seek(24); val b = ByteArray(4); raf.readFully(b)
+            ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN).int
+        }
+    }.getOrDefault(AudioMath.SAMPLE_RATE)
+
+    /** Lit le fichier et le ramène à 16 kHz (analyse, transcription). */
+    fun read16k(file: File): ShortArray = Resample.to16k(read(file), rate(file))
+
     fun read(file: File): ShortArray {
         RandomAccessFile(file, "r").use { raf ->
             val bytes = ByteArray((raf.length() - 44).coerceAtLeast(0).toInt())

@@ -9,6 +9,9 @@ class CapturedEvent(
     val noiseFloorDb: Float,
     /** Échantillon de bruit ambiant juste avant l'événement (pour isoler la voix). */
     val noiseSample: ShortArray,
+    /** Même passage en haute qualité (48 kHz) si disponible. */
+    val pcmHi: ShortArray? = null,
+    val hiRate: Int = AudioMath.SAMPLE_RATE,
 ) {
     val durationMs: Long get() = pcm.size * 1000L / AudioMath.SAMPLE_RATE
 }
@@ -37,6 +40,9 @@ class SoundEventDetector(
     private val frameMs = 1000 * frame / AudioMath.SAMPLE_RATE
     private val preRollFrames = preRollMs / frameMs
     private val ring = ArrayDeque<ShortArray>()
+    private val ringHi = ArrayDeque<ShortArray>()
+    private var currentHi = ArrayList<ShortArray>()
+    private var hiRate = AudioMath.SAMPLE_RATE
     private val quietRing = ArrayDeque<ShortArray>()
 
     private var active = false
@@ -67,8 +73,9 @@ class SoundEventDetector(
     }
 
     /** Ajoute une trame de 100 ms ; renvoie un événement quand il se termine. */
-    fun process(frameData: ShortArray): CapturedEvent? {
+    fun process(frameData: ShortArray, hiRes: ShortArray? = null, hiResRate: Int = AudioMath.SAMPLE_RATE): CapturedEvent? {
         require(frameData.size == frame)
+        hiRate = hiResRate
         val db = AudioMath.rmsDb(frameData)
         lastDb = db
         val loud = db > threshold
@@ -78,6 +85,10 @@ class SoundEventDetector(
             noiseTracker.add(db)
             ring.addLast(frameData)
             while (ring.size > preRollFrames + onsetFrames) ring.removeFirst()
+            if (hiRes != null) {
+                ringHi.addLast(hiRes)
+                while (ringHi.size > preRollFrames + onsetFrames) ringHi.removeFirst()
+            }
             if (!loud) {
                 quietRing.addLast(frameData)
                 while (quietRing.size > 10) quietRing.removeFirst()
@@ -86,6 +97,8 @@ class SoundEventDetector(
             if (loudFrames >= onsetFrames) {
                 active = true
                 current = ArrayList(ring)
+                currentHi = ArrayList(ringHi)
+                ringHi.clear()
                 eventStartFrame = frameIndex - ring.size + 1
                 floorAtStart = noiseTracker.floorDb
                 noiseAtStart = concat(quietRing)
@@ -97,6 +110,7 @@ class SoundEventDetector(
         } else {
             noiseTracker.addDuringEvent()
             current.add(frameData)
+            if (hiRes != null) currentHi.add(hiRes)
             if (db > peakDb) peakDb = db
             quietFrames = if (loud) 0 else quietFrames + 1
             if (loud) eventLoudFrames++
@@ -125,8 +139,11 @@ class SoundEventDetector(
             peakDb = peakDb,
             noiseFloorDb = floorAtStart,
             noiseSample = noiseAtStart,
+            pcmHi = if (currentHi.size == current.size && currentHi.isNotEmpty()) concat(currentHi.subList(0, kept.size)) else null,
+            hiRate = hiRate,
         )
         current = ArrayList()
+        currentHi = ArrayList()
         quietFrames = 0
         return ev
     }

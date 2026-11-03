@@ -158,9 +158,10 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
     @SuppressLint("MissingPermission")
     private fun startAudio() {
         audioJob = lifecycleScope.launch(Dispatchers.IO) {
-            val rec = com.somnia.app.audio.MicChoice.open(this@SleepTrackingService, settings.micSource)
+            val rec = com.somnia.app.audio.MicChoice.open(this@SleepTrackingService, settings.micSource, hiRes = true)
             val record = rec.record
-            val raw = ShortArray(AudioMath.FRAME * rec.channels)
+            val factor = (rec.rate / AudioMath.SAMPLE_RATE).coerceAtLeast(1)
+            val raw = ShortArray(AudioMath.FRAME * factor * rec.channels)
             val detector = SoundEventDetector().apply { setSensitivity(settings.micSensitivity) }
             val tv = com.somnia.app.audio.TvDetector()
             val delayUntil = startTime + settings.startDelayMin * 60_000L
@@ -177,11 +178,14 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                     }
                     if (read < raw.size) continue
                     // « Tous les micros » : on mélange les canaux en un seul
-                    val frame = if (rec.channels == 1) raw.copyOf() else ShortArray(AudioMath.FRAME) { i ->
+                    val mono = if (rec.channels == 1) raw.copyOf() else ShortArray(AudioMath.FRAME * factor) { i ->
                         var sum = 0
                         for (c in 0 until rec.channels) sum += raw[i * rec.channels + c]
                         (sum / rec.channels).toShort()
                     }
+                    // Analyse en 16 kHz ; le son 48 kHz est gardé pour l'enregistrement
+                    val frame = com.somnia.app.audio.Resample.down(mono, factor)
+                    val hi = if (factor > 1) mono else null
                     if (settings.tvMode) {
                         tv.process(AudioMath.rmsDb(frame), detector.noiseFloorDb)
                         detector.mediaLevelDb = if (tv.isOn) tv.tvLevelDb else -96f
@@ -189,7 +193,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                             TrackingState.live.value = TrackingState.live.value?.copy(tvOn = tv.isOn)
                         }
                     }
-                    val ev = detector.process(frame)
+                    val ev = detector.process(frame, hi, rec.rate)
                     synchronized(lock) {
                         minuteDbSum += detector.lastDb; minuteDbCount++
                         if (detector.lastDb > minuteDbMax) minuteDbMax = detector.lastDb
@@ -242,12 +246,15 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 var enhanced: String? = null
                 if (keepAudio) {
                     val f = File(dir, "${ts}_${cls.type.name.lowercase()}.wav")
-                    WavFile.write(f, ev.pcm)
+                    // Original en haute qualité, légèrement retouché (grondement, volume, clics)
+                    if (ev.pcmHi != null) WavFile.write(f, com.somnia.app.audio.Resample.polish(ev.pcmHi, ev.hiRate), ev.hiRate)
+                    else WavFile.write(f, com.somnia.app.audio.Resample.polish(ev.pcm, AudioMath.SAMPLE_RATE))
                     audio = f.absolutePath
                     val voiceLike = cls.type in setOf(SoundType.SPEECH, SoundType.NIGHT_TERROR, SoundType.LAUGHTER, SoundType.CRYING)
                     if (settings.enhanceVoice && voiceLike) {
                         val e = File(dir, "${ts}_${cls.type.name.lowercase()}_voix.wav")
-                        WavFile.write(e, VoiceEnhancer.enhance(ev.pcm, ev.noiseSample))
+                        if (ev.pcmHi != null) WavFile.write(e, VoiceEnhancer.enhance(ev.pcmHi, null, ev.hiRate), ev.hiRate)
+                        else WavFile.write(e, VoiceEnhancer.enhance(ev.pcm, ev.noiseSample))
                         enhanced = e.absolutePath
                     }
                 }

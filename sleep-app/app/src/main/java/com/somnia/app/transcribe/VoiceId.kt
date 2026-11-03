@@ -91,7 +91,7 @@ object VoiceId {
         }
     }
 
-    suspend fun vector(ctx: Context, wavPath: String): FloatArray? = vector(ctx, WavFile.read(File(wavPath)))
+    suspend fun vector(ctx: Context, wavPath: String): FloatArray? = vector(ctx, WavFile.read16k(File(wavPath)))
 
     /** Enregistre l'empreinte à partir de ~20 s de voix. */
     suspend fun enroll(ctx: Context, pcm: ShortArray): Boolean {

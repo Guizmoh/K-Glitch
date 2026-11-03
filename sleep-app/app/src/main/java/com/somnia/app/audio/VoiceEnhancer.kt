@@ -16,11 +16,18 @@ import kotlin.math.sqrt
  *  4. on normalise le volume pour rendre audibles les chuchotements.
  */
 object VoiceEnhancer {
-    private const val N = 512
-    private const val HOP = N / 2
-    private val fft = Fft(N)
-    // Fenêtre racine de Hann (analyse + synthèse => reconstruction parfaite à 50 %).
-    private val window = DoubleArray(N) { sqrt(0.5 - 0.5 * cos(2 * PI * it / N)) }
+    // Fenêtre ~32-42 ms : 512 points à 16 kHz, 2048 à 48 kHz.
+    private class Frame(val n: Int) {
+        val fft = Fft(n)
+        // Fenêtre racine de Hann (analyse + synthèse => reconstruction parfaite à 50 %).
+        val window = DoubleArray(n) { sqrt(0.5 - 0.5 * cos(2 * PI * it / n)) }
+    }
+    private val frames = HashMap<Int, Frame>()
+    private fun frameFor(rate: Int) = synchronized(frames) { frames.getOrPut(if (rate >= 32_000) 2048 else 512) { Frame(if (rate >= 32_000) 2048 else 512) } }
+    private var N = 512
+    private val HOP get() = N / 2
+    private var fft = Fft(512)
+    private var window = DoubleArray(512)
 
     fun enhance(
         pcm: ShortArray,
@@ -29,7 +36,8 @@ object VoiceEnhancer {
         overSubtraction: Double = 2.0,
         floorGain: Double = 0.06,
         voiceBand: Boolean = true,
-    ): ShortArray {
+    ): ShortArray = synchronized(this) {
+        frameFor(sampleRate).let { N = it.n; fft = it.fft; window = it.window }
         if (pcm.size < N) return pcm.copyOf()
         val bins = N / 2 + 1
         val noise = noiseSample?.takeIf { it.size >= N * 2 }?.let { averagePower(it) }
@@ -52,7 +60,7 @@ object VoiceEnhancer {
                 prevGain[k] = g
                 if (voiceBand) {
                     val hz = k * binHz
-                    if (hz < 90) g *= 0.1 else if (hz > 5000) g *= 0.3
+                    if (hz < 90) g *= 0.1 else if (hz > 7000) g *= 0.3
                 }
                 re[k] *= g; im[k] *= g
                 if (k in 1 until N / 2) { re[N - k] = re[k]; im[N - k] = -im[k] }

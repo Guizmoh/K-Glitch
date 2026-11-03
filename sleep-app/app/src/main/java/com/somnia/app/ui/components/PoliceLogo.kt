@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -39,16 +40,31 @@ import kotlin.math.sin
 private val GOLD = Color(0xFFE0B656)
 
 /**
+ * Horloge en secondes basée sur les images de l'écran. Contrairement aux animations
+ * Compose, elle tourne même si « Supprimer les animations » ou l'économiseur de
+ * batterie réduit les animations d'Android.
+ */
+@Composable
+fun rememberClockSeconds(): Float {
+    var t by androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val start = androidx.compose.runtime.withFrameNanos { it }
+        while (true) androidx.compose.runtime.withFrameNanos { t = (it - start) / 1e9f }
+    }
+    return t
+}
+
+/**
  * L'agent du Dodo dans son médaillon.
  * - [awake] = true : l'agent moustachu, yeux grands ouverts (avant la nuit, au réveil).
  * - [awake] = false : il dort, des « Zzz » s'envolent (pendant la nuit).
  */
 @Composable
 fun PoliceLogo(size: Dp = 56.dp, awake: Boolean = true, animated: Boolean = true) {
-    val inf = rememberInfiniteTransition(label = "agent")
-    val t by inf.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing), RepeatMode.Restart), label = "t")
+    val clock = if (animated) rememberClockSeconds() else 0f
+    val t = (clock % 2.6f) / 2.6f
     // Image de l'animation « bave » (6 images de 450 ms)
-    val f by inf.animateFloat(0f, 6f, infiniteRepeatable(tween(6 * 450, easing = LinearEasing), RepeatMode.Restart), label = "frame")
+    val f = (clock / 0.45f) % 6f
     Crossfade(awake, label = "eyes") { a ->
         PoliceLogoFrame(
             size, if (a) 1f else 0f, if (!a) (if (animated) t else 0.4f) else null,
@@ -133,9 +149,7 @@ private val NIGHT_FRAMES = arrayOf(
 @Composable
 fun NightAgentAnimation(width: Dp, frame: Int? = null) {
     val agent = com.somnia.app.ui.LocalAgent.current.coerceIn(0, 1)
-    val inf = rememberInfiniteTransition(label = "night")
-    val f by inf.animateFloat(0f, 7f, infiniteRepeatable(tween(7 * 420, easing = LinearEasing), RepeatMode.Restart), label = "f")
-    val i = (frame ?: f.toInt()).coerceIn(0, 6)
+    val i = (frame ?: ((rememberClockSeconds() / 0.42f).toInt() % 7)).coerceIn(0, 6)
     val toggle = com.somnia.app.ui.LocalAgentToggle.current
     Image(
         painterResource(NIGHT_FRAMES[agent][i]), "L'agent du Dodo dort",

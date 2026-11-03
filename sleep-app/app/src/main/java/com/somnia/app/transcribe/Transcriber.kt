@@ -88,7 +88,7 @@ object Transcriber {
     suspend fun transcribe(ctx: Context, wavPath: String): String? = withContext(Dispatchers.Default) {
         if (!isReady(ctx)) return@withContext null
         val m = loadModel(ctx)
-        val pcm = WavFile.read(File(wavPath))
+        val pcm = WavFile.read16k(File(wavPath))
         Recognizer(m, 16000f).use { rec ->
             var i = 0
             while (i < pcm.size) {

@@ -152,4 +152,5 @@ app/src/main/java/com/somnia/app/
 - Police du titre et du gros bouton : **Fredoka** (Google Fonts), licence SIL Open Font License 1.1.
 - Modèle de reconnaissance des sons : **YAMNet** (Google), licence Apache 2.0.
 - Transcription : **Vosk** et modèle `vosk-model-small-fr-0.22` (Alpha Cephei), licence Apache 2.0.
+- Police de l'écran de nuit : **Nunito** (Google Fonts), licence SIL Open Font License 1.1.
 - Police du gros bouton : **Quicksand** (Google Fonts), licence SIL Open Font License 1.1.
