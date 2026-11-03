@@ -248,7 +248,7 @@ class ScreenshotTest {
                         eventCount = 9, counts = mapOf(SoundType.SNORING to 5, SoundType.SPEECH to 2, SoundType.LAUGHTER to 1, SoundType.CRYING to 1),
                         lastEvent = SoundType.SPEECH, lastEventTime = t0 + 3_000_000L, alarmTarget = t0 + 30_000_000L,
                     ),
-                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 14.dp, previewFrame = 3,
+                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 44.dp, previewFrame = 3,
                 ) {}
                 com.somnia.app.ui.components.NightFoliage()
             }

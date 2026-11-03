@@ -255,12 +255,15 @@ private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compo
             val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
             Box(
                 Modifier.padding(top = 10.dp).width(286.dp).height(68.dp).clip(shape)
-                    .background(Color(0xA6F6EBD3))
+                    .background(Color(0x5BF6EBD3)) // vitre crème, 45 % plus transparente
                     .border(1.5.dp, Color(0xB3FFFFFF), shape)
                     .clickable(onClick = onStop),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Je me réveille", fontFamily = nf, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = Color(0xFF2A1A00))
+                Text(
+                    "Je me réveille", fontFamily = nf, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = Color.White,
+                    style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color(0x99050A20), androidx.compose.ui.geometry.Offset(0f, 2f), 6f)),
+                )
             }
         }
     }
