@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 data class Settings(
     /** Mode télé : repère une télé / radio allumée et la traite comme bruit de fond. */
-    val tvMode: Boolean = true,
+    val tvMode: Boolean = false,
     /** Ne garder que les paroles qui ressemblent à la voix enregistrée (si empreinte faite). */
     val onlyMyVoice: Boolean = true,
     /** Ressemblance minimale avec l'empreinte vocale (0..1). */
