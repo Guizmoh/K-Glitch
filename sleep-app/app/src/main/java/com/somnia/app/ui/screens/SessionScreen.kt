@@ -333,11 +333,6 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel) {
                 com.somnia.app.ui.components.Segmented(listOf("Original", "Voix claire"), if (useEnhanced) 1 else 0) {
                     AudioPlayer.stop(); useEnhanced = it == 1
                 }
-                Text(
-                    if (useEnhanced) "Voix claire : le bruit de fond (ventilateur, rue…) est retiré et le volume remonté."
-                    else "Original : le son tel qu'il a été enregistré.",
-                    style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp),
-                )
             }
         } else {
             Text("Audio non conservé", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp))
