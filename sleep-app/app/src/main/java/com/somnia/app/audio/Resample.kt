@@ -54,8 +54,13 @@ object Resample {
      * (< ~70 Hz), remonte le volume (jusqu'à x4) sans saturer, et adoucit le début
      * et la fin pour éviter les « clics ».
      */
-    fun polish(pcm: ShortArray, rate: Int): ShortArray {
-        if (pcm.isEmpty()) return pcm
+    fun polish(pcm: ShortArray, rate: Int): ShortArray = polishWith(pcm, rate).first
+
+    /** Comme [polish] ; [fixedGain] réutilise le gain d'un morceau précédent. Renvoie aussi le gain. */
+    fun polishWith(
+        pcm: ShortArray, rate: Int, fixedGain: Float? = null, fadeIn: Boolean = true, fadeOut: Boolean = true,
+    ): Pair<ShortArray, Float> {
+        if (pcm.isEmpty()) return pcm to 1f
         val a = (1.0 / (1.0 + 2 * PI * 70.0 / rate)).toFloat()
         val out = FloatArray(pcm.size)
         var prevX = pcm[0].toFloat(); var prevY = 0f
@@ -66,15 +71,15 @@ object Resample {
         }
         var peak = 1f
         for (v in out) peak = max(peak, abs(v))
-        val gain = min(4f, 0.89f * 32767f / peak)
+        val gain = fixedGain ?: min(4f, 0.89f * 32767f / peak)
         val fade = min(pcm.size / 4, rate / 100) // 10 ms
         return ShortArray(pcm.size) { i ->
             val f = when {
-                i < fade -> i / fade.toFloat()
-                i >= pcm.size - fade -> (pcm.size - 1 - i) / fade.toFloat()
+                fadeIn && i < fade -> i / fade.toFloat()
+                fadeOut && i >= pcm.size - fade -> (pcm.size - 1 - i) / fade.toFloat()
                 else -> 1f
             }
             (out[i] * gain * f).toInt().coerceIn(-32768, 32767).toShort()
-        }
+        } to gain
     }
 }

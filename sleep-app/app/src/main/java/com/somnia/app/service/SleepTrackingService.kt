@@ -219,7 +219,35 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
         val ec = EventClassifier(c, settings.thresholds())
         val dir = File(filesDir, "recordings/$sessionId").apply { mkdirs() }
         processJob = lifecycleScope.launch(Dispatchers.Default) {
+            // Son long découpé toutes les 60 s : les morceaux suivants sont recollés ici
+            class OpenChunk(val id: Long, val audio: String?, val enhanced: String?, val gain: Float, val type: SoundType)
+            var open: OpenChunk? = null
             for (ev in events) {
+                val rate = if (ev.pcmHi != null) ev.hiRate else AudioMath.SAMPLE_RATE
+                val chunk = ev.pcmHi ?: ev.pcm
+                if (ev.continuation) {
+                    val o = open
+                    if (o != null) {
+                        o.audio?.let { p ->
+                            val add = com.somnia.app.audio.Resample.polishWith(chunk, rate, o.gain, fadeIn = false, fadeOut = !ev.continues).first
+                            WavFile.write(File(p), WavFile.read(File(p)) + add, rate)
+                        }
+                        o.enhanced?.let { p -> WavFile.write(File(p), WavFile.read(File(p)) + VoiceEnhancer.enhance(chunk, null, rate), rate) }
+                        dao.event(o.id)?.let { e ->
+                            var upd = e.copy(durationMs = e.durationMs + ev.durationMs, peakDb = maxOf(e.peakDb, ev.peakDb))
+                            if (!ev.continues && (o.type == SoundType.SPEECH || o.type == SoundType.NIGHT_TERROR)) {
+                                (o.enhanced ?: o.audio)?.let { path ->
+                                    runCatching { com.somnia.app.transcribe.Transcriber.transcribe(this@SleepTrackingService, path) }
+                                        .getOrNull()?.let { upd = upd.copy(transcript = it) }
+                                }
+                            }
+                            dao.updateEvent(upd)
+                        }
+                    }
+                    if (!ev.continues) open = null
+                    continue // la suite d'un son ignoré est ignorée aussi
+                }
+                open = null
                 val cls = ec.classify(ev.pcm)
                 val ts = startTime + ev.startOffsetMs
                 val keepAudio = cls.type in settings.recordTypes
@@ -244,11 +272,13 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 }
                 var audio: String? = null
                 var enhanced: String? = null
+                var gain = 1f
                 if (keepAudio) {
                     val f = File(dir, "${ts}_${cls.type.name.lowercase()}.wav")
                     // Original en haute qualité, légèrement retouché (grondement, volume, clics)
-                    if (ev.pcmHi != null) WavFile.write(f, com.somnia.app.audio.Resample.polish(ev.pcmHi, ev.hiRate), ev.hiRate)
-                    else WavFile.write(f, com.somnia.app.audio.Resample.polish(ev.pcm, AudioMath.SAMPLE_RATE))
+                    val (polished, g) = com.somnia.app.audio.Resample.polishWith(chunk, rate, fadeOut = !ev.continues)
+                    WavFile.write(f, polished, rate)
+                    gain = g
                     audio = f.absolutePath
                     val voiceLike = cls.type in setOf(SoundType.SPEECH, SoundType.NIGHT_TERROR, SoundType.LAUGHTER, SoundType.CRYING)
                     if (settings.enhanceVoice && voiceLike) {
@@ -270,8 +300,9 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         hidden = !keepAudio,
                     ),
                 )
-                // Paroles et cris : transcription en texte si le modèle est installé
-                if (cls.type == SoundType.SPEECH || cls.type == SoundType.NIGHT_TERROR) {
+                if (ev.continues) open = OpenChunk(eventId, audio, enhanced, gain, cls.type)
+                // Paroles et cris : transcription en texte si le modèle est installé (à la fin d'un son long)
+                if (!ev.continues && (cls.type == SoundType.SPEECH || cls.type == SoundType.NIGHT_TERROR)) {
                     (enhanced ?: audio)?.let { path ->
                         runCatching { com.somnia.app.transcribe.Transcriber.transcribe(this@SleepTrackingService, path) }
                             .getOrNull()?.let { text -> dao.event(eventId)?.let { dao.updateEvent(it.copy(transcript = text)) } }

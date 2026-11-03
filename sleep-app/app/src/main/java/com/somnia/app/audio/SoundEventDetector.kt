@@ -12,6 +12,10 @@ class CapturedEvent(
     /** Même passage en haute qualité (48 kHz) si disponible. */
     val pcmHi: ShortArray? = null,
     val hiRate: Int = AudioMath.SAMPLE_RATE,
+    /** Le son continue : un morceau suivant va être recollé à celui-ci. */
+    val continues: Boolean = false,
+    /** Ce morceau est la suite du précédent (à recoller). */
+    val continuation: Boolean = false,
 ) {
     val durationMs: Long get() = pcm.size * 1000L / AudioMath.SAMPLE_RATE
 }
@@ -42,6 +46,8 @@ class SoundEventDetector(
     private val ring = ArrayDeque<ShortArray>()
     private val ringHi = ArrayDeque<ShortArray>()
     private var currentHi = ArrayList<ShortArray>()
+    /** Le morceau en cours est la suite d'un son long découpé toutes les 60 s. */
+    private var inContinuation = false
     private var hiRate = AudioMath.SAMPLE_RATE
     private val quietRing = ArrayDeque<ShortArray>()
 
@@ -115,8 +121,12 @@ class SoundEventDetector(
             quietFrames = if (loud) 0 else quietFrames + 1
             if (loud) eventLoudFrames++
             val tooLong = current.size * frameMs >= maxEventMs
-            if (quietFrames * frameMs >= hangoverMs || tooLong) {
+            // Hésitations : après 5 s de son, on tolère 3 s de silence avant de couper
+            val hangover = if (inContinuation || (current.size - preRollFrames) * frameMs > 5_000) 3_000 else hangoverMs
+            if (quietFrames * frameMs >= hangover) {
                 finished = finish()
+            } else if (tooLong) {
+                finished = cutAndContinue()
             }
         }
         frameIndex++
@@ -126,14 +136,40 @@ class SoundEventDetector(
     /** Termine l'événement en cours (fin de nuit). */
     fun flush(): CapturedEvent? = if (active) finish() else null
 
+    /**
+     * Son très long : on livre le morceau de 60 s sans s'arrêter d'écouter.
+     * Le morceau suivant commence à la trame d'après (aucun trou) et sera recollé.
+     */
+    private fun cutAndContinue(): CapturedEvent {
+        val ev = CapturedEvent(
+            startOffsetMs = eventStartFrame * frameMs,
+            pcm = concat(current),
+            peakDb = peakDb,
+            noiseFloorDb = floorAtStart,
+            noiseSample = noiseAtStart,
+            pcmHi = if (currentHi.size == current.size && currentHi.isNotEmpty()) concat(currentHi) else null,
+            hiRate = hiRate,
+            continues = true,
+            continuation = inContinuation,
+        )
+        inContinuation = true
+        eventStartFrame = frameIndex + 1
+        current = ArrayList(); currentHi = ArrayList()
+        eventLoudFrames = 0
+        return ev
+    }
+
     private fun finish(): CapturedEvent? {
+        val wasContinuation = inContinuation
+        inContinuation = false
         active = false
         loudFrames = 0
         // On retire la fin silencieuse, sauf 300 ms de queue.
         val trim = (quietFrames - 3).coerceAtLeast(0)
         val kept = current.subList(0, (current.size - trim).coerceAtLeast(0))
         val loudPartMs = eventLoudFrames * frameMs
-        val ev = if (loudPartMs < minEventMs) null else CapturedEvent(
+        // La suite d'un son long est toujours livrée (même courte) pour clore le recollage
+        val ev = if (loudPartMs < minEventMs && !wasContinuation) null else CapturedEvent(
             startOffsetMs = eventStartFrame * frameMs,
             pcm = concat(kept),
             peakDb = peakDb,
@@ -141,6 +177,7 @@ class SoundEventDetector(
             noiseSample = noiseAtStart,
             pcmHi = if (currentHi.size == current.size && currentHi.isNotEmpty()) concat(currentHi.subList(0, kept.size)) else null,
             hiRate = hiRate,
+            continuation = wasContinuation,
         )
         current = ArrayList()
         currentHi = ArrayList()

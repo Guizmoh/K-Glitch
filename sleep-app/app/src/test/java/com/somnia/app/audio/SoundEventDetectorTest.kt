@@ -62,11 +62,32 @@ class SoundEventDetectorTest {
         assertNotNull(t)
     }
 
-    @Test fun longEventIsSplit() {
+    @Test fun longEventIsCutIntoGluablePiecesWithoutGap() {
         val d = SoundEventDetector().apply { setSensitivity(6) }
-        val frames = List(300) { noise(0.01) } + List(900) { tone(0.2, 200.0, 0.01) } + List(50) { noise(0.01) }
+        // 4 min de voix continue
+        val frames = List(300) { noise(0.01) } + List(2400) { tone(0.2, 200.0, 0.01) } + List(50) { noise(0.01) }
         val events = run(d, frames)
-        assertTrue(events.size >= 2)
+        assertTrue(events.size >= 4)
+        assertTrue(events.first().continues && !events.first().continuation)
+        assertTrue(events.drop(1).all { it.continuation })
+        assertTrue(events.dropLast(1).all { it.continues } && !events.last().continues)
+        // Aucun trou : chaque morceau commence juste à la fin du précédent
+        events.zipWithNext().forEach { (a, b) -> assertEquals(a.startOffsetMs + a.durationMs, b.startOffsetMs) }
         assertNull(d.flush())
+    }
+
+    @Test fun longHesitationsAreKeptTogether() {
+        val d = SoundEventDetector().apply { setSensitivity(6) }
+        // 6 s de voix, 2,5 s de pause, 3 s de voix : un seul enregistrement
+        val frames = List(300) { noise(0.01) } + List(60) { tone(0.2, 200.0, 0.01) } +
+            List(25) { noise(0.01) } + List(30) { tone(0.2, 200.0, 0.01) } + List(50) { noise(0.01) }
+        assertEquals(1, run(d, frames).size)
+    }
+
+    @Test fun shortSoundsStillCutAfterTwoSeconds() {
+        val d = SoundEventDetector().apply { setSensitivity(6) }
+        val frames = List(300) { noise(0.01) } + List(20) { tone(0.2, 200.0, 0.01) } +
+            List(25) { noise(0.01) } + List(20) { tone(0.2, 200.0, 0.01) } + List(50) { noise(0.01) }
+        assertEquals(2, run(d, frames).size)
     }
 }

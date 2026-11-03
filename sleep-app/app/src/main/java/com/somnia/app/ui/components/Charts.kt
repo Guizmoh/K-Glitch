@@ -105,7 +105,8 @@ fun BarChart(values: List<Float>, labels: List<String>, maxValue: Float? = null,
 /** Vu-mètre en direct avec plancher de bruit et seuil de détection. */
 @Composable
 fun LevelMeter(levelDb: Float, floorDb: Float, thresholdDb: Float, capturing: Boolean) {
-    val lo = -90f; val hi = -10f
+    // Échelle centrée sur le bruit de fond (de -10 à +35 dB) : on voit bien le seuil bouger
+    val lo = floorDb - 10f; val hi = floorDb + 35f
     fun f(db: Float) = ((db - lo) / (hi - lo)).coerceIn(0f, 1f)
     Canvas(Modifier.fillMaxWidth().height(28.dp)) {
         drawRoundRect(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.08f), cornerRadius = CornerRadius(8.dp.toPx()))

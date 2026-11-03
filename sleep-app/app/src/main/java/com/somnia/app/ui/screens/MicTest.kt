@@ -164,8 +164,12 @@ fun MicTestDialog(settings: Settings, label: String, onSensitivity: (Int) -> Uni
                 else if (settings.tvMode) Text("Mode télé actif (une télé est repérée après ~1 à 2 min de son continu)", color = TextSoft, style = MaterialTheme.typography.labelSmall)
                 Spacer(Modifier.height(10.dp))
                 Text("Sensibilité du micro : ${sens.roundToInt()}/10", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Seuil (trait jaune) : bruit de fond + ${"%.0f".format(23f - 1.9f * sens.roundToInt())} dB",
+                    style = MaterialTheme.typography.bodySmall, color = com.somnia.app.ui.theme.Badge,
+                )
                 Slider(sens, {
-                    sens = it; detector.setSensitivity(it.roundToInt()); onSensitivity(it.roundToInt())
+                    sens = it; detector.setSensitivity(it.roundToInt()); threshold = detector.threshold; onSensitivity(it.roundToInt())
                 }, valueRange = 1f..10f, steps = 8)
                 Text("Derniers déclenchements", style = MaterialTheme.typography.titleSmall)
                 if (results.isEmpty()) Text("Aucun pour l'instant.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
