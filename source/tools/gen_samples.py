@@ -131,6 +131,9 @@ def name_note(name):
 # SLOOP 2.7.2: sets that keep their first sound only, over the whole keyboard (SCRCH: the scratch, 3 KB; the backspin
 # and the rewind, 20 KB, made room for the NOTES editor). The set and its number stay: projects and presets unchanged
 ONE_SOUND = {"SCRCH"}
+# K-GLITCH: sets that keep every other sound (each then spans twice the keys), 66 KB of flash for K-GLITCH's code (its
+# drum kits, effects, filters, sampler and screens): the set and its number stay, projects and presets unchanged
+HALF_SOUNDS = {"PIANO", "BASS", "VIBES", "HORNS"}
 
 
 def cc0_entries(setname, kind):
@@ -138,6 +141,8 @@ def cc0_entries(setname, kind):
     files = sorted((CC0 / setname).glob("*.wav"))
     if setname in ONE_SOUND:
         files = files[:1]
+    elif setname in HALF_SOUNDS:
+        files = files[::2]
     out, conv = [], 1
     if kind != "kit" and not all(re.search(r"_m\d+\.wav$", p.name) for p in files):
         # octave convention of this set (C4 = 60 or C3 = 60): YIN votes, the names give the notes

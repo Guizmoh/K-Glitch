@@ -683,6 +683,7 @@ static void t_midi_fx(void)
     mi_r = mi_w;
     song.g[G_ROUTE] = 0;
     song.g[G_FXCH] = 0;
+    song.g[G_KBANK] = 0;                                /* (K-GLITCH: SLOOP's bank on the white keys, as this test knows them) */
     punch.req = -1, punch.keybit = 0;
     note_in(4, 53, 100);                                /* FX CH OFF: channel 5 plays the selected track as before */
     r0 = punch.req;

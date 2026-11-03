@@ -2,7 +2,19 @@
 
 **DRUM DESTROYER pour le M-VAVE FM-1** — un firmware de glitch et de déconstruction rythmique (breakcore, jungle, IDM, drill, glitch), construit sur **[SLOOP](https://github.com/isod89/sloop-fm1) 2.8.4** (isod89), lui-même basé sur **Felucca** (Leo Kuroshita / Hügelton Instruments). GPL-3.0-only.
 
-> État : version de développement **0.9**. Testé sur ordinateur (tests hôtes + émulateur web). **Jamais compilé pour le FM-1 ni essayé sur l'appareil** : ne pas l'installer.
+> État : version de développement **0.9**. Compilé pour le FM-1 avec la chaîne officielle de JieLi (image 567 Ko sur 581, RAM 73 Ko sur 96, toutes les vérifications de la compilation passent), testé sur ordinateur (tests hôtes, émulateur web). **Pas encore essayé sur un FM-1 réel** : à vos risques.
+
+## Installer sur le FM-1
+
+Dossier [`installer/`](installer/) : un installateur **en un seul fichier, le firmware dedans, sans internet** — mode d'emploi dans [`installer/LISEZ-MOI.md`](installer/LISEZ-MOI.md).
+
+1. FM-1 branché en USB (câble de données, directement sur l'ordinateur).
+2. Windows : `INSTALLER-WINDOWS.bat` ; Mac : `INSTALLER-MAC.command` ; sinon ouvrir `K-GLITCH-0.9-installer.html` avec **Chrome ou Edge**.
+3. **Installer**, autoriser le MIDI, attendre « Terminé » (environ une minute).
+
+Aussi en ligne de commande : `python3 installer/fm1_install.py installer/k-glitch-0.9.fwsc` (mido + python-rtmidi). Secours : OCT− maintenu à l'allumage.
+
+Construire le paquet et l'installateur : `cd source && sh tools/get_toolchain.sh` (une fois), les trois fichiers du SDK AC79 (voir `source/BUILDING.md`), puis `sh build.sh --release 0.9` et `python3 tools/make_installer.py build/felucca-0.9.fwsc 0.9 ../installer/K-GLITCH-0.9-installer.html`. Pour tenir dans la flash, quatre jeux de samples de SLOOP (PIANO, BASS, VIBES, HORNS) gardent un son sur deux (chacun couvre deux fois plus de touches) : 66 Ko rendus à K-GLITCH.
 
 ## Essayer : l'émulateur
 

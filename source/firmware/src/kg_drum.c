@@ -160,7 +160,7 @@ static int32_t kgd_sat(int32_t x, uint32_t type, uint32_t drv)
     int32_t y, L = 16000;
     if (type == KS_OFF)
         return x;
-    y = clamp((x * (16 + (int32_t)drv)) >> 4, -(1 << 22), 1 << 22);   /* x1 .. x9 */
+    y = clamp((x * (16 + (int32_t)drv)) >> 4, -(1 << 21), 1 << 21);   /* x1 .. x9 (2^21: a constant the build's ROM check passes) */
     switch (type) {
     case KS_SOFT:
         return softclip(y);

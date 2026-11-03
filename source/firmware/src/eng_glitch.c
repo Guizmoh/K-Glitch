@@ -29,6 +29,16 @@ static void glitch_note_on(track_t *t, voice_t *v)
     v->s[2] = 0;
     v->s[3] = v->s[4] = v->s[5] = v->s[6] = v->s[7] = 0;
 }
+/* UNISON (voice.c unison_spread): each voice its own time: the oscillator, the bytebeat counter and the retrigger
+ * moved, the glitches' sequence reseeded (in phase, eight digital voices stack: +9 dB over POLY) */
+static void glitch_spread(track_t *t, voice_t *v, uint32_t r)
+{
+    (void)t;
+    v->ph[0] += r;
+    v->ph[2] += (r >> 24) << 12;                    /* (bytebeat: up to 255 counts on) */
+    v->ph[1] = (r >> 9) & 2047u;
+    v->s[0] = (int32_t)(((uint32_t)v->s[0] ^ (r * 2654435761u)) | 1u);
+}
 static void glitch_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
     const int16_t *p = t->p;
@@ -39,6 +49,9 @@ static void glitch_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
     uint32_t period = rate ? (uint32_t)FS / (2u + rate * rate * 58u / 16129u) : 0u;
     int32_t dshift = decay ? 13 - (int32_t)decay / 12 : 0;   /* the envelope: 1/2^13 .. 1/2^3 a sample */
     int32_t coef = 1200 + (int32_t)tone * 31500 / 127;       /* TONE: the low-pass's share a sample, Q15 */
+    /* UNISON: BYTE and DATA have no phase to spread (a counter, a sequence): their voices stay near in phase and stack;
+     * each at half its level (as the others' random phases make the sum) */
+    int32_t uni_sh = p[P_VOICE] == V_UNISON && (mode == GL_BYTE || mode == GL_DATA) ? 1 : 0;
     inc = gl_inc(m->pitch16 + jmp);
     for (i = 0; i < n; i++) {
         int32_t y;
@@ -121,7 +134,7 @@ static void glitch_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
         }
         lp += ((y - lp) * coef) >> 15;
         dc += ((lp << 6) - dc) >> 11;              /* (a DC blocker, ~3 Hz: bytebeat and BITS lean to one side) */
-        out[i] += voice_amp(lp - (dc >> 6), m, i);
+        out[i] += voice_amp((lp - (dc >> 6)) >> uni_sh, m, i);
     }
     v->ph[0] = ph, v->ph[1] = left, v->ph[2] = tt;
     v->s[0] = rng, v->s[1] = env, v->s[2] = dc, v->s[3] = lp, v->s[4] = held, v->s[5] = hn, v->s[6] = jmp, v->s[7] = dv;

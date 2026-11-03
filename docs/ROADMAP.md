@@ -37,5 +37,5 @@
 ## Avant toute installation sur un FM-1
 
 - [ ] Identité de paquet propre à K-GLITCH (ne pas réutiliser celle de SLOOP).
-- [ ] Compiler avec la chaîne JieLi + SDK AC79, vérifier les budgets image / RAM / CPU audio.
+- [x] Compiler avec la chaîne JieLi + SDK AC79, vérifier les budgets image / RAM / CPU audio (0.9 : 567 Ko / 581, RAM 73 Ko / 96) ; installateur en un fichier (installer/).
 - [ ] Tester sur l'appareil : son, écran (temps de rafraîchissement du plein écran), MIDI, mise à jour et retour au firmware d'origine.

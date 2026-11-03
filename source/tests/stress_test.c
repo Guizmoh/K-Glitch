@@ -67,6 +67,11 @@ static void t_font(void)
     uint32_t c, i, bad = 0, n = 0;
     char s[48];
     font_ref_build();
+    if (!FONT_L.sh) {                                  /* K-GLITCH: FONT_L is a font of its own (Carlito at 29 px, its own
+                                                        * bitmaps: tests/font_test.c), not S at 2x: its height only here */
+        scheck(FONT_L.h == 2u * FONT_S.h, "font: FONT_L twice FONT_S's height (K-GLITCH: its own bitmaps)");
+        goto random;
+    }
     scheck(FONT_L.data == FONT_S.data && FONT_L.sh == 1u && FONT_L.h == 2u * FONT_S.h && FONT_L.first == FONT_S.first,
            "font: FONT_L draws FONT_S's bitmaps at 2x");
     for (c = 32; c < 128u; c++) {                     /* every character, lower case folding to capitals */
@@ -80,6 +85,7 @@ static void t_font(void)
     }
     printf("font: %u characters, %u pixels compared, %u different\n", 96u, n, bad);
     scheck(bad == 0, "font: FONT_L from S at 2x = the stored 2x font, pixel for pixel");
+random:
     for (i = 0; i < 20000u; i++) {                    /* random text anywhere, partly or wholly off the canvas */
         uint32_t len = rn(40), k, w = 1u + rn(240), h = 1u + rn(124);
         const felucca_font_t *f = rn(2) ? &FONT_L : &FONT_S;

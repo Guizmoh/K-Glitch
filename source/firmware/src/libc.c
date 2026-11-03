@@ -19,6 +19,19 @@ void *memcpy(void *d, const void *s, unsigned n)
     return d;
 }
 
+void *memmove(void *d, const void *s, unsigned n)   /* (K-GLITCH: the undo history's oldest out) */
+{
+    unsigned char *p = d;
+    const unsigned char *q = s;
+    if (p < q)
+        while (n--)
+            *p++ = *q++;
+    else
+        while (n--)
+            p[n] = q[n];
+    return d;
+}
+
 int memcmp(const void *a, const void *b, unsigned n)
 {
     const unsigned char *p = a, *q = b;
