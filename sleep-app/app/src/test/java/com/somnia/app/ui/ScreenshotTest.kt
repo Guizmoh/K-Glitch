@@ -217,4 +217,24 @@ class ScreenshotTest {
             }
         } }
     }
+
+    private fun themed(t: com.somnia.app.ui.theme.AppTheme, name: String) {
+        com.somnia.app.ui.theme.Themes.select(t)
+        try {
+            paparazzi.snapshot(name) {
+                SomniaTheme {
+                    NightBackground {
+                        TonightIdle(
+                            settings = Settings(smartAlarmEnabled = true, alarmHour = 7, alarmMinute = 15),
+                            lastNight = SleepSession(id = 1, startTime = t0, endTime = t0 + 8 * 3_600_000L, score = 82, deepMinutes = 95, lightMinutes = 330),
+                            tags = setOf("Stress"), onToggleTag = {}, onStart = {}, onOpen = {}, hour = 22,
+                        )
+                    }
+                }
+            }
+        } finally { com.somnia.app.ui.theme.Themes.select(com.somnia.app.ui.theme.Themes.VIOLET) }
+    }
+    @Test fun themeViolet() = themed(com.somnia.app.ui.theme.Themes.VIOLET, "violet")
+    @Test fun themeRose() = themed(com.somnia.app.ui.theme.Themes.ROSE, "rose")
+    @Test fun themeBleu() = themed(com.somnia.app.ui.theme.Themes.BLEU, "bleu")
 }

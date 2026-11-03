@@ -94,7 +94,7 @@ fun BarChart(values: List<Float>, labels: List<String>, maxValue: Float? = null,
         }
         goal?.let {
             val y = size.height * (1 - it / top)
-            drawLine(Color.White.copy(alpha = 0.4f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+            drawLine(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.4f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
         }
     }
     Row(Modifier.fillMaxWidth()) {
@@ -108,7 +108,7 @@ fun LevelMeter(levelDb: Float, floorDb: Float, thresholdDb: Float, capturing: Bo
     val lo = -90f; val hi = -10f
     fun f(db: Float) = ((db - lo) / (hi - lo)).coerceIn(0f, 1f)
     Canvas(Modifier.fillMaxWidth().height(28.dp)) {
-        drawRoundRect(Color.White.copy(alpha = 0.08f), cornerRadius = CornerRadius(8.dp.toPx()))
+        drawRoundRect(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.08f), cornerRadius = CornerRadius(8.dp.toPx()))
         drawRoundRect(
             if (capturing) Color(0xFFE08A7E) else com.somnia.app.ui.theme.Badge,
             size = Size(size.width * f(levelDb), size.height), cornerRadius = CornerRadius(8.dp.toPx()),
@@ -126,7 +126,7 @@ fun ScoreRing(score: Int?, modifier: Modifier = Modifier) {
         val inset = stroke / 2
         val arcSize = Size(size.width - stroke, size.height - stroke)
         val tl = Offset(inset, inset)
-        drawArc(Color.White.copy(alpha = 0.1f), 135f, 270f, false, tl, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        drawArc(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.1f), 135f, 270f, false, tl, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
         if ((score ?: 0) > 0) drawArc(scoreColor(score), 135f, 270f * ((score ?: 0) / 100f), false, tl, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
     }
 }

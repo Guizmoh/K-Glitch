@@ -64,7 +64,7 @@ fun Waveform(path: String, progress: Float, color: Color, onSeek: (Float) -> Uni
         }
         if (progress > 0f) {
             val x = size.width * progress
-            drawLine(Color.White, Offset(x, 0f), Offset(x, size.height), 2.dp.toPx())
+            drawLine(com.somnia.app.ui.theme.Themes.cur.text, Offset(x, 0f), Offset(x, size.height), 2.dp.toPx())
         }
     }
 }

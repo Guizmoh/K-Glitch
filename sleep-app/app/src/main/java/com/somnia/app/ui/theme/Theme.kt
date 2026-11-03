@@ -7,7 +7,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Brush
@@ -31,25 +30,32 @@ val ButtonFont = androidx.compose.ui.text.font.FontFamily(
 )
 
 // Palette « Police du Dodo » : bleu nuit, bleu police, or de l'insigne.
-val Night = Color(0xFF213268)
-val NightMid = Color(0xFF283C7A)
-val NightCard = Color(0x5A16234F) // vitre teintée semi-opaque
-val CardStroke = Color(0x3DFFFFFF)
-val PoliceBlue = Color(0xFFE6C47A) // or de l'insigne (couleur d'accent)
-val PoliceBlueDark = Color(0xFF2A3360)
-val Badge = Color(0xFFE6C47A)
-val Moon = Color(0xFFC9BCFF)
-val TextSoft = Color(0xFFB9C1DE)
-val DeepColor = Color(0xFF4A5AA8)
-val LightColor = Color(0xFF8FB7FF)
-val AwakeColor = Color(0xFFE3A07F)
-val Good = Color(0xFF8FCFA5)
+// Couleurs du thème actif (voir AppThemes.kt) : lues à chaque affichage.
+val Night get() = Themes.cur.bgBottom
+val NightMid get() = Themes.cur.bgMid
+val NightCard get() = Themes.cur.card // vitre teintée semi-opaque
+val CardStroke get() = Themes.cur.cardStroke
+val PoliceBlue get() = Themes.cur.accent
+val PoliceBlueDark get() = Themes.cur.accent.copy(alpha = 0.22f)
+val Badge get() = Themes.cur.accent
+val Moon get() = Themes.cur.accent2
+val TextSoft get() = Themes.cur.textSoft
+val DeepColor get() = Themes.cur.deep
+val LightColor get() = Themes.cur.light
+val AwakeColor get() = Themes.cur.awake
+val Good get() = Themes.cur.good
 
-val BackgroundBrush = Brush.verticalGradient(listOf(Color(0xFF34509A), Color(0xFF283E80), Night))
-val PrimaryBrush = Brush.linearGradient(listOf(Color(0xFFE6C47A), Color(0xFFE6C47A)))
+val BackgroundBrush get() = Brush.verticalGradient(listOf(Themes.cur.bgTop, Themes.cur.bgMid, Themes.cur.bgBottom))
+val PrimaryBrush get() = Brush.linearGradient(listOf(Themes.cur.accent, Themes.cur.accent))
 val SunriseBrush = Brush.linearGradient(listOf(Color(0xFFF1E6CF), Color(0xFFF1E6CF)))
 
-fun SoundType.color(): Color = when (this) {
+/** Sur fond clair, les couleurs pastel des sons sont assombries pour rester lisibles. */
+private fun Color.forTheme(): Color =
+    if (Themes.cur.dark) this else androidx.compose.ui.graphics.lerp(this, Color(0xFF1B1840), 0.42f)
+
+fun SoundType.color(): Color = baseColor().forTheme()
+
+private fun SoundType.baseColor(): Color = when (this) {
     SoundType.SPEECH -> Color(0xFF8DB8E0)
     SoundType.NIGHT_TERROR -> Color(0xFFE08A7E)
     SoundType.SNORING -> Color(0xFFB3A6D9)
@@ -68,26 +74,16 @@ fun scoreColor(score: Int?): Color = when {
     else -> AwakeColor
 }
 
-private val scheme = darkColorScheme(
-    primary = PoliceBlue,
-    onPrimary = Color(0xFF151A33),
-    primaryContainer = PoliceBlueDark,
-    onPrimaryContainer = Color.White,
-    secondary = Badge,
-    onSecondary = Night,
-    secondaryContainer = Color(0x33FFC857),
-    onSecondaryContainer = Badge,
-    background = Night,
-    surface = Night,
-    surfaceVariant = NightCard,
-    surfaceContainer = NightMid,
-    surfaceContainerHigh = Color(0xFF2C4084),
-    surfaceContainerHighest = Color(0xFF34498F),
-    onBackground = Color(0xFFEDE8DC),
-    onSurface = Color(0xFFEDE8DC),
-    onSurfaceVariant = TextSoft,
-    outline = CardStroke,
-    outlineVariant = CardStroke,
+private fun schemeFor(t: AppTheme) = (if (t.dark) androidx.compose.material3.darkColorScheme() else androidx.compose.material3.lightColorScheme()).copy(
+    primary = t.accent, onPrimary = t.onAccent,
+    primaryContainer = t.accent.copy(alpha = 0.22f), onPrimaryContainer = t.text,
+    secondary = t.accent, onSecondary = t.onAccent,
+    secondaryContainer = t.accent.copy(alpha = 0.2f), onSecondaryContainer = t.accent,
+    background = t.bgBottom, surface = t.bgBottom, surfaceVariant = t.card,
+    surfaceContainer = t.bgMid, surfaceContainerHigh = t.bgMid, surfaceContainerHighest = t.bgTop,
+    onBackground = t.text, onSurface = t.text, onSurfaceVariant = t.textSoft,
+    outline = t.cardStroke, outlineVariant = t.cardStroke,
+    error = if (t.dark) Color(0xFFE08A7E) else Color(0xFFB3412F),
 )
 
 private val typography = Typography().let { t ->
@@ -115,33 +111,35 @@ private val shapes = Shapes(
 )
 
 @Composable
-fun SomniaTheme(content: @Composable () -> Unit) =
-    MaterialTheme(colorScheme = scheme, typography = typography, shapes = shapes) {
-        // Texte clair par défaut, même hors d'une Surface (fonds dégradés).
-        // Adaptation à la taille de l'écran : l'interface est dessinée pour un écran de
-        // référence (411 x 860 dp, type Pixel 6) puis agrandie ou réduite à l'identique.
-        // Les petits téléphones gardent tout à l'écran, les grands n'ont pas l'air vides.
-        val d = androidx.compose.ui.platform.LocalDensity.current
-        val conf = androidx.compose.ui.platform.LocalConfiguration.current
-        val scale = uiScale(conf.screenWidthDp, conf.screenHeightDp)
+fun SomniaTheme(forceNight: Boolean = false, content: @Composable () -> Unit) {
+    if (forceNight) Themes.nightOverride = true
+    val t = Themes.cur
+    // Adaptation à la taille de l'écran : l'interface est dessinée pour un écran de
+    // référence (411 x 860 dp, type Pixel 6) puis agrandie ou réduite à l'identique.
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val conf = androidx.compose.ui.platform.LocalConfiguration.current
+    val scale = uiScale(conf.screenWidthDp, conf.screenHeightDp)
+    MaterialTheme(colorScheme = schemeFor(t), typography = typography, shapes = shapes) {
         CompositionLocalProvider(
-            LocalContentColor provides scheme.onBackground,
+            LocalContentColor provides t.text,
             // Texte agrandi d'environ 12 % (en plus du réglage de taille du téléphone).
             androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density * scale, d.fontScale * 1.12f),
             content = content,
         )
     }
+}
 
-fun SoundType.icon(): androidx.compose.ui.graphics.vector.ImageVector = when (this) {
-    SoundType.SPEECH -> Icons.Rounded.RecordVoiceOver
-    SoundType.NIGHT_TERROR -> Icons.Rounded.Campaign
-    SoundType.SNORING -> Icons.Rounded.Waves
-    SoundType.LAUGHTER -> Icons.Rounded.SentimentVerySatisfied
-    SoundType.CRYING -> Icons.Rounded.SentimentVeryDissatisfied
-    SoundType.COUGH -> Icons.Rounded.Sick
-    SoundType.BREATHING -> Icons.Rounded.Air
-    SoundType.NOISE -> Icons.Rounded.GraphicEq
-    SoundType.MEDIA -> Icons.Rounded.Tv
+/**
+ * Écrans de nuit (surveillance, réveil) : toujours le thème sombre, devant le décor de nuit,
+ * quel que soit le thème choisi.
+ */
+@Composable
+fun ForceNight(content: @Composable () -> Unit) {
+    androidx.compose.runtime.remember { Themes.nightOverride = true }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { Themes.nightOverride = false } }
+    MaterialTheme(colorScheme = schemeFor(Themes.BLEU), typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
+        CompositionLocalProvider(LocalContentColor provides Themes.BLEU.text, content = content)
+    }
 }
 
 /**
@@ -156,4 +154,16 @@ fun uiScale(widthDp: Int, heightDp: Int): Float {
     val byWidth = portraitW / 411f
     val byHeight = portraitH / 780f
     return minOf(byWidth, byHeight).coerceIn(0.78f, 1.30f)
+}
+
+fun SoundType.icon(): androidx.compose.ui.graphics.vector.ImageVector = when (this) {
+    SoundType.SPEECH -> Icons.Rounded.RecordVoiceOver
+    SoundType.NIGHT_TERROR -> Icons.Rounded.Campaign
+    SoundType.SNORING -> Icons.Rounded.Waves
+    SoundType.LAUGHTER -> Icons.Rounded.SentimentVerySatisfied
+    SoundType.CRYING -> Icons.Rounded.SentimentVeryDissatisfied
+    SoundType.COUGH -> Icons.Rounded.Sick
+    SoundType.BREATHING -> Icons.Rounded.Air
+    SoundType.NOISE -> Icons.Rounded.GraphicEq
+    SoundType.MEDIA -> Icons.Rounded.Tv
 }

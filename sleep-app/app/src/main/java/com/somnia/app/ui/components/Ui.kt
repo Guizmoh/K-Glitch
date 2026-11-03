@@ -54,12 +54,15 @@ import com.somnia.app.ui.theme.Badge
 import com.somnia.app.ui.theme.CardStroke
 import com.somnia.app.ui.theme.NightCard
 import com.somnia.app.ui.theme.TextSoft
+import com.somnia.app.ui.theme.Themes
 
 private val CardShape = RoundedCornerShape(16.dp)
-private val ON_GOLD = Color(0xFF151A33)
+private val ON_GOLD get() = Themes.cur.onAccent
 /** Reflet de la vitre : plus clair en haut. */
-private val GlassSheen = Brush.verticalGradient(listOf(Color(0x24FFFFFF), Color(0x08FFFFFF)))
-private val GlassEdge = Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x1AFFFFFF)))
+private val GlassSheen get() = if (Themes.cur.dark) Brush.verticalGradient(listOf(Color(0x24FFFFFF), Color(0x08FFFFFF)))
+    else Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x14FFFFFF)))
+private val GlassEdge get() = if (Themes.cur.dark) Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x1AFFFFFF)))
+    else Brush.verticalGradient(listOf(Color(0xE6FFFFFF), Color(0x66FFFFFF)))
 
 /** Effet vitre teintée : teinte bleu nuit translucide + reflet + liseré clair. */
 fun Modifier.tintedGlass(shape: androidx.compose.ui.graphics.Shape = CardShape): Modifier =
@@ -184,7 +187,7 @@ fun GradientButton(text: String, modifier: Modifier = Modifier, brush: Brush = S
 @Composable
 fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
     // Bleu clair à 50 % d'opacité : se fond dans le décor, reste lisible
-    val cream = Color(0xFFD9E4FA).copy(alpha = 0.66f)
+    val cream = Themes.cur.bubble
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Canvas(Modifier.size(width = 22.dp, height = 11.dp)) {
             val p = androidx.compose.ui.graphics.Path().apply {
@@ -195,7 +198,7 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
         Text(
             text,
             Modifier.clip(RoundedCornerShape(18.dp)).background(cream).padding(horizontal = 18.dp, vertical = 12.dp),
-            color = Color(0xFF14204A),
+            color = Themes.cur.bubbleText,
             style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
@@ -228,13 +231,13 @@ fun Button3D(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(modifier.fillMaxWidth().height(80.dp)) {
         // ombre portée + tranche du bouton
         Box(Modifier.fillMaxWidth().height(73.dp).align(Alignment.BottomCenter)
-            .androidxShadow(shape).clip(shape).background(Color(0xFF4C79BF)))
+            .androidxShadow(shape).clip(shape).background(Themes.cur.buttonEdge))
         // face du bouton
         Box(
             Modifier.fillMaxWidth().height(73.dp).padding(bottom = 0.dp)
                 .androidxOffset(7.dp - depth)
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFFB9DDF8), Color(0xFF86B8EC))))
+                .background(Brush.verticalGradient(listOf(Themes.cur.buttonTop, Themes.cur.buttonBottom)))
                 .border(1.5.dp, Brush.verticalGradient(listOf(Color(0xCCFFFFFF), Color(0x00FFFFFF))), shape)
                 .clickable(src, indication = null, onClick = onClick),
             contentAlignment = Alignment.Center,
@@ -242,7 +245,7 @@ fun Button3D(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
             // reflet en haut
             Box(Modifier.align(Alignment.TopCenter).padding(horizontal = 18.dp, vertical = 6.dp).fillMaxWidth().height(18.dp)
                 .clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF)))))
-            Text(text, color = Color(0xFF13305F), fontSize = 27.sp, fontFamily = com.somnia.app.ui.theme.ButtonFont, fontWeight = FontWeight.Bold)
+            Text(text, color = Themes.cur.buttonText, fontSize = 27.sp, fontFamily = com.somnia.app.ui.theme.ButtonFont, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -258,7 +261,7 @@ fun AppTitle(subtitle: String? = null) {
         Text(
             "Police du Dodo",
             fontFamily = com.somnia.app.ui.theme.CozyFont, fontWeight = FontWeight.Bold, fontSize = 38.sp,
-            color = Color(0xFFF8EFDC),
+            color = Themes.cur.text,
             style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color(0x660A1030), Offset(0f, 4f), 8f)),
         )
         if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = TextSoft)
@@ -291,7 +294,7 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
             val sel = i == selected
             Box(
                 Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
-                    .background(if (sel) Color(0x33FFFFFF) else Color.Transparent)
+                    .background(if (sel) Themes.cur.accent.copy(alpha = 0.18f) else Color.Transparent)
                     .then(if (sel) Modifier.border(1.dp, Badge.copy(alpha = 0.5f), RoundedCornerShape(10.dp)) else Modifier)
                     .clickable { onSelect(i) }.padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center,

@@ -42,7 +42,7 @@ class AlarmActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SomniaTheme {
+            SomniaTheme(forceNight = true) {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.somnia.app.ui.LocalAgent provides com.somnia.app.data.SettingsRepository.get(this).settings.value.agent,
                 ) {

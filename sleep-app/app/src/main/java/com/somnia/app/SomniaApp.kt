@@ -11,6 +11,7 @@ import com.somnia.app.data.SettingsRepository
 class SomniaApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.somnia.app.ui.theme.Themes.init(this)
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CH_TRACKING, "Suivi du sommeil", NotificationManager.IMPORTANCE_LOW).apply {

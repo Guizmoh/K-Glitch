@@ -190,7 +190,7 @@ private fun EnrollDialog(micKey: String, onClose: () -> Unit) {
                 Spacer(Modifier.height(10.dp))
                 Text(
                     "« $ENROLL_TEXT »",
-                    Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x22FFFFFF)).padding(12.dp),
+                    Modifier.clip(RoundedCornerShape(12.dp)).background(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.1f)).padding(12.dp),
                     style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
                 )
                 if (step == 1) {

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.LocalPolice
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SaveAlt
@@ -44,7 +45,7 @@ internal val SYMBOL_ICONS: Map<String, ImageVector> = mapOf(
     "🔔" to Icons.Rounded.NotificationsActive, "🛏️" to Icons.Rounded.Hotel, "🔒" to Icons.Rounded.Lock,
     "📝" to Icons.Rounded.EditNote, "🚨" to Icons.Rounded.GraphicEq, "🎚️" to Icons.Rounded.Equalizer,
     "⭐" to Icons.Rounded.Star, "🔎" to Icons.Rounded.Insights, "⏳" to Icons.Rounded.HourglassEmpty,
-    "💡" to Icons.Rounded.Lightbulb, "📺" to Icons.Rounded.Tv, "🎤" to Icons.Rounded.RecordVoiceOver, "❓" to Icons.Rounded.HelpOutline,
+    "💡" to Icons.Rounded.Lightbulb, "🎨" to Icons.Rounded.Palette, "📺" to Icons.Rounded.Tv, "🎤" to Icons.Rounded.RecordVoiceOver, "❓" to Icons.Rounded.HelpOutline,
     "🗣️" to Icons.Rounded.RecordVoiceOver, "😱" to Icons.Rounded.Campaign, "😂" to Icons.Rounded.SentimentVerySatisfied,
     "😢" to Icons.Rounded.SentimentVeryDissatisfied, "🤧" to Icons.Rounded.Sick, "💨" to Icons.Rounded.Air,
 )

@@ -9,6 +9,7 @@ Police du Dodo écoute la nuit et **n'enregistre que les sons qui se détachent 
 Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 
 ## Interface
+- **3 thèmes** (Réglages > Thème) : **Violet** (dégradé pastel lavande → rose, thème de base), **Rose pâle** et **Bleu nuit** (le thème d'origine). L'écran de nuit et le réveil restent toujours sombres.
 - **Tuto au premier lancement** : un diaporama animé de 6 pages (« Bonsoir ma Moman », j'écoute la nuit, je reconnais les sons, voix isolée, comment ça marche, réveil). On peut le revoir depuis Réglages > Aide.
 - **Logo animé** : le policier a les yeux ouverts et cligne avant la nuit. Il s'endort avec des « Zzz » pendant la surveillance, puis ouvre les yeux quand le réveil sonne. Le dessin vient d'une seule source, `tools/logo.py`, qui génère l'icône et le code.
 - **Ce soir** : un gros bouton « Commencer », le rapport du soir (caféine, sport, écrans…) et le score de la dernière nuit.

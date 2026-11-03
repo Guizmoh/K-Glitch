@@ -18,6 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
@@ -50,6 +55,31 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
     Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         ScreenHeader("Réglages", "Simple par défaut, précis si besoin")
         if (live != null) Text("Les changements s'appliqueront à la prochaine nuit.", color = Badge, modifier = Modifier.padding(bottom = 6.dp))
+
+        GlassCard(title = "Thème", icon = "🎨") {
+            val chosen = com.somnia.app.ui.theme.Themes.chosen
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                com.somnia.app.ui.theme.Themes.ALL.forEach { t ->
+                    val sel = t.id == chosen.id
+                    Column(
+                        Modifier.weight(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                            .clickable { com.somnia.app.ui.theme.Themes.set(ctx, t) }
+                            .border(if (sel) 2.dp else 1.dp, if (sel) com.somnia.app.ui.theme.Badge else com.somnia.app.ui.theme.CardStroke, androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                            .padding(6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            Modifier.fillMaxWidth().height(54.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(t.bgTop, t.bgMid, t.bgBottom))),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(Modifier.size(width = 34.dp, height = 12.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).background(t.accent))
+                        }
+                        Text(t.name, Modifier.padding(top = 6.dp), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
 
         GlassCard(title = "Que doit-on capter ?", icon = "🎙️") {
             Segmented(CapturePreset.entries.map { it.label }, preset?.ordinal ?: -1) { i ->

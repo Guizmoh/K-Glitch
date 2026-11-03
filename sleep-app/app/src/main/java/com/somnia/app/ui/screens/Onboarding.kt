@@ -268,7 +268,7 @@ private fun WaveLine(noise: Float, scan: Float, t: Float) {
             prev?.let { drawLine(if (clean) Good else Color(0xFF9E9EB8), it, p, 2.dp.toPx(), StrokeCap.Round) }
             prev = p
         }
-        if (noise == 0f && scan < 1f) drawLine(Color.White, Offset(scan * size.width, 0f), Offset(scan * size.width, size.height), 1.5.dp.toPx())
+        if (noise == 0f && scan < 1f) drawLine(com.somnia.app.ui.theme.Themes.cur.text, Offset(scan * size.width, 0f), Offset(scan * size.width, size.height), 1.5.dp.toPx())
     }
 }
 
@@ -291,7 +291,7 @@ private fun StepsArt(t: Float) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.size(34.dp).clip(CircleShape).background(PoliceBlue), contentAlignment = Alignment.Center) {
-                    Text("${i + 1}", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("${i + 1}", fontWeight = FontWeight.Bold, color = com.somnia.app.ui.theme.Themes.cur.onAccent)
                 }
                 Text(" $e ", fontSize = 20.sp)
                 Text(s, style = MaterialTheme.typography.bodyMedium)
@@ -312,7 +312,7 @@ private fun WakeArt(t: Float) {
                 val st = 11.dp.toPx()
                 val tl = Offset(st / 2, st / 2)
                 val sz = Size(size.width - st, size.height - st)
-                drawArc(Color.White.copy(alpha = 0.1f), 135f, 270f, false, tl, sz, style = Stroke(st, cap = StrokeCap.Round))
+                drawArc(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.1f), 135f, 270f, false, tl, sz, style = Stroke(st, cap = StrokeCap.Round))
                 if (score > 0.01f) drawArc(Good, 135f, 270f * 0.82f * score, false, tl, sz, style = Stroke(st, cap = StrokeCap.Round))
             }
             Text("${(82 * score).toInt()}", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Good)

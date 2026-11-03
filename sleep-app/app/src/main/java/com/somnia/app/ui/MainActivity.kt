@@ -71,6 +71,14 @@ class MainActivity : ComponentActivity() {
                 val prefs = remember { getSharedPreferences("app", MODE_PRIVATE) }
                 var showTuto by remember { mutableStateOf(!prefs.getBoolean("tuto_done", false)) }
                 val settingsNow by vm.settings.collectAsState()
+                // Icônes de la barre d'état : claires sur thème sombre, sombres sur thème clair
+                val darkTheme = com.somnia.app.ui.theme.Themes.chosen.dark
+                androidx.compose.runtime.LaunchedEffect(darkTheme) {
+                    enableEdgeToEdge(
+                        statusBarStyle = if (darkTheme) SystemBarStyle.dark(AColor.TRANSPARENT) else SystemBarStyle.light(AColor.TRANSPARENT, AColor.TRANSPARENT),
+                        navigationBarStyle = if (darkTheme) SystemBarStyle.dark(AColor.TRANSPARENT) else SystemBarStyle.light(AColor.TRANSPARENT, AColor.TRANSPARENT),
+                    )
+                }
                 androidx.compose.runtime.CompositionLocalProvider(
                     LocalAgent provides settingsNow.agent,
                     LocalAgentToggle provides { Agent.next(this@MainActivity) },
@@ -92,7 +100,7 @@ class MainActivity : ComponentActivity() {
                         modifier = androidx.compose.ui.Modifier.widthIn(max = 600.dp),
                         containerColor = Color.Transparent,
                         bottomBar = {
-                            NavigationBar(containerColor = Color(0xE01C2A5E), tonalElevation = 0.dp) {
+                            NavigationBar(containerColor = com.somnia.app.ui.theme.Themes.cur.nav, tonalElevation = 0.dp) {
                                 tabs.forEach { (r, label, ico) ->
                                     val selected = route == r || (r == "history" && route?.startsWith("session") == true)
                                     NavigationBarItem(
@@ -107,7 +115,7 @@ class MainActivity : ComponentActivity() {
                                         icon = { androidx.compose.material3.Icon(ico, null) },
                                         label = { Text(label) },
                                         colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = Color(0x1FE6C47A),
+                                            indicatorColor = com.somnia.app.ui.theme.Badge.copy(alpha = 0.16f),
                                             selectedIconColor = com.somnia.app.ui.theme.Badge,
                                             selectedTextColor = com.somnia.app.ui.theme.Badge,
                                             unselectedIconColor = TextSoft,

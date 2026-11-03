@@ -177,7 +177,12 @@ fun TonightIdle(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp = 0.dp, previewFrame: Int? = null, onStop: () -> Unit) {
+fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp = 0.dp, previewFrame: Int? = null, onStop: () -> Unit) =
+    com.somnia.app.ui.theme.ForceNight { TonightLiveContent(l, now, topInset, previewFrame, onStop) }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp, previewFrame: Int?, onStop: () -> Unit) {
     Column(
         Modifier.verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = topInset),
         horizontalAlignment = Alignment.CenterHorizontally,
