@@ -12,6 +12,8 @@ import com.somnia.app.ui.screens.TonightIdle
 import com.somnia.app.ui.screens.TonightLive
 import com.somnia.app.ui.theme.SomniaTheme
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
@@ -199,5 +201,20 @@ class ScreenshotTest {
                 }
             }
         }
+    }
+
+    @Test fun eventCardPreview() = paparazzi.snapshot {
+        SomniaTheme { NightBackground {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(20.dp)) {
+                com.somnia.app.ui.components.GlassCard(title = "Paroles · 23:23", icon = "🗣️") {
+                    com.somnia.app.ui.components.Segmented(listOf("Original", "Voix claire"), 1) {}
+                    androidx.compose.material3.Text("Voix claire : le bruit de fond (ventilateur, rue…) est retiré et le volume remonté.", style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = com.somnia.app.ui.theme.TextSoft)
+                    androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End) {
+                        androidx.compose.material3.TextButton({}) { androidx.compose.material3.Text("Corriger") }
+                        androidx.compose.material3.TextButton({}) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Share, null, androidx.compose.ui.Modifier.size(16.dp)); androidx.compose.material3.Text(" Partager") }
+                    }
+                }
+            }
+        } }
     }
 }

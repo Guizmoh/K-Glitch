@@ -74,15 +74,26 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
         dao.deleteSession(s)
     }
 
-    fun shareAudio(context: Context, path: String) {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", File(path))
-        context.startActivity(
-            Intent.createChooser(
-                Intent(Intent.ACTION_SEND).setType("audio/wav").putExtra(Intent.EXTRA_STREAM, uri)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
-                "Partager l'enregistrement",
-            ),
-        )
+    /**
+     * Partage un son (mail, WhatsApp, MMS…). Le fichier est copié avec un nom lisible,
+     * et le texte transcrit (s'il existe) est joint au message.
+     */
+    fun shareAudio(context: Context, e: SoundEventEntity, path: String, enhanced: Boolean) {
+        val type = com.somnia.app.audio.SoundType.fromName(e.type)
+        val name = "Police-du-Dodo_${type.label.substringBefore(' ').replace("/", "")}_${Fmt.time(e.timestamp).replace(":", "h")}" +
+            (if (enhanced) "_voix-claire" else "") + ".wav"
+        val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+        val copy = File(dir, name).also { File(path).copyTo(it, overwrite = true) }
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", copy)
+        val text = buildString {
+            append("${type.label} à ${Fmt.time(e.timestamp)} (${Fmt.seconds(e.durationMs)}) – Police du Dodo")
+            e.transcript?.let { append("\n« $it »") }
+        }
+        val send = Intent(Intent.ACTION_SEND).setType("audio/wav")
+            .putExtra(Intent.EXTRA_STREAM, uri).putExtra(Intent.EXTRA_TEXT, text).putExtra(Intent.EXTRA_SUBJECT, "Enregistrement de la nuit")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        send.clipData = android.content.ClipData.newRawUri(name, uri)
+        context.startActivity(Intent.createChooser(send, "Partager par mail, WhatsApp, MMS…").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     /** Export CSV de toutes les nuits et de tous les événements. */

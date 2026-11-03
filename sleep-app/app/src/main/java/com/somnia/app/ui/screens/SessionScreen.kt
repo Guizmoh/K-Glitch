@@ -197,7 +197,7 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         if (shown.isEmpty()) item {
             GlassCard { Text("Rien à signaler, nuit calme !", color = TextSoft) }
         }
-        items(shown, key = { it.id }) { e -> EventCard(e, vm, onShare = { p -> vm.shareAudio(ctx, p) }) }
+        items(shown, key = { it.id }) { e -> EventCard(e, vm) }
 
         // --- Au réveil ---
         item {
@@ -256,7 +256,7 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
 }
 
 @Composable
-private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String) -> Unit) {
+private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel) {
     val t = SoundType.fromName(e.type)
     GlassCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -327,12 +327,17 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
                     "  " + fmtMs(if (current) AudioPlayer.positionMs else 0) + " / " + fmtMs(if (current && AudioPlayer.durationMs > 0) AudioPlayer.durationMs else e.durationMs.toInt()),
                     style = MaterialTheme.typography.labelLarge, color = TextSoft,
                 )
-                Spacer(Modifier.weight(1f))
-                if (e.enhancedPath != null) {
-                    ToggleChip(if (useEnhanced) "Voix isolée" else "Original", useEnhanced) {
-                        AudioPlayer.stop(); useEnhanced = !useEnhanced
-                    }
+            }
+            if (e.enhancedPath != null) {
+                Spacer(Modifier.height(10.dp))
+                com.somnia.app.ui.components.Segmented(listOf("Original", "Voix claire"), if (useEnhanced) 1 else 0) {
+                    AudioPlayer.stop(); useEnhanced = it == 1
                 }
+                Text(
+                    if (useEnhanced) "Voix claire : le bruit de fond (ventilateur, rue…) est retiré et le volume remonté."
+                    else "Original : le son tel qu'il a été enregistré.",
+                    style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp),
+                )
             }
         } else {
             Text("Audio non conservé", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp))
@@ -345,7 +350,10 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, onShare: (String
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
             if (e.userCorrected) Text("corrigé ", style = MaterialTheme.typography.labelSmall, color = TextSoft)
             TextButton(onClick = { correcting = true }) { Text("Corriger") }
-            (e.enhancedPath ?: e.audioPath)?.let { p -> IconButton(onClick = { onShare(p) }) { Icon(Icons.Filled.Share, "Partager", tint = TextSoft) } }
+            if (path != null) TextButton(onClick = { vm.shareAudio(ctx, e, path, useEnhanced && e.enhancedPath != null) }) {
+                Icon(Icons.Filled.Share, null, Modifier.size(16.dp))
+                Text(" Partager")
+            }
             IconButton(onClick = { vm.deleteEvent(e) }) { Icon(Icons.Filled.Delete, "Supprimer", tint = TextSoft) }
         }
     }
