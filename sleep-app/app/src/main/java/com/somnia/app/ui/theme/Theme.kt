@@ -29,6 +29,12 @@ val ButtonFont = androidx.compose.ui.text.font.FontFamily(
     androidx.compose.ui.text.font.Font(com.somnia.app.R.font.quicksand_bold, FontWeight.Bold),
 )
 
+/** Police douce et très lisible (Nunito, licence OFL) pour l'écran de nuit. */
+val NightFont = androidx.compose.ui.text.font.FontFamily(
+    androidx.compose.ui.text.font.Font(com.somnia.app.R.font.nunito_semibold, FontWeight.SemiBold),
+    androidx.compose.ui.text.font.Font(com.somnia.app.R.font.nunito_extrabold, FontWeight.ExtraBold),
+)
+
 // Palette « Police du Dodo » : bleu nuit, bleu police, or de l'insigne.
 // Couleurs du thème actif (voir AppThemes.kt) : lues à chaque affichage.
 val Night get() = Themes.cur.bgBottom

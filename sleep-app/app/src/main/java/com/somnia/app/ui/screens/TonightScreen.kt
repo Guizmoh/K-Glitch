@@ -6,6 +6,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -186,29 +190,41 @@ fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp =
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp, previewFrame: Int?, onStop: () -> Unit) {
+    val nf = com.somnia.app.ui.theme.NightFont
     // L'écran tient en entier : le bouton « Je me réveille » se pose dans le creux
-    // entre les feuillages du bas (~85 % de la hauteur), le reste au-dessus.
+    // entre les feuillages du bas (~80 % de la hauteur), le reste au-dessus.
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
         Column(
             Modifier.verticalScroll(rememberScrollState()).heightIn(min = h)
-                .padding(start = 20.dp, end = 20.dp, top = topInset, bottom = h * 0.155f),
+                .padding(start = 20.dp, end = 20.dp, top = topInset, bottom = h * 0.115f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                ScreenHeader("Surveillance en cours", "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone")
-                ListeningOrb(l.levelDb, l.noiseFloorDb, l.capturing, orbSize = 180.dp) {
+                // L'agent endormi (animation), puis les textes centrés
+                com.somnia.app.ui.components.NightAgentAnimation(118.dp, frame = previewFrame)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Surveillance en cours", fontFamily = nf, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp, color = Color.White,
+                    style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA050A20), androidx.compose.ui.geometry.Offset(0f, 3f), 8f)),
+                )
+                Text(
+                    "Depuis ${Fmt.time(l.startTime)} · tout reste sur le téléphone", fontFamily = nf, fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp, color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(10.dp))
+                ListeningOrb(l.levelDb, l.noiseFloorDb, l.capturing, orbSize = 132.dp) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        com.somnia.app.ui.components.NightAgentAnimation(96.dp, frame = previewFrame)
-                        Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontFamily = nf, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
                         Text(
                             when {
                                 now < l.detectionStartsAt -> "Endormissement… ${((l.detectionStartsAt - now) / 60_000) + 1} min"
                                 l.capturing -> "J'enregistre"
                                 else -> "J'écoute…"
                             },
-                            color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall,
+                            fontFamily = nf, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.85f), textAlign = TextAlign.Center,
                         )
                     }
                 }
@@ -235,10 +251,17 @@ private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compo
                     )
                 }
             }
-            GradientButton(
-                "Je me réveille", Modifier.padding(top = 10.dp).width(172.dp),
-                brush = SunriseBrush, textColor = Color(0xFF2A1A00), onClick = onStop,
-            )
+            // « Je me réveille » : vitre crème translucide, assez large pour que les feuilles passent devant ses bords
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+            Box(
+                Modifier.padding(top = 10.dp).width(286.dp).height(68.dp).clip(shape)
+                    .background(Color(0xA6F6EBD3))
+                    .border(1.5.dp, Color(0xB3FFFFFF), shape)
+                    .clickable(onClick = onStop),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Je me réveille", fontFamily = nf, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = Color(0xFF2A1A00))
+            }
         }
     }
 }
