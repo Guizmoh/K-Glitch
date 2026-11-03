@@ -22,6 +22,11 @@ data class LiveState(
     val movementLastMin: Float = 0f,
     /** Micro réellement utilisé (type, emplacement). */
     val micInfo: String = "",
+    /** Télé / radio repérée en ce moment (traitée comme bruit de fond). */
+    val tvOn: Boolean = false,
+    /** Sons ignorés : télé / musique, et voix qui ne sont pas la vôtre. */
+    val ignoredMedia: Int = 0,
+    val ignoredVoices: Int = 0,
 )
 
 object TrackingState {

@@ -99,6 +99,8 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
 
         TranscriptionCard()
 
+        TvAndVoiceCard(s, { t -> vm.updateSettings(t) }, live != null)
+
         ExpandableCard("Réglage fin par type de son", "🎛️", "Sensibilité du micro et intensité pour rires, pleurs, cris…") {
             Text("Micro : ${s.micSensitivity}/10", style = MaterialTheme.typography.titleSmall)
             Text("Écart nécessaire avec le bruit de fond : +${"%.0f".format(23f - 1.9f * s.micSensitivity)} dB", style = MaterialTheme.typography.bodySmall, color = TextSoft)
@@ -107,7 +109,7 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
                 "Pour chaque type : plus c'est haut, plus les sons discrets ou peu typiques sont retenus.",
                 style = MaterialTheme.typography.bodySmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp),
             )
-            SoundType.entries.filter { it != SoundType.NOISE }.forEach { t ->
+            SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA }.forEach { t ->
                 val on = t in s.recordTypes
                 Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(

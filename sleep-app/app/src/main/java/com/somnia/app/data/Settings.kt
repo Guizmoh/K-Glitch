@@ -7,6 +7,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 data class Settings(
+    /** Mode télé : repère une télé / radio allumée et la traite comme bruit de fond. */
+    val tvMode: Boolean = true,
+    /** Ne garder que les paroles qui ressemblent à la voix enregistrée (si empreinte faite). */
+    val onlyMyVoice: Boolean = true,
+    /** Ressemblance minimale avec l'empreinte vocale (0..1). */
+    val voiceMatch: Float = 0.45f,
     /** Micro utilisé (voir MicChoice) : auto, bottom, back, all, dev:ID. */
     val micSource: String = "auto",
     /** Personnage : 0 = l'agent moustachu, 1 = le gros agent au nez rouge. */
@@ -16,7 +22,7 @@ data class Settings(
     /** Intensité de captation par catégorie 1..10 (10 = capte les moindres signes). */
     val typeSensitivity: Map<SoundType, Int> = defaultTypeSensitivity(),
     /** Catégories dont on conserve l'enregistrement audio. */
-    val recordTypes: Set<SoundType> = SoundType.entries.toSet() - SoundType.NOISE,
+    val recordTypes: Set<SoundType> = SoundType.entries.toSet() - SoundType.NOISE - SoundType.MEDIA,
     /** Créer automatiquement une version « voix isolée » des paroles, cris, rires, pleurs. */
     val enhanceVoice: Boolean = true,
     /** Ne commencer la détection qu'après N minutes (temps d'endormissement). */
@@ -90,7 +96,10 @@ class SettingsRepository private constructor(context: Context) {
             micSensitivity = prefs.getInt("mic", d.micSensitivity),
             micSource = prefs.getString("mic_source", d.micSource) ?: "auto",
             agent = prefs.getInt("agent", d.agent),
-            typeSensitivity = SoundType.entries.filter { it != SoundType.NOISE }.associateWith {
+            tvMode = prefs.getBoolean("tv_mode", d.tvMode),
+            onlyMyVoice = prefs.getBoolean("only_my_voice", d.onlyMyVoice),
+            voiceMatch = prefs.getFloat("voice_match", d.voiceMatch),
+            typeSensitivity = SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA }.associateWith {
                 prefs.getInt("sens_${it.name}", d.typeSensitivity[it] ?: 5)
             },
             recordTypes = prefs.getStringSet("record", null)?.map { SoundType.fromName(it) }?.toSet() ?: d.recordTypes,
@@ -114,6 +123,9 @@ class SettingsRepository private constructor(context: Context) {
             putInt("mic", s.micSensitivity)
             putString("mic_source", s.micSource)
             putInt("agent", s.agent)
+            putBoolean("tv_mode", s.tvMode)
+            putBoolean("only_my_voice", s.onlyMyVoice)
+            putFloat("voice_match", s.voiceMatch)
             s.typeSensitivity.forEach { (t, v) -> putInt("sens_${t.name}", v) }
             putStringSet("record", s.recordTypes.map { it.name }.toSet())
             putBoolean("enhance", s.enhanceVoice)

@@ -162,6 +162,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
             val record = rec.record
             val raw = ShortArray(AudioMath.FRAME * rec.channels)
             val detector = SoundEventDetector().apply { setSensitivity(settings.micSensitivity) }
+            val tv = com.somnia.app.audio.TvDetector()
             val delayUntil = startTime + settings.startDelayMin * 60_000L
             record.startRecording()
             TrackingState.live.value = TrackingState.live.value?.copy(micInfo = rec.describe())
@@ -180,6 +181,13 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         var sum = 0
                         for (c in 0 until rec.channels) sum += raw[i * rec.channels + c]
                         (sum / rec.channels).toShort()
+                    }
+                    if (settings.tvMode) {
+                        tv.process(AudioMath.rmsDb(frame), detector.noiseFloorDb)
+                        detector.mediaLevelDb = if (tv.isOn) tv.tvLevelDb else -96f
+                        if (tv.isOn != (TrackingState.live.value?.tvOn ?: false)) {
+                            TrackingState.live.value = TrackingState.live.value?.copy(tvOn = tv.isOn)
+                        }
                     }
                     val ev = detector.process(frame)
                     synchronized(lock) {
@@ -211,9 +219,24 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 val cls = ec.classify(ev.pcm)
                 val ts = startTime + ev.startOffsetMs
                 val keepAudio = cls.type in settings.recordTypes
+                if (cls.type == SoundType.MEDIA && SoundType.MEDIA !in settings.recordTypes) {
+                    TrackingState.live.value = TrackingState.live.value?.let { it.copy(ignoredMedia = it.ignoredMedia + 1) }
+                    continue // télé / musique : bruit de fond
+                }
                 if (cls.type == SoundType.NOISE && SoundType.NOISE !in settings.recordTypes) {
                     synchronized(lock) { minuteEvents++ }
                     continue // bruit non identifié : on ne garde rien
+                }
+                // Paroles : on ne garde que VOTRE voix (si l'empreinte vocale est faite)
+                if (cls.type == SoundType.SPEECH && settings.onlyMyVoice) {
+                    val print = com.somnia.app.transcribe.VoiceId.voiceprint(this@SleepTrackingService)
+                    if (print != null) {
+                        val v = runCatching { com.somnia.app.transcribe.VoiceId.vector(this@SleepTrackingService, ev.pcm) }.getOrNull()
+                        if (v != null && com.somnia.app.transcribe.VoiceId.cosine(print, v) < settings.voiceMatch) {
+                            TrackingState.live.value = TrackingState.live.value?.let { it.copy(ignoredVoices = it.ignoredVoices + 1) }
+                            continue // une autre voix (télé, radio, autre personne)
+                        }
+                    }
                 }
                 var audio: String? = null
                 var enhanced: String? = null

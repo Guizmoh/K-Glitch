@@ -200,6 +200,14 @@ fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp =
         }
 
         l.alarmTarget?.let { Pill("⏰ Réveil au plus tard à ${Fmt.time(it)}", Badge) }
+        if (l.tvOn || l.ignoredMedia + l.ignoredVoices > 0) {
+            Spacer(Modifier.height(6.dp))
+            Pill(
+                "📺 " + (if (l.tvOn) "Télé détectée : ignorée" else "Télé éteinte") +
+                    (if (l.ignoredMedia + l.ignoredVoices > 0) " · ${l.ignoredMedia + l.ignoredVoices} son(s) ignoré(s)" else ""),
+                com.somnia.app.ui.theme.TextSoft,
+            )
+        }
         Spacer(Modifier.height(8.dp))
 
         GlassCard(title = "Sons relevés : ${l.eventCount}", icon = "🚨") {

@@ -57,6 +57,11 @@ class YamnetClassifier private constructor(private val classifier: AudioClassifi
             listOf("Cough", "Sneeze", "Throat clearing").forEach { put(it, SoundType.COUGH) }
             listOf("Breathing", "Wheeze", "Gasp", "Pant", "Sigh", "Groan", "Grunt")
                 .forEach { put(it, SoundType.BREATHING) }
+            // Télé, radio, musique : sons « de fond » à ignorer
+            listOf(
+                "Television", "Radio", "Music", "Musical instrument", "Pop music", "Song", "Singing",
+                "Background music", "Theme music", "Soundtrack music", "Video game music", "Speech synthesizer", "Applause",
+            ).forEach { put(it, SoundType.MEDIA) }
         }
 
         fun create(context: Context): YamnetClassifier? = runCatching {

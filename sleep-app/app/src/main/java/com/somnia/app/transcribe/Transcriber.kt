@@ -81,10 +81,13 @@ object Transcriber {
         _state.value = State.Missing
     }
 
+    /** Modèle de langue partagé (transcription + empreinte vocale). */
+    fun loadModel(ctx: Context): Model = synchronized(this) { model ?: Model(modelDir(ctx).absolutePath).also { model = it } }
+
     /** Texte reconnu dans un fichier WAV 16 kHz mono, ou null si rien / modèle absent. */
     suspend fun transcribe(ctx: Context, wavPath: String): String? = withContext(Dispatchers.Default) {
         if (!isReady(ctx)) return@withContext null
-        val m = synchronized(this@Transcriber) { model ?: Model(modelDir(ctx).absolutePath).also { model = it } }
+        val m = loadModel(ctx)
         val pcm = WavFile.read(File(wavPath))
         Recognizer(m, 16000f).use { rec ->
             var i = 0

@@ -189,4 +189,15 @@ class ScreenshotTest {
             }
         }
     }
+
+    @Test fun tvVoiceCard() = paparazzi.snapshot {
+        SomniaTheme {
+            NightBackground {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(20.dp)) {
+                    com.somnia.app.ui.screens.TvAndVoiceCard(Settings(), {}, false)
+                    com.somnia.app.ui.components.Pill("📺 Télé détectée : ignorée · 12 son(s) ignoré(s)", com.somnia.app.ui.theme.TextSoft)
+                }
+            }
+        }
+    }
 }

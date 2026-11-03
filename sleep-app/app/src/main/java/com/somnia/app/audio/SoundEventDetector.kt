@@ -54,7 +54,11 @@ class SoundEventDetector(
     var lastDb = -96f
         private set
     val noiseFloorDb get() = noiseTracker.floorDb
-    val threshold get() = maxOf(noiseTracker.floorDb + marginDb, minLevelDb)
+    /** Niveau d'une télé repérée (sinon très bas) : le seuil passe au-dessus. */
+    var mediaLevelDb: Float = -96f
+    /** Marge au-dessus de la télé : une voix dans la chambre doit la dépasser nettement. */
+    var mediaMarginDb: Float = 8f
+    val threshold get() = maxOf(noiseTracker.floorDb + marginDb, minLevelDb, mediaLevelDb + mediaMarginDb)
     val isRecording get() = active
 
     fun setSensitivity(level: Int) {

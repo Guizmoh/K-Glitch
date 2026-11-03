@@ -51,6 +51,10 @@ class EventClassifier(
     }
 
     fun decide(agg: SoundScores): Classification {
+        // Télé / musique : si c'est le score le plus fort, le son est considéré comme du fond
+        val media = agg[SoundType.MEDIA] ?: 0f
+        val bestOther = agg.filterKeys { it != SoundType.MEDIA }.maxOfOrNull { it.value } ?: 0f
+        if (media >= 0.3f && media >= bestOther) return Classification(SoundType.MEDIA, media, agg)
         // Ordre de priorité si deux catégories passent le seuil avec des
         // scores proches : un cri ou des pleurs priment sur la parole.
         val priority = listOf(

@@ -9,6 +9,7 @@ enum class SoundType(val label: String, val emoji: String) {
     CRYING("Pleurs", "😢"),
     COUGH("Toux / éternuement", "🤧"),
     BREATHING("Respiration bruyante", "💨"),
+    MEDIA("Télé / musique", "📺"),
     NOISE("Autre bruit", "🔊");
 
     companion object {

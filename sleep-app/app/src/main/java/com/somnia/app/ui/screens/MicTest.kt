@@ -77,6 +77,8 @@ fun MicTestDialog(settings: Settings, label: String, onSensitivity: (Int) -> Uni
     var sens by remember { mutableFloatStateOf(settings.micSensitivity.toFloat()) }
     val results = remember { mutableStateListOf<TestResult>() }
     val detector = remember { SoundEventDetector().apply { setSensitivity(settings.micSensitivity) } }
+    val tv = remember { com.somnia.app.audio.TvDetector() }
+    var tvOn by remember { mutableStateOf(false) }
 
     LaunchedEffect(granted) {
         if (!granted) { ask.launch(Manifest.permission.RECORD_AUDIO); return@LaunchedEffect }
@@ -88,9 +90,20 @@ fun MicTestDialog(settings: Settings, label: String, onSensitivity: (Int) -> Uni
             try {
                 for (ev in events) {
                     val cls = ec.classify(ev.pcm)
-                    val kept = cls.type != SoundType.NOISE && cls.type in settings.recordTypes
+                    var kept = cls.type != SoundType.NOISE && cls.type in settings.recordTypes
                     val secs = "%.1f s".format(ev.durationMs / 1000f)
-                    val text = if (cls.type == SoundType.NOISE) "Bruit non identifié · $secs" else "${cls.type.label} · $secs · ${(cls.confidence * 100).roundToInt()} %"
+                    var text = if (cls.type == SoundType.NOISE) "Bruit non identifié · $secs" else "${cls.type.label} · $secs · ${(cls.confidence * 100).roundToInt()} %"
+                    // Paroles : est-ce votre voix ?
+                    val print = com.somnia.app.transcribe.VoiceId.voiceprint(ctx)
+                    if (cls.type == SoundType.SPEECH && print != null && settings.onlyMyVoice) {
+                        val v = runCatching { com.somnia.app.transcribe.VoiceId.vector(ctx, ev.pcm) }.getOrNull()
+                        if (v != null) {
+                            val sim = com.somnia.app.transcribe.VoiceId.cosine(print, v)
+                            val mine = sim >= settings.voiceMatch
+                            text = (if (mine) "Votre voix" else "Autre voix (télé ?)") + " · $secs · ressemblance ${(sim * 100).roundToInt()} %"
+                            kept = kept && mine
+                        }
+                    }
                     withContext(Dispatchers.Main) {
                         results.add(0, TestResult(text, kept, cls.type.color()))
                         while (results.size > 5) results.removeAt(results.lastIndex)
@@ -117,6 +130,11 @@ fun MicTestDialog(settings: Settings, label: String, onSensitivity: (Int) -> Uni
                     val frame = if (rec.channels == 1) raw.copyOf() else ShortArray(AudioMath.FRAME) { i ->
                         var sum = 0; for (c in 0 until rec.channels) sum += raw[i * rec.channels + c]; (sum / rec.channels).toShort()
                     }
+                    if (settings.tvMode) {
+                        tv.process(AudioMath.rmsDb(frame), detector.noiseFloorDb)
+                        detector.mediaLevelDb = if (tv.isOn) tv.tvLevelDb else -96f
+                        tvOn = tv.isOn
+                    }
                     detector.process(frame)?.let { events.trySend(it) }
                     if (++tick % 2 == 0) {
                         level = detector.lastDb; floor = detector.noiseFloorDb
@@ -142,6 +160,8 @@ fun MicTestDialog(settings: Settings, label: String, onSensitivity: (Int) -> Uni
                     modifier = Modifier.padding(top = 6.dp),
                 )
                 Text("Gris : bruit de fond · Jaune : seuil", style = MaterialTheme.typography.labelSmall, color = TextSoft)
+                if (tvOn) Text("Télé détectée : le seuil passe au-dessus de son volume", color = Good, style = MaterialTheme.typography.bodySmall)
+                else if (settings.tvMode) Text("Mode télé actif (une télé est repérée après ~1 à 2 min de son continu)", color = TextSoft, style = MaterialTheme.typography.labelSmall)
                 Spacer(Modifier.height(10.dp))
                 Text("Sensibilité du micro : ${sens.roundToInt()}/10", style = MaterialTheme.typography.titleSmall)
                 Slider(sens, {

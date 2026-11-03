@@ -51,6 +51,11 @@ Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 - **Calibration** : l'activité habituelle de chaque nuit est mémorisée ; à partir de 3 nuits, l'analyse des phases s'appuie sur la médiane des 14 dernières nuits (indiqué « Calibré sur vos N nuits précédentes »).
 - **Corrections** : bouton « Corriger » sur chaque son (« c'était quoi, en vrai ? »). Le type est corrigé et la sensibilité s'ajuste d'un cran : moins pour la catégorie qui s'est trompée, plus pour la bonne.
 
+### Télé et autres voix
+- **Mode télé automatique** (activé par défaut) : un son presque continu pendant ~1 à 2 minutes, au volume régulier, est repéré comme une télé / radio. Le seuil de détection passe alors au-dessus de son volume ; les sons classés « Télé / musique » par YAMNet sont ignorés.
+- **Ma voix** : une empreinte vocale (Vosk, modèle locuteur `vosk-model-spk-0.4`) est créée en lisant un texte de 20 s. La nuit, les paroles dont la ressemblance avec l'empreinte est sous le seuil réglable (45 % par défaut) sont ignorées. Les paroles trop courtes pour être jugées sont gardées.
+- Le test de déclenchement des Réglages montre « Votre voix / Autre voix (télé ?) » avec la ressemblance, et « Télé détectée ».
+
 ### Widget
 - Widget d'écran d'accueil avec l'agent, sa phrase du moment et le bouton « Commencer la nuit » / « Je me réveille ».
 
