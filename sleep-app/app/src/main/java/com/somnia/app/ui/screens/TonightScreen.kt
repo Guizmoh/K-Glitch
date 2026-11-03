@@ -177,7 +177,7 @@ fun TonightIdle(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp = 0.dp, onStop: () -> Unit) {
+fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp = 0.dp, previewFrame: Int? = null, onStop: () -> Unit) {
     Column(
         Modifier.verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = topInset),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -186,8 +186,8 @@ fun TonightLive(l: LiveState, now: Long, topInset: androidx.compose.ui.unit.Dp =
 
         ListeningOrb(l.levelDb, l.noiseFloorDb, l.capturing) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                PoliceLogo(58.dp, awake = false)
-                Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                com.somnia.app.ui.components.NightAgentAnimation(132.dp, frame = previewFrame)
+                Text(Fmt.duration(((now - l.startTime) / 60_000).toInt()), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(
                     when {
                         now < l.detectionStartsAt -> "Endormissement… ${((l.detectionStartsAt - now) / 60_000) + 1} min"

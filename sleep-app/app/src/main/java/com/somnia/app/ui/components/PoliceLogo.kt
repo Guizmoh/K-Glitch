@@ -113,3 +113,34 @@ private fun Zzz(size: Dp, phase: Float) {
         )
     }
 }
+
+private val NIGHT_FRAMES = arrayOf(
+    intArrayOf(
+        R.drawable.night_agent1_f0, R.drawable.night_agent1_f1, R.drawable.night_agent1_f2, R.drawable.night_agent1_f3,
+        R.drawable.night_agent1_f4, R.drawable.night_agent1_f5, R.drawable.night_agent1_f6,
+    ),
+    intArrayOf(
+        R.drawable.night_agent2_f0, R.drawable.night_agent2_f1, R.drawable.night_agent2_f2, R.drawable.night_agent2_f3,
+        R.drawable.night_agent2_f4, R.drawable.night_agent2_f5, R.drawable.night_agent2_f6,
+    ),
+)
+
+/**
+ * Animation de nuit (7 images de 420 ms en boucle, comme le GIF d'origine) :
+ * l'agent choisi dort dans son cadre, avec ses « Zzz » et sa bave.
+ * [frame] force une image (captures d'écran).
+ */
+@Composable
+fun NightAgentAnimation(width: Dp, frame: Int? = null) {
+    val agent = com.somnia.app.ui.LocalAgent.current.coerceIn(0, 1)
+    val inf = rememberInfiniteTransition(label = "night")
+    val f by inf.animateFloat(0f, 7f, infiniteRepeatable(tween(7 * 420, easing = LinearEasing), RepeatMode.Restart), label = "f")
+    val i = (frame ?: f.toInt()).coerceIn(0, 6)
+    val toggle = com.somnia.app.ui.LocalAgentToggle.current
+    Image(
+        painterResource(NIGHT_FRAMES[agent][i]), "L'agent du Dodo dort",
+        Modifier.size(width = width, height = width * (361f / 430f))
+            .then(if (toggle != null) Modifier.clickable(onClickLabel = "Changer de policier") { toggle() } else Modifier),
+        contentScale = ContentScale.Fit,
+    )
+}

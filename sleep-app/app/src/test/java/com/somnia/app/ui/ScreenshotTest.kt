@@ -90,7 +90,7 @@ class ScreenshotTest {
                         eventCount = 9, counts = mapOf(SoundType.SNORING to 5, SoundType.SPEECH to 2, SoundType.LAUGHTER to 1, SoundType.CRYING to 1),
                         lastEvent = SoundType.SPEECH, lastEventTime = t0 + 3_000_000L, alarmTarget = t0 + 30_000_000L,
                     ),
-                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 150.dp,
+                    now = t0 + 2 * 3_600_000L + 14 * 60_000L, topInset = 150.dp, previewFrame = 3,
                 ) {}
             }
         }
@@ -174,5 +174,19 @@ class ScreenshotTest {
             setBackgroundColor(0xFF5A6C8C.toInt()); setPadding(40, 40, 40, 40); addView(v)
         }
         paparazzi.snapshot(frame)
+    }
+
+    @Test fun nightAgent2() = paparazzi.snapshot {
+        SomniaTheme {
+            androidx.compose.runtime.CompositionLocalProvider(LocalAgent provides 1) {
+                androidx.compose.foundation.layout.Box {
+                    com.somnia.app.ui.components.NightScene()
+                    TonightLive(
+                        LiveState(sessionId = 1, startTime = t0, levelDb = -50f, noiseFloorDb = -55f, thresholdDb = -44f),
+                        now = t0 + 3_600_000L, topInset = 150.dp, previewFrame = 3,
+                    ) {}
+                }
+            }
+        }
     }
 }

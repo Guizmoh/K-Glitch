@@ -41,8 +41,8 @@ class DodoWidget : AppWidgetProvider() {
             val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
             val v = RemoteViews(context.packageName, R.layout.widget_dodo)
             val image = when {
-                live != null && agent == 1 -> R.drawable.agent2_sleep2
-                live != null -> R.drawable.agent_asleep
+                live != null && agent == 1 -> R.drawable.night_agent2_f3
+                live != null -> R.drawable.night_agent1_f3
                 agent == 1 -> Agent.awakeDrawable(hour)
                 else -> R.drawable.agent_awake
             }
