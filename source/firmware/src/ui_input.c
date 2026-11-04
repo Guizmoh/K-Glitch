@@ -295,6 +295,12 @@ UI_SMALL static void tracks_edit(uint32_t slot, int32_t steps)
     const param_desc_t *d;
     switch (slot) {
     case 0:
+        if (!is_drum(t)) {                         /* K-GLITCH: a synth track's KNOB 1 picks its engine (ENG_ORD) */
+            if (!bank_ready)
+                bank_resolve();
+            select_engine(eng_next(t->eng_req, steps));
+            return;
+        }
         vp = &song.g[G_SWING];
         d = &GP[G_SWING];
         break;
@@ -516,7 +522,7 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
             if (total)
                 preset_go((uint32_t)(((int32_t)cur + steps % (int32_t)total + (int32_t)total) % (int32_t)total));
         } else if (slot == 1u && !is_drum(TSEL)) {
-            select_engine((TSEL->eng_req + (steps > 0 ? 1u : NENGINES - 1u)) % NENGINES);
+            select_engine(eng_next(TSEL->eng_req, steps));
         } else if (slot == 3u && !is_drum(TSEL)) {          /* (2.7) KNOB 4: FAV, right adds the sound, left removes it */
             fav_toggle(steps > 0);
         }

@@ -393,15 +393,17 @@ UI_SMALL static void studio_tracks_draw(void)
     {   /* KNOB 1 swing (the global groove), 2 level, 3 steps, 4 pan of the selected track */
         track_t *t = TSEL;
         static char v[4][8];
-        static const char *const lab[4] = {"swing", "level", "steps", "pan"};
+        const char *lab[4] = {"swing", "level", "steps", "pan"};
         const char *val[4] = {v[0], v[1], v[2], v[3]};
         int32_t ratio[4];
         uint32_t lvl = is_drum(t) ? song.g[G_DRLVL] : t->p[P_LEVEL];
         swing_str(v[0], song.g[G_SWING]);
+        if (!is_drum(t))                           /* K-GLITCH: a synth track's KNOB 1, its engine */
+            lab[0] = "engine", str_cpy(v[0], ENGINES[t->eng_req % NENGINES]->name, sizeof v[0]);
         fmt_int(v[1], t->p[P_MUTE] ? 0 : (int32_t)lvl * 100 / 127);
         fmt_int(v[2], t->p[P_SLEN]);
         fmt_int(v[3], t->p[P_PAN]);
-        ratio[0] = song.g[G_SWING] * 10;
+        ratio[0] = is_drum(t) ? song.g[G_SWING] * 10 : (int32_t)(t->eng_req % NENGINES) * 1000 / (NENGINES - 1);
         ratio[1] = t->p[P_MUTE] ? 0 : (int32_t)lvl * 1000 / 127;
         ratio[2] = (t->p[P_SLEN] - 1) * 1000 / 63;
         ratio[3] = (t->p[P_PAN] + 64) * 1000 / 127;

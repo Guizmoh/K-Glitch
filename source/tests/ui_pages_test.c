@@ -176,13 +176,13 @@ int main(int argc, char **argv)
         bank_resolve();
         for (n = 0; n < NBANK; n++)
             if (bank_pi[n] == 0xFF) {
-                printf("ui: BANK %s: no such preset in engine %u\n", BANK[n].name, BANK[n].e);
+                printf("ui: BANK %s: no such preset in engine %u\n", BANK[bank_ord[n]].name, BANK[bank_ord[n]].e);
                 fails++;
             }
         for (e = 0; e < NENGINES; e++)
             for (k = 0; k < ENGINES[e]->npresets; k++) {
                 for (hits = 0, n = 0; n < NBANK; n++)
-                    hits += BANK[n].e == e && bank_pi[n] == k;
+                    hits += BANK[bank_ord[n]].e == e && bank_pi[n] == k;
                 if (hits != 1) {
                     printf("ui: preset %s (engine %u) is %u times in BANK\n", ENGINES[e]->presets[k].name, e, hits);
                     fails++;
@@ -1994,7 +1994,7 @@ int main(int argc, char **argv)
             go_home(); frame();
             pc_req[1] = 1;                                /* PC 0 on track 2's channel: the first sound of the list */
             frame();
-            check(trk[1].eng_req == BANK[0].e && trk[1].preset == bank_pi[0] && !strncmp(ui.msg, "T2 PROG 0", 9),
+            check(trk[1].eng_req == BANK[bank_ord[0]].e && trk[1].preset == bank_pi[0] && !strncmp(ui.msg, "T2 PROG 0", 9),
                   "MIDI Program Change 0: track 2 takes the first sound of the PRESETS list (T2 PROG 0)");
             pc_req[3] = 3;                                /* PC 2 on the drum channel: kit 2 */
             frame();

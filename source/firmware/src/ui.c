@@ -781,14 +781,34 @@ static const struct { uint8_t kind, e; const char *name; } BANK[] = {
 #define NBANK (sizeof BANK / sizeof BANK[0])
 static uint8_t bank_pi[NBANK];                       /* the preset index of each entry in its engine */
 static uint8_t bank_ready;
+/* K-GLITCH: the PRESETS list grouped by engine, in this order (ANALOG, the FMs, WHEEL...), each engine's sounds by
+ * kind as BANK[] has them; bank_ord: list position -> BANK[] entry, bank_inv the other way (the favourites keep
+ * BANK[] indices) */
+static const uint8_t ENG_ORD[] = {0, 1, 9, 2, 7, 6, 3, 4, 5, 8, 10, 11, ENGI_GLITCH, ENGI_KDRUM,
+#if FELUCCA_SLICE
+                                  ENGI_SLICE,
+#endif
+};
+_Static_assert(sizeof ENG_ORD == NENGINES, "ENG_ORD: every engine once");
+static uint8_t bank_ord[NBANK], bank_inv[NBANK];
+UI_SMALL static uint32_t eng_next(uint32_t e, int32_t dir)   /* the engine after / before e in ENG_ORD */
+{
+    uint32_t i;
+    for (i = 0; i < NENGINES && ENG_ORD[i] != e; i++) {}
+    return ENG_ORD[(i + (dir > 0 ? 1u : NENGINES - 1u)) % NENGINES];
+}
 UI_SMALL static void bank_resolve(void)
 {
-    uint32_t i, k;
+    uint32_t i, k, o, n = 0;
+    for (o = 0; o < NENGINES; o++)
+        for (i = 0; i < NBANK; i++)
+            if (BANK[i].e == ENG_ORD[o])
+                bank_inv[i] = (uint8_t)n, bank_ord[n++] = (uint8_t)i;
     for (i = 0; i < NBANK; i++) {
-        const engine_t *e = ENGINES[BANK[i].e % NENGINES];
+        const engine_t *e = ENGINES[BANK[bank_ord[i]].e % NENGINES];
         bank_pi[i] = 0xFF;
         for (k = 0; k < e->npresets; k++)
-            if (str_eq(e->presets[k].name, BANK[i].name))
+            if (str_eq(e->presets[k].name, BANK[bank_ord[i]].name))
                 bank_pi[i] = (uint8_t)k;
     }
     bank_ready = 1;
@@ -799,7 +819,7 @@ UI_SMALL static uint32_t base_pos(uint32_t *total)            /* list index of t
     if (!bank_ready)
         bank_resolve();
     for (i = 0; i < NBANK; i++)
-        if (BANK[i].e == TSEL->eng_req && bank_pi[i] == TSEL->preset)
+        if (BANK[bank_ord[i]].e == TSEL->eng_req && bank_pi[i] == TSEL->preset)
             cur = i;
     if (user_of(TSEL) < UP_SLOTS)
         cur = NBANK + up_rank(user_of(TSEL));
@@ -817,9 +837,9 @@ UI_SMALL static uint32_t base_at(uint32_t n, uint32_t *k)
         return NENGINES;
     }
     *k = bank_pi[n] == 0xFF ? 0u : bank_pi[n];
-    return BANK[n].e;
+    return BANK[bank_ord[n]].e;
 }
-UI_SMALL static const char *base_kind(uint32_t n) { return n < NBANK ? BANK_KIND[BANK[n].kind] : "USER"; }
+UI_SMALL static const char *base_kind(uint32_t n) { return n < NBANK ? ENGINES[BANK[bank_ord[n]].e % NENGINES]->name : "USER"; }
 
 /* SLOOP 2.7: favourites (PRESETS page, KNOB 4): up to 16 sounds at the top of the PRESETS list, kept in the FM-1's
  * settings (project.c, the settings' side record). An entry: a factory sound, its BANK index; a user preset, FAV_USER |
@@ -843,7 +863,7 @@ UI_SMALL static uint32_t fav_list(uint32_t *b)                /* the favourites 
                 continue;
             b[n++] = NBANK + up_rank(f & 0xFFu);
         } else if (f < NBANK) {
-            b[n++] = f;
+            b[n++] = bank_inv[f];
         }
     }
     return n;
@@ -856,8 +876,8 @@ UI_SMALL static uint32_t fav_key(void)                        /* the selected tr
     if (user_of(TSEL) < UP_SLOTS)
         return FAV_USER | user_of(TSEL);
     for (i = 0; i < NBANK; i++)
-        if (BANK[i].e == TSEL->eng_req && bank_pi[i] == TSEL->preset)
-            return i;
+        if (BANK[bank_ord[i]].e == TSEL->eng_req && bank_pi[i] == TSEL->preset)
+            return bank_ord[i];
     return FAV_NONE;
 }
 UI_SMALL static int fav_has(uint32_t key)
