@@ -126,7 +126,9 @@ int main(void)
                 uint32_t a = st_sector(o, c);
                 int data = a >= 0x97000u && a + 4096u <= 0xA0000u, ups = a >= 0xDC000u && a + 4096u <= 0xE0000u;
                 int glob = a >= 0xFC000u && a + 4096u <= 0xFF000u, fm6 = a >= 0xE5000u && a + 4096u <= 0xE7000u;
-                inside &= (data || ups || glob || fm6) && !(a & 0xFFFu);
+                int songs = o >= OBJ_SONG4 && ((a >= 0xC8000u && a + 4096u <= 0xDC000u) ||   /* (K-GLITCH: songs E..P in */
+                                               (a >= 0xE7000u && a + 4096u <= 0xEB000u));    /* USR3 / USR4's flash) */
+                inside &= (data || ups || glob || fm6 || songs) && !(a & 0xFFFu);
                 for (o2 = 0; o2 < OBJ_COUNT; o2++)
                     for (c2 = 0; c2 < 2u; c2++)
                         if ((o2 != o || c2 != c) && st_sector(o2, c2) == a)
