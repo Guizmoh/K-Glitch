@@ -127,26 +127,18 @@ int main(void)
     drum_on(36, 110);
     check(run_peak(40) < 64, "USR2 (an empty slot): silent");
 
-    {   /* USR3+4: one kit over two slots, the editor's split: KICK and HAT in USR3, SNARE and OPEN HAT in USR4 */
+    {   /* K-GLITCH: USR3 and USR4 hold songs E..P: even a valid sample header there is not read, KIT USR3+4 / USR4 silent */
         static const uint8_t n3[2] = {36, 42}, n4[2] = {38, 46};
         static const uint32_t l3[2] = {30000, 4000}, l4[2] = {6000, 60000};
         slot_build(2, n3, l3, 2);
         slot_build(3, n4, l4, 2);
-        check(usr_nz[2] == 2u && usr_nz[3] == 2u, "USR3 and USR4 read: 2 zones each (USR4 from its own place)");
+        check(usr_nz[2] == 0u && usr_nz[3] == 0u, "K-GLITCH: USR3 and USR4 not read (songs there)");
         TDRUM->p[P_E0] = (int16_t)DRUM_PAIR;
         quiet(); drum_on(36, 110);
-        check(drum_voice_on(DZ_USR + 2 * 16 + 0), "USR3+4: KICK from USR3");
+        check(run_peak(40) < 64, "K-GLITCH: KIT USR3+4: silent");
+        TDRUM->p[P_E0] = (int16_t)(DRUM_USR + 3u);
         quiet(); drum_on(38, 110);
-        check(drum_voice_on(DZ_USR + 3 * 16 + 0) && run_peak(40) > 2000, "USR3+4: SNARE from USR4, and it sounds");
-        quiet(); drum_on(46, 110); run_peak(4); drum_on(42, 110);
-        check(!drum_voice_on(DZ_USR + 3 * 16 + 1) && drum_voice_on(DZ_USR + 2 * 16 + 1), "USR3+4: the closed hat (USR3) chokes the open one (USR4)");
-        quiet(); drum_on(49, 110);
-        check(run_peak(40) < 64, "USR3+4: a lane in neither slot (CRASH): silent");
-        TDRUM->p[P_E0] = (int16_t)(DRUM_USR + 3u);       /* USR4 alone: its two sounds */
-        quiet(); drum_on(36, 110);
-        check(run_peak(40) < 64, "USR4 alone: no KICK there");
-        quiet(); drum_on(38, 110);
-        check(drum_voice_on(DZ_USR + 3 * 16 + 0), "USR4 alone: its SNARE");
+        check(run_peak(40) < 64, "K-GLITCH: KIT USR4: silent");
         quiet();
     }
     {   /* the sequencer: KICK on 1, SNARE on 5 */
