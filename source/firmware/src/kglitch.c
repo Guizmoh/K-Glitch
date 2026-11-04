@@ -1,4 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
+#ifndef UI_SMALL                     /* (gfx.c: compiled for size, main loop only; the host tests without gfx.c: nothing) */
+#define UI_SMALL
+#endif
 /* K-GLITCH: the DRUM DESTROYER layer over SLOOP's punch-in FX (punch.c). Included by fx.c after punch.c; runs in
  * the audio ISR (punch_process asks kg_route once a block which effect plays).
  *

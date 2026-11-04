@@ -1,4 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
+#ifndef UI_SMALL                     /* (gfx.c: compiled for size, main loop only; the host tests without gfx.c: nothing) */
+#define UI_SMALL
+#endif
 /* K-GLITCH DRUMS: two synthesised kits of its own for the drum track (KIT: FM DRUM, C64 DRUM), every sound edited on
  * the device (EDIT with the drum track selected: KIT, the model's three pages, DRUM FX), each sound with its own
  * saturation (SOFT, HARD, FOLD), delay send and reverb send. Included by drums.c after drum_synth.c; the voices run in
