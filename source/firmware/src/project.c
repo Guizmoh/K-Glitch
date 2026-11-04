@@ -570,10 +570,14 @@ static union {
     project_v1_t v1;
 } proj_tmp;
 UI_SMALL static void *up_stage(void) { return &proj_tmp; }   /* upreset.c: a user preset bank staged for a write (sloop-lab) */
+static project_t song_buf __attribute__((section(".pool")));   /* K-GLITCH: songs E..P, loaded / saved through it */
 UI_SMALL static void proj_fetch(uint32_t slot)
 {
-    project_t *q = &proj_slot[slot & 3u];
-    int n = st_load(OBJ_PROJECT0 + (slot & 3u), &proj_tmp, sizeof proj_tmp);
+    project_t *q;
+    int n;
+    slot %= NSONG;
+    q = slot < 4u ? &proj_slot[slot] : &song_buf;
+    n = st_load(proj_obj(slot), &proj_tmp, sizeof proj_tmp);
     if (!proj_import(q, &proj_tmp, n))
         q->magic = 0;
 }
@@ -583,23 +587,43 @@ UI_SMALL static void proj_fetch(uint32_t slot)
 #include "fm6_bank.c"                           /* the FM6 patch bank (eng_fm6.c PTCH B1..B27): staged in proj_tmp */
 #endif
 
-static const char *const SEC_NAME[4] = {"A", "B", "C", "D"};   /* (2.7: the slots named as the song's sections) */
+static const char *const SEC_NAME[NSONG] = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"};
+/* (2.7: the slots named as the song's sections; K-GLITCH: 16, A..D the song mode's sections, E..P songs kept in flash
+ * only: loaded through song_buf) */
+static uint16_t song_used_m, song_scanned;              /* E..P: has a project (bit s), read from flash once */
+UI_SMALL static int project_used(uint32_t slot);
+UI_SMALL static void song_scan(void)
+{
+#if FELUCCA_FLASH
+    uint32_t s;
+    st_hdr_t h;
+    song_used_m = 0;
+    for (s = 4u; s < NSONG && flash_ok; s++)
+        if (st_current(proj_obj(s), &h) >= 0 && h.len)
+            song_used_m |= (uint16_t)(1u << s);
+#endif
+    song_scanned = 1;
+}
 UI_SMALL static void project_save(uint32_t slot)
 {
-    project_t *p = &proj_slot[slot & 3u];
+    project_t *p;
+    slot %= NSONG;
+    p = slot < 4u ? &proj_slot[slot] : &song_buf;
 #if FELUCCA_ARRANGER
     if (song.playing || transport_req) { ui_message("STOP BEFORE SAVE"); return; }
 #endif
     proj_capture(p);
 #if FELUCCA_FLASH
     if (flash_ok) {
-        if (st_save(OBJ_PROJECT0 + (slot & 3u), p, sizeof *p))
+        if (st_save(proj_obj(slot), p, sizeof *p))
             ui_message("SAVE ERROR");
         else {
 #ifdef KGLITCH_VERSION
-            kgs_save(slot);                             /* (its effects, kg_song.c) */
+            kgs_save(slot);                             /* (its effects and name, kg_song.c) */
 #endif
-            ui_say("SAVED SECTION ", SEC_NAME[slot & 3u]);
+            if (slot >= 4u)
+                song_used_m |= (uint16_t)(1u << slot);
+            ui_say(slot < 4u ? "SAVED SECTION " : "SAVED SONG ", SEC_NAME[slot]);
         }
         return;
     }
@@ -613,12 +637,27 @@ UI_SMALL static void project_save(uint32_t slot)
  * so song mode still plays. Stopped only: a flash erase stops the audio ~50 ms */
 UI_SMALL static void project_erase(uint32_t slot)
 {
-    slot &= 3u;
+    slot %= NSONG;
 #if FELUCCA_ARRANGER
     if (song.playing || transport_req) { ui_message("STOP BEFORE ERASE"); return; }
 #endif
-    if (!proj_ok(&proj_slot[slot])) {
-        ui_say("EMPTY SECTION ", SEC_NAME[slot]);
+    if (!project_used(slot)) {
+        ui_say("EMPTY ", SEC_NAME[slot]);
+        return;
+    }
+    if (slot >= 4u) {                                   /* (K-GLITCH: a song E..P: flash only) */
+#if FELUCCA_FLASH
+        if (flash_ok && st_save(proj_obj(slot), &song_buf, 0)) {
+            ui_message("ERASE ERROR");
+            return;
+        }
+#endif
+#ifdef KGLITCH_VERSION
+        kgs_erase(slot);
+#endif
+        song_used_m &= (uint16_t)~(1u << slot);
+        ui_say("ERASED SONG ", SEC_NAME[slot]);
+        ui.force = 1;
         return;
     }
 #if FELUCCA_FLASH
@@ -682,23 +721,25 @@ UI_SMALL static void project_apply(const project_t *p)
 
 UI_SMALL static void project_load(uint32_t slot)
 {
-    project_t *p = &proj_slot[slot & 3u];
+    project_t *p;
+    slot %= NSONG;
+    p = slot < 4u ? &proj_slot[slot] : &song_buf;
 #if FELUCCA_ARRANGER
     if (song.playing || transport_req) { ui_message("STOP BEFORE LOAD"); return; }
 #endif
 #if FELUCCA_FLASH
-    if (flash_ok && !proj_ok(p))
+    if (flash_ok && (slot >= 4u || !proj_ok(p)))
         proj_fetch(slot);
 #endif
     if (!proj_ok(p)) {
-        ui_say("EMPTY SECTION ", SEC_NAME[slot & 3u]);
+        ui_say("EMPTY ", SEC_NAME[slot]);
         return;
     }
     project_apply(p);
 #ifdef KGLITCH_VERSION
     kgs_load(slot);                                     /* (its effects; none saved: cleared) */
 #endif
-    ui_say("LOADED SECTION ", SEC_NAME[slot & 3u]);
+    ui_say(slot < 4u ? "LOADED SECTION " : "LOADED SONG ", SEC_NAME[slot]);
 }
 
 /* ---- the working project, kept in flash by itself: saved when it changed, the transport is stopped,
@@ -849,6 +890,7 @@ UI_SMALL static void persist_boot(void)                    /* before settings_in
 #ifdef KGLITCH_VERSION
             if (st_tail_load(OBJ_SETTINGS, &kg_blob, sizeof kg_blob) == 0)   /* (K-GLITCH's state, power-on) */
                 kg_unpack(&kg_blob);
+            kgu_sync();                                 /* (the undo history starts from it) */
 #endif
         } else if (n == (int)(8u + sizeof(panel_t)) && p.magic == 0x50455231u) {   /* "PER1": palette, panel */
             const uint32_t *w = (const uint32_t *)&p;
@@ -881,7 +923,15 @@ UI_SMALL static void persist_boot(void)                    /* before settings_in
 #endif
 }
 
-UI_SMALL static int project_used(uint32_t slot) { return proj_ok(&proj_slot[slot & 3u]); }
+UI_SMALL static int project_used(uint32_t slot)
+{
+    slot %= NSONG;
+    if (slot < 4u)
+        return proj_ok(&proj_slot[slot]);
+    if (!song_scanned)
+        song_scan();
+    return song_used_m >> slot & 1u;
+}
 
 #if FELUCCA_FLASH
 /* SLOOP 2.5: the settings object holds the SYN kits after persist_t (drum_synth.c dsu): firmware before 2.5 reads

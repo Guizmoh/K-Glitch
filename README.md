@@ -139,8 +139,19 @@ N'importe laquelle des 3 pistes synthé peut devenir une batterie : sur la piste
 ### Moteurs groupés, potard 1 = moteur
 La liste PRESETS est rangée par moteur : ANALOG, puis les FM (DIGITAL, FM6), PHASE, WHEEL, TRIO, LOFI, SAMPLE, VOICE, GRAIN, PHYS, NOISE, GLITCH, KDRUM (le moteur est affiché dans la carte ENG, le type BASS / KEYS… dans la liste). Sur la page TRACKS, le **potard 1** d'une piste synthé choisit son moteur dans le même ordre (sur la piste batterie, il reste le SWING ; le swing reste aussi dans GLO).
 
+### 16 morceaux, avec un nom
+SAVE > **SONGS** : 16 morceaux, **A à P** (KNOB 1 choisit, KNOB 2 efface — deux crans —, KNOB 3 LOAD, KNOB 4 SAVE). A–D restent les sections du mode SONG ; E–P sont des morceaux rangés en flash (la place des emplacements de samples **USR3 et USR4**, retirés : il reste USR1 et USR2). La liste affiche le nom de chaque morceau.
+
+SAVE > **NAME** : le nom du morceau en cours, tapé au clavier (comme sur K-WASUB) : les **touches noires = A à K**, les **blanches = L à Z** puis l'espace ; la touche écrit sa lettre au curseur et avance. KNOB 1 déplace le curseur, KNOB 2 met un chiffre ou un signe, KNOB 3 efface le caractère, KNOB 4 (deux crans) efface le nom. Le nom est enregistré avec SAVE.
+
+### Undo complet
+EDIT ou SAVE + OCT− / OCT+ annulent / rétablissent aussi la **séquence d'effets et son automation** (filtre compris) et les **verrous de paramètres** (l'automation des pistes). L'écran dit ce qui est annulé : « UNDO T1: 5 STEPS + LOCKS », « UNDO FX SEQ: 3 STEPS », « REDO DRUMS: 2 STEPS ».
+
+### SEQ maintenu : les outils
+SEQ maintenu + **PRESETS** choisit l'outil, **OCT+** l'applique (OCT− l'annule) : RANDOM, MUTATE, COPY, PASTE, CLEAR, DOUBLE, HALF, SHIFT <, SHIFT >, REVERSE, THIN OUT, sur le motif de la piste (COPY / PASTE emportent aussi ses verrous). Sur les pages K-GLITCH (FX, SEL…), les mêmes outils agissent sur la **séquence d'effets** et son automation (RANDOM, MUTATE, COPY, PASTE, CLEAR, SHIFT, REVERSE). Chaque outil = un undo.
+
 ### Les effets enregistrés avec le morceau
-SAVE (PROJECT A..D) enregistre aussi les effets du morceau : la séquence / automation d'effets (les deux couches, intensités, probabilités, notes du filtre), l'INTENSITY de chaque effet, l'ordre des slices et les réglages K-GLITCH (banque, CHAOS, filtre, DJ filter…). LOAD les recharge ; un morceau enregistré sans effets revient sans effets. NEW repart de zéro : aucun effet, aucune automation, slices dans l'ordre, et la boucle enregistrée est effacée (elle reste en RAM seulement, elle ne passe jamais d'un morceau à l'autre). Les kits FM / C64 restent ceux du FM-1.
+SAVE (SONGS A..P) enregistre aussi les effets du morceau : la séquence / automation d'effets (les deux couches, intensités, probabilités, notes du filtre), l'INTENSITY de chaque effet, l'ordre des slices et les réglages K-GLITCH (banque, CHAOS, filtre, DJ filter…). LOAD les recharge ; un morceau enregistré sans effets revient sans effets. NEW repart de zéro : aucun effet, aucune automation, slices dans l'ordre, et la boucle enregistrée est effacée (elle reste en RAM seulement, elle ne passe jamais d'un morceau à l'autre). Les kits FM / C64 restent ceux du FM-1.
 
 ### Police et écran
 Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec des chiffres de largeur fixe, sur les mêmes lignes que SLOOP. Économe : seuls les caractères affichés (tout est en capitales) et 4 niveaux de lissage (2 bits par pixel) : environ **15 Ko** de flash pour les trois tailles (SLOOP : 5 Ko ; `KG_FONT=terminus` remet sa police). Dans l'émulateur, l'écran est agrandi en lissé ; le bouton **PIXELS** montre les vrais pixels du FM-1.

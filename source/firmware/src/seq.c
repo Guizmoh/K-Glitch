@@ -455,30 +455,26 @@ static struct {
     uint32_t sess;
     step_t st[NSTEP];
     int8_t micro[NSTEP];                                 /* (2.7) the nudges too (REC QUANT OFF writes them) */
+    plock_t lock[NLOCK];                                 /* (K-GLITCH 0.9.4) the parameter locks (automation) too */
 } undo;
-#define UH_BYTES 2048u
+#define UH_BYTES 4096u
 #define UH_MAXE 48u
 #define UH_REC (1u + 2u * (sizeof(step_t) + 1u))   /* a step: its index, before and after, the nudge before and after */
+#define UH_HDR 5u                                    /* track (0xFE: the effect lane), length before, after, steps, locks */
+#define UH_LOCKS (2u * sizeof(plock_t) * NLOCK)      /* the locks before and after, when they changed */
+#define UH_FX 0xFEu
+#define UH_FREC (1u + 2u * 6u)                       /* an effect step: its index, its 6 bytes before and after */
+/* K-GLITCH: the effect lane (FX > SEQ, its automation) as the history last saw it: a change from it is an entry */
+static struct { int8_t seq[KG_STEPS], seq2[KG_STEPS]; uint8_t sint[KG_STEPS], prob[KG_STEPS], fnote[KG_STEPS], fmode[KG_STEPS]; int16_t len; } kgu;
 static struct {
     uint8_t buf[UH_BYTES];                              /* entries: track, length before, after, steps; then the steps */
     uint16_t off[UH_MAXE + 1u];                          /* entry k: buf[off[k] .. off[k + 1]) */
     uint8_t n, cur;                                      /* entries; applied (cur < n: the ones after can be redone) */
 } uh;
 static volatile uint8_t uh_busy;                         /* the main loop is writing it (the ISR's mark waits a pass) */
-static void uh_close(void)                               /* the open session's changes into the history */
+static uint8_t *uh_room(uint32_t size, uint32_t *at)    /* room for a new entry of size bytes at the end */
 {
-    const track_t *t;
-    uint32_t i, cnt = 0, size, at;
-    uint8_t *p;
-    if (!undo.valid || !undo.open)
-        return;
-    undo.open = 0;
-    t = &trk[undo.trk % NTRK];
-    for (i = 0; i < NSTEP; i++)
-        cnt += memcmp(&undo.st[i], &t->step[i], sizeof(step_t)) != 0 || undo.micro[i] != t->micro[i];
-    if (!cnt && undo.len == t->p[P_SLEN])
-        return;                                          /* (nothing changed: nothing to undo) */
-    size = 4u + cnt * UH_REC;
+    uint32_t i;
     uh.n = uh.cur;                                       /* (a new change: what was undone cannot come back) */
     while (uh.n && (uh.off[uh.n] + size > UH_BYTES || uh.n >= UH_MAXE)) {   /* full: the oldest go */
         uint32_t sh = uh.off[1];
@@ -486,10 +482,80 @@ static void uh_close(void)                               /* the open session's c
         for (i = 0; i < uh.n; i++) uh.off[i] = (uint16_t)(uh.off[i + 1u] - sh);
         uh.n--;
     }
-    at = uh.off[uh.n];
-    p = uh.buf + at;
-    p[0] = undo.trk, p[1] = (uint8_t)undo.len, p[2] = (uint8_t)t->p[P_SLEN], p[3] = (uint8_t)cnt;
-    p += 4;
+    *at = uh.off[uh.n];
+    return uh.buf + *at;
+}
+static void uh_push(uint32_t at, uint32_t size)
+{
+    uh.off[uh.n + 1u] = (uint16_t)(at + size);
+    uh.n++;
+    uh.cur = uh.n;
+}
+static void kgu_get(uint32_t i, uint8_t *b)              /* effect step i now: its 6 bytes */
+{
+    b[0] = (uint8_t)kg.seq[i], b[1] = (uint8_t)kg.seq2[i], b[2] = kg.sint[i], b[3] = kg.prob[i], b[4] = kg.fnote[i], b[5] = kg.fmode[i];
+}
+static void kgu_base(uint32_t i, uint8_t *b)
+{
+    b[0] = (uint8_t)kgu.seq[i], b[1] = (uint8_t)kgu.seq2[i], b[2] = kgu.sint[i], b[3] = kgu.prob[i], b[4] = kgu.fnote[i], b[5] = kgu.fmode[i];
+}
+static void kgu_sync(void)                               /* the lane as it is now: no change (a load, NEW) */
+{
+    uint32_t i;
+    for (i = 0; i < KG_STEPS; i++)
+        kgu.seq[i] = kg.seq[i], kgu.seq2[i] = kg.seq2[i], kgu.sint[i] = kg.sint[i], kgu.prob[i] = kg.prob[i],
+        kgu.fnote[i] = kg.fnote[i], kgu.fmode[i] = kg.fmode[i];
+    kgu.len = song.g[G_KSEQ];
+}
+/* K-GLITCH (main loop): the effect lane's changes since the history last saw it, one entry (UH_FX) */
+static int kgu_commit(void)
+{
+    uint32_t i, cnt = 0, size, at;
+    uint8_t a[6], b[6], *p;
+    for (i = 0; i < KG_STEPS; i++) {
+        kgu_get(i, a), kgu_base(i, b);
+        cnt += memcmp(a, b, 6) != 0;
+    }
+    if (!cnt && kgu.len == song.g[G_KSEQ])
+        return 0;
+    if (uh_busy)
+        return 0;
+    uh_busy = 1;
+    size = UH_HDR + cnt * UH_FREC;
+    p = uh_room(size, &at);
+    p[0] = UH_FX, p[1] = (uint8_t)kgu.len, p[2] = (uint8_t)song.g[G_KSEQ], p[3] = (uint8_t)cnt, p[4] = 0;
+    p += UH_HDR;
+    for (i = 0; i < KG_STEPS; i++) {
+        kgu_get(i, a), kgu_base(i, b);
+        if (memcmp(a, b, 6)) {
+            *p++ = (uint8_t)i;
+            memcpy(p, b, 6), p += 6;
+            memcpy(p, a, 6), p += 6;
+        }
+    }
+    uh_push(at, size);
+    kgu_sync();
+    uh_busy = 0;
+    return 1;
+}
+static void uh_close(void)                               /* the open session's changes into the history */
+{
+    const track_t *t;
+    uint32_t i, cnt = 0, size, at, lk;
+    uint8_t *p;
+    if (!undo.valid || !undo.open)
+        return;
+    undo.open = 0;
+    t = &trk[undo.trk % NTRK];
+    for (i = 0; i < NSTEP; i++)
+        cnt += memcmp(&undo.st[i], &t->step[i], sizeof(step_t)) != 0 || undo.micro[i] != t->micro[i];
+    lk = memcmp(undo.lock, t->lock, sizeof undo.lock) != 0;
+    if (!cnt && !lk && undo.len == t->p[P_SLEN])
+        return;                                          /* (nothing changed: nothing to undo) */
+    size = UH_HDR + cnt * UH_REC + (lk ? UH_LOCKS : 0u);
+    p = uh_room(size, &at);
+    p[0] = undo.trk, p[1] = (uint8_t)undo.len, p[2] = (uint8_t)t->p[P_SLEN], p[3] = (uint8_t)cnt, p[4] = (uint8_t)lk;
+    p += UH_HDR;
     for (i = 0; i < NSTEP; i++)
         if (memcmp(&undo.st[i], &t->step[i], sizeof(step_t)) != 0 || undo.micro[i] != t->micro[i]) {
             *p++ = (uint8_t)i;
@@ -498,22 +564,60 @@ static void uh_close(void)                               /* the open session's c
             *p++ = (uint8_t)undo.micro[i];
             *p++ = (uint8_t)t->micro[i];
         }
-    uh.off[uh.n + 1u] = (uint16_t)(at + size);
-    uh.n++;
-    uh.cur = uh.n;
+    if (lk) {
+        memcpy(p, undo.lock, sizeof undo.lock), p += sizeof undo.lock;
+        memcpy(p, t->lock, sizeof undo.lock);
+    }
+    uh_push(at, size);
 }
 static void uh_apply(uint32_t e, int after)             /* entry e's steps as they were before it, or after */
 {
     const uint8_t *p = uh.buf + uh.off[e];
-    track_t *t = &trk[p[0] % NTRK];
-    uint32_t i, cnt = p[3];
+    track_t *t;
+    uint32_t i, cnt = p[3], lk = p[4];
+    if (p[0] == UH_FX) {                                 /* K-GLITCH: the effect lane */
+        song.g[G_KSEQ] = (int16_t)(after ? p[2] : p[1]);
+        p += UH_HDR;
+        for (i = 0; i < cnt; i++, p += UH_FREC) {
+            uint32_t k = p[0] % KG_STEPS;
+            const uint8_t *v = p + 1u + (after ? 6u : 0u);
+            kg.seq[k] = (int8_t)v[0], kg.seq2[k] = (int8_t)v[1], kg.sint[k] = v[2], kg.prob[k] = v[3], kg.fnote[k] = v[4], kg.fmode[k] = v[5];
+        }
+        kgu_sync();
+        return;
+    }
+    t = &trk[p[0] % NTRK];
     t->p[P_SLEN] = (int16_t)(after ? p[2] : p[1]);
-    p += 4;
+    p += UH_HDR;
     for (i = 0; i < cnt; i++, p += UH_REC) {
         uint32_t k = p[0] % NSTEP;
         memcpy(&t->step[k], p + 1u + (after ? sizeof(step_t) : 0u), sizeof(step_t));
         t->micro[k] = (int8_t)p[1u + 2u * sizeof(step_t) + (after ? 1u : 0u)];
     }
+    if (lk)
+        memcpy(t->lock, p + (after ? sizeof undo.lock : 0u), sizeof undo.lock);
+}
+/* what entry e changes, for the screen: "T1: 5 STEPS + LOCKS", "FX SEQ: 3 STEPS" */
+static void uh_desc(uint32_t e, char *b, uint32_t n)
+{
+    const uint8_t *p = uh.buf + uh.off[e];
+    uint32_t k = p[0];
+    char c[4];
+    if (k == UH_FX)
+        str_cpy(b, "FX SEQ", n);
+    else if (k == TRK_DRUM)
+        str_cpy(b, "DRUMS", n);
+    else
+        str_cpy(b, "T1", n), b[1] = (char)('1' + k % NTRK);
+    if (p[3]) {
+        str_cpy(b + str_len(b), ": ", n - str_len(b));
+        fmt_int(c, p[3]);
+        str_cpy(b + str_len(b), c, n - str_len(b));
+        str_cpy(b + str_len(b), p[3] > 1u ? " STEPS" : " STEP", n - str_len(b));
+    } else if (p[1] != p[2])
+        str_cpy(b + str_len(b), ": LENGTH", n - str_len(b));
+    if (p[4])
+        str_cpy(b + str_len(b), " + LOCKS", n - str_len(b));
 }
 static int uh_can_undo(void) { return undo.open || uh.cur > 0u; }
 static int uh_can_redo(void) { return !undo.open && uh.cur < uh.n; }
@@ -529,6 +633,7 @@ static void undo_mark(const track_t *t, uint32_t sess)
     uh_close();
     memcpy(undo.st, t->step, sizeof undo.st);
     memcpy(undo.micro, t->micro, sizeof undo.micro);
+    memcpy(undo.lock, t->lock, sizeof undo.lock);
     undo.len = t->p[P_SLEN];
     undo.trk = (uint8_t)i;
     undo.sess = sess;
@@ -2271,6 +2376,10 @@ static void key_down(uint32_t k)
     kb_kind[k] = KS_NONE;
     kb_trk[k] = (uint8_t)sel;
     kb_n[k] = 0;
+    if (layer == LY_PLAY && name_pads) {             /* K-GLITCH SAVE > NAME: a key types its letter */
+        if (name_keyp) name_keyp(k);
+        return;
+    }
     if (layer == LY_PLAY && kg_pads == 2u && !(song.rec && song.playing)) {   /* K-GLITCH SEQ: a white key picks the step
                                                      * (recording: the keys are the pads, the lane fills up) */
         int32_t w = punch_key(k);

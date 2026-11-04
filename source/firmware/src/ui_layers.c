@@ -873,9 +873,10 @@ UI_SMALL static void layer_screen_draw(void)
             str_cpy(sub, "presets: tools", sizeof sub);
         }
         if (seq_tool_on) {                              /* (K-GLITCH: the tool PRESETS picked, OCT+ does it) */
-            str_cpy(sub, "oct+ ", sizeof sub);
-            str_cpy(sub + 5, SEQ_TOOL[seq_tool % ST_N], sizeof sub - 5u);
-        }
+            str_cpy(sub, !ui.home && cur_page()->graph == GR_KG ? "oct+ fx " : "oct+ ", sizeof sub);   /* (its pages: the FX lane) */
+            str_cpy(sub + str_len(sub), SEQ_TOOL[seq_tool % ST_N], sizeof sub - str_len(sub));
+        } else if (!ui.home && cur_page()->graph == GR_KG)
+            str_cpy(sub, "presets: fx seq tools", sizeof sub);
         lab[0] = is_drum(t) ? "sound" : "note";
         if (is_drum(t))
             str_cpy(v[0], LANE_SHORT[pen_lane], 8);
@@ -1106,7 +1107,7 @@ UI_SMALL static void hold_screen_draw(void)
         b[6] = (char)('1' + ui.hold_trk);
     } else {
         str_cpy(b, "section A", sizeof b);
-        b[8] = (char)('A' - 1 + clamp(song.g[G_SLOT], 1, 4));
+        b[8] = (char)('A' - 1 + clamp(song.g[G_SLOT], 1, (int32_t)NSONG));
     }
     te_text_c(120, 4, b, TE_G4);
     te_text_c(120, 30, "keep holding", TE_G3);

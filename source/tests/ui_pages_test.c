@@ -68,7 +68,8 @@ static void open_fx(void)                           /* K-GLITCH: SLOOP's FX page
 static int project_used(uint32_t i) { return i < 2; }
 static void project_save(uint32_t i) { (void)i; saves++; ui_message("SAVED"); }
 static void project_load(uint32_t i) { (void)i; loads++; }
-static void kgs_clear(void) {}                     /* (kg_song.c: tests/kgsong_test.c) */
+static void kgs_clear(void) {}
+static const char *song_name_of(uint32_t s) { (void)s; return ""; }   /* (kg_song.c: tests/kgsong_test.c) */                     /* (kg_song.c: tests/kgsong_test.c) */
 static void project_erase(uint32_t i) { (void)i; erases++; ui_message("ERASED"); }
 static void arrangement_save(void) {}
 static uint32_t arrangement_ready(void) { return 3; }
@@ -2174,7 +2175,7 @@ int main(int argc, char **argv)
         uint32_t i, e0 = erases;
         song.playing = 0;
         go_home(); frame();
-        for (i = 0; i < NPAGES; i++) if (!strcmp(PAGES[i].title, "SECTION")) break;
+        for (i = 0; i < NPAGES; i++) if (!strcmp(PAGES[i].title, "SONGS")) break;
         open_family(PAGES[i].fam); ui.page = (uint8_t)i; ui.fam_last[PAGES[i].fam] = (uint8_t)i; page_entered(); ui.force = 1; frame();
         check(PAGES[ui.page].graph == GR_SLOTS && PAGES[ui.page].id[1] == 0xFFu, "SAVE > PROJECT: KNOB 2 free for ERASE (no parameter)");
         song.g[G_SLOT] = 2;
@@ -2189,6 +2190,33 @@ int main(int argc, char **argv)
         encs[panel.enc[EN_K2]] = 1; frames(2);
         check(erases == e0 + 1u && ui.arm == 0xE8u, "  the arm runs out (~1.5 s): a detent after it arms again");
         ui.arm = 0; song.g[G_SLOT] = 1;
+        go_home(); frames(4);
+    }
+    {   /* K-GLITCH: SAVE > NAME: the keys type the song's name (black A..K, white L..Z, space), K1 the place, K2 a digit,
+         * K3 deletes, K4 twice clears */
+        uint32_t i;
+        go_home(); frame();
+        for (i = 0; i < NPAGES; i++) if (!strcmp(PAGES[i].title, "NAME")) break;
+        check(i < NPAGES && PAGES[i].graph == GR_NAME, "K-GLITCH: SAVE > NAME");
+        open_family(PAGES[i].fam); ui.page = (uint8_t)i; ui.fam_last[PAGES[i].fam] = (uint8_t)i; page_entered(); ui.force = 1; frame();
+        song_name[0] = 0; name_pos = 0;
+        key_down(PUNCH_BLACK[0]); key_up(PUNCH_BLACK[0]);      /* A */
+        key_down(0); key_up(0);                                /* L (the first white key) */
+        key_down(PUNCH_BLACK[10]); key_up(PUNCH_BLACK[10]);    /* K */
+        frame();
+        check(!strcmp(song_name, "ALK") && name_pos == 3u, "NAME: black A, white L, black K: ALK, the cursor after it");
+        encs[panel.enc[EN_K2]] = 2; frames(2);
+        check(!strcmp(song_name, "ALK1"), "NAME: K2 a digit at the cursor");
+        encs[panel.enc[EN_K1]] = -1; frames(2);
+        encs[panel.enc[EN_K3]] = 1; frames(2);
+        check(!strcmp(song_name, "AL1") && name_pos == 2u, "NAME: K1 back, K3 deletes there");
+        ui.force = 1; frame(); ppm("page-name");
+        encs[panel.enc[EN_K4]] = 1; frames(2);
+        encs[panel.enc[EN_K4]] = 1; frames(2);
+        check(!song_name[0], "NAME: K4 twice clears it");
+        key_down(0); key_up(0);
+        check(song_name[0] == 'L' && trk[song.sel].v[0].active == 0, "NAME: a key types, it plays no note");
+        song_name[0] = 0; name_pos = 0;
         go_home(); frames(4);
     }
     {   /* 2.7: favourites: the PRESETS page, KNOB 4 right adds the sound to the top of the list, left removes it */

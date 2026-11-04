@@ -24,7 +24,15 @@
  * (upreset.c); the working project (autosave, project.c): copy A 0x9F000, copy B 0xFE000 (the two sectors
  * left: A/B needs no two neighbours); the FM6 patch bank (fm6_bank.c, SLOOP 2.4): 0xE5000 / 0xE6000, the first
  * two sectors of the free 0xE5000..0xFBFFF after the update staging (FL_FM6, fm1_flash.h) */
-enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_AUTOSAVE = OBJ_UPRESET0 + 2, OBJ_FM6BANK, OBJ_COUNT };
+enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_AUTOSAVE = OBJ_UPRESET0 + 2, OBJ_FM6BANK,
+       OBJ_SONG4, OBJ_COUNT = OBJ_SONG4 + 12 };
+/* K-GLITCH: 16 songs. 1..4 are the sections A..D (OBJ_PROJECT0..), 5..16 OBJ_SONG4.. in the flash of the user sample
+ * slots USR3 (0xC8000..0xDBFFF: songs 5..14) and USR4 (0xE7000..: songs 15, 16), which K-GLITCH gives up (eng_sample.c
+ * SMP_USER_LIVE); A / B sectors as every object */
+#ifndef NSONG
+#define NSONG 16u                                    /* (core.h; the storage test alone) */
+#endif
+static uint32_t proj_obj(uint32_t slot) { slot %= NSONG; return slot < 4u ? OBJ_PROJECT0 + slot : OBJ_SONG4 + slot - 4u; }
 
 typedef struct {
     uint32_t magic;
@@ -60,6 +68,10 @@ UI_SMALL static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset
         return copy ? 0xFE000u : 0x9F000u;
     if (obj == OBJ_FM6BANK)
         return 0xE5000u + copy * ST_SECTOR;
+    if (obj >= OBJ_SONG4) {                           /* (K-GLITCH: songs 5..16) */
+        uint32_t j = obj - OBJ_SONG4;
+        return (j < 10u ? 0xC8000u + j * 2u * ST_SECTOR : 0xE7000u + (j - 10u) * 2u * ST_SECTOR) + copy * ST_SECTOR;
+    }
     if (obj >= OBJ_UPRESET0 && obj < OBJ_AUTOSAVE)
         return 0xDC000u + (obj - OBJ_UPRESET0) * 2u * ST_SECTOR + copy * ST_SECTOR;
     return 0x97000u + (obj - OBJ_PROJECT0) * 2u * ST_SECTOR + copy * ST_SECTOR;

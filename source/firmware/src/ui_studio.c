@@ -262,7 +262,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
             cv_text(x + 5, 23, &FONT_T, tag, C_BLACK);
         }
         if (sect >= 0) {                               /* (2.7.2) the section A..D playing, SONG-layer colours */
-            char sb[2] = {(char)('A' + (sect & 3)), 0};
+            char sb[2] = {(char)('A' + sect % (int32_t)NSONG), 0};
             x -= 18;
             cv_card(x, 22, 14, 13, playing ? TE_COL[sect & 3] : TE_DIM[sect & 3], playing ? TE_COL[sect & 3] : TE_DIM[sect & 3]);
             cv_text(x + 4, 23, &FONT_T, sb, C_BLACK);
@@ -293,7 +293,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
         int32_t tx = 240 - text_w(&FONT_S, title) - 4;
         cv_text(tx, 5, &FONT_S, title, tc);
         if (sect >= 0) {                               /* (2.7.2) which section (A..D) is playing, SONG-layer colours */
-            char sb[2] = {(char)('A' + (sect & 3)), 0};
+            char sb[2] = {(char)('A' + sect % (int32_t)NSONG), 0};
             int32_t bw = text_w(&FONT_S, sb) + 8, bx = tx - bw - 6;
             cv_rect(bx, 3, bw, 14, playing ? TE_COL[sect & 3] : TE_DIM[sect & 3]);
             cv_text(bx + 4, 5, &FONT_S, sb, C_BLACK);

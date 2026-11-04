@@ -596,8 +596,11 @@ UI_SMALL static uint32_t graph_signature(void)
     if (pg->graph == GR_SLCR && t->p[P_SLCR])        /* the SLICER's step playing */
         h ^= (sl[song.sel].idx + 1u) * 2654435761u;
     if (pg->graph == GR_SLOTS)                       /* (a checksum over each slot) */
-        for (i = 0; i < 4u; i++)
-            h ^= (uint32_t)project_used(i) << (20u + i);
+        for (i = 0; i < NSONG; i++)
+            h = h * 31u + (uint32_t)project_used(i) + (uint32_t)(uint8_t)song_name_of(i)[0] * 3u;
+    if (pg->graph == GR_NAME)                        /* (the name, the cursor) */
+        for (i = 0; i <= KGS_NAME; i++)
+            h = h * 31u + (uint8_t)song_name[i] + name_pos * 7u;
     if (pg->graph == GR_STEPS || pg->graph == GR_ROLL) {
         uint32_t ph = song.playing ? t->seq_idx : 0xFFFFu;
         if (pg->graph == GR_ROLL)                    /* (2.7.2 NOTES: the note under edit, the zoom, the sheet) */
@@ -655,20 +658,56 @@ UI_SMALL static void graph_user(void)
     }
 }
 
-/* the sections A..D (the four slots): used / empty, the selected one in white */
+/* K-GLITCH: the 16 songs (A..D: the song mode's sections), five rows around the selected one: its letter, its name
+ * (or SONG), used / empty; the selected one in white */
 UI_SMALL static void graph_slots(void)
 {
-    uint32_t i;
-    for (i = 0; i < 4u; i++) {
-        int32_t y = 8 + (int32_t)i * 26;
+    int32_t sel = (int32_t)song.g[G_SLOT] - 1, first = clamp(sel - 2, 0, (int32_t)NSONG - 5), row;
+    for (row = 0; row < 5; row++) {
+        uint32_t k = (uint32_t)(first + row);
+        int32_t y = 4 + row * 22;
+        int on = (int32_t)k == sel, used = project_used(k);
+        const char *nm = song_name_of(k);
         char b[4];
-        int sel = (int32_t)i + 1 == song.g[G_SLOT];
-        b[0] = (char)('A' + i);
+        b[0] = (char)('A' + k);
         b[1] = 0;
-        if (sel)
+        if (on)
             cv_rect(4, y + 6, 3, 3, C_WHITE);
-        cv_text(14, y, &FONT_S, b, sel ? C_WHITE : C_GRAY);
-        cv_text(40, y, &FONT_S, project_used(i) ? "USED" : "EMPTY", project_used(i) ? (sel ? C_WHITE : C_HI) : C_DIM);
+        cv_text(14, y, &FONT_S, b, on ? C_WHITE : k < 4u ? C_HI : C_GRAY);
+        cv_text(40, y, &FONT_S, used ? (nm[0] ? nm : "SONG") : "EMPTY", used ? (on ? C_WHITE : C_HI) : C_DIM);
+    }
+}
+
+/* K-GLITCH SAVE > NAME: the name with its cursor, and the keyboard the keys are (after K-WASUB): the 16 white keys
+ * L .. Z and a space, the 11 black ones A .. K; K2 a digit or a sign at the cursor */
+UI_SMALL static void graph_name(void)
+{
+    static const char WH[16] = {'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_'};
+    const int32_t kx = 8, ky = 52, kw = 14, kh = 54;
+    int32_t i, x;
+    char t[2] = {0, 0}, b[16];
+    cv_text(8, 2, &FONT_S, "SONG", C_GRAY);
+    t[0] = (char)('A' + (uint32_t)(song.g[G_SLOT] - 1) % NSONG);
+    cv_text(52, 2, &FONT_S, t, C_HI);
+    for (i = 0, x = 8; i < (int32_t)KGS_NAME; i++) {   /* the name, a box a character, the cursor's box lit */
+        int on = i == (int32_t)name_pos;
+        t[0] = i < (int32_t)str_len(song_name) ? song_name[i] : ' ';
+        cv_rect(x, 22, 17, 22, on ? C_WHITE : C_DIM);
+        cv_rect(x + 1, 23, 15, 20, on ? C_AMB : C_BLACK);
+        cv_text(x + 4, 24, &FONT_S, t, on ? C_BLACK : C_WHITE);
+        x += 19;
+    }
+    (void)b;
+    for (i = 0; i < 16; i++) {                       /* the white keys */
+        cv_rect(kx + i * kw, ky, kw - 1, kh, C_HI);
+        t[0] = WH[i];
+        cv_text(kx + i * kw + 3, ky + kh - 16, &FONT_S, t, C_BLACK);
+    }
+    for (i = 0; i < 11; i++) {                       /* the black ones, between the white keys before and after them */
+        int32_t w = punch_key(PUNCH_BLACK[i] - 1u), bx = kx + (w + 1) * kw - 5;
+        cv_rect(bx, ky, 11, kh * 55 / 100, C_BLACK);
+        t[0] = (char)('A' + i);
+        cv_text(bx + 2, ky + 4, &FONT_S, t, C_AMB);
     }
 }
 
@@ -954,6 +993,10 @@ UI_SMALL static void draw_graph(void)
             cv_oy = 0;
             graph_slots();
             break;
+        case GR_NAME:
+            cv_oy = 0;
+            graph_name();
+            break;
         case GR_USER:
             cv_oy = 0;
             graph_user();
@@ -966,7 +1009,7 @@ UI_SMALL static void draw_graph(void)
             break;
         }
     }
-    top = !ui.home && !drum_note && (pg->graph == GR_BROWSE || pg->graph == GR_SLOTS || pg->graph == GR_USER ||
+    top = !ui.home && !drum_note && (pg->graph == GR_BROWSE || pg->graph == GR_SLOTS || pg->graph == GR_NAME || pg->graph == GR_USER ||
                                      pg->graph == GR_ROLL || big_page(pg));   /* these draw from the top */
     cv_oy = 0;
     if (ui.hot_t && settings.zoom && !(top && (big_page(pg) || pg->graph == GR_ROLL) && !drum_note)) {   /* (the big values show it already) */                 /* focus (menu ZOOM): the touched value, large and white */
@@ -1185,6 +1228,13 @@ UI_SMALL static void draw_columns(void)
     for (c = 0; c < 4u; c++) {
         int16_t *vp;
         const param_desc_t *d = page_desc(cur_page(), c, &vp);
+        if (cur_page()->graph == GR_NAME) {          /* K-GLITCH NAME: K1 the place, K2 a digit / sign, K3 delete, K4 clear */
+            static const char *const NL[4] = {"POS", "0-9", "DEL", "CLEAR"};
+            char pv[4];
+            fmt_int(pv, (int32_t)name_pos + 1);
+            draw_column(c, NL[c], c == 0u ? pv : "--", "", C_HI, -1, ICON_AUTO);
+            continue;
+        }
         if (cur_page()->graph == GR_SLOTS && c == 1u) {   /* 2.6: ERASE, lit while the slot holds a project */
             draw_column(1, "ERASE", "--", "", project_used((uint32_t)song.g[G_SLOT] - 1u) ? C_HI : C_DIM, -1, ICON_AUTO);
             continue;
@@ -1269,6 +1319,7 @@ UI_SMALL static void ui_draw(void)
     ui.frame++;
     if (ui.home || ui.menu || cur_page()->graph != GR_KG)
         kg_pads = 0;                                    /* (K-GLITCH: the keys are pads only on its pages: kg_screen_draw) */
+    name_pads = !ui.home && !ui.menu && cur_page()->graph == GR_NAME;
     pads_tick();
     if (rec_go) {                                       /* the take started: say so */
         rec_go = 0;

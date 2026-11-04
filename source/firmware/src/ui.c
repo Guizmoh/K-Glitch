@@ -12,6 +12,10 @@ static void project_load(uint32_t slot);
 #ifdef KGLITCH_VERSION
 static void kgs_clear(void);                 /* (kg_song.c) */
 #endif
+#define KGS_NAME 12u                         /* K-GLITCH: a song's name (kg_song.c) */
+static char song_name[KGS_NAME + 1];         /* the working song's name */
+static uint8_t name_pos;                     /* SAVE > NAME: the cursor */
+static const char *song_name_of(uint32_t slot);   /* a saved song's name ("" none) */
 static void project_erase(uint32_t slot);        /* SAVE > PROJECT > ERASE (2.6) */
 static int project_used(uint32_t slot);
 static int up_used(uint32_t k);              /* user presets: upreset.c */
@@ -275,22 +279,27 @@ UI_SMALL static void step_clear(step_t *st)
 }
 
 /* undo / redo (EDIT or SAVE + OCT- / OCT+), as many steps as the history holds (seq.c uh) */
+static char undo_what[32];                           /* K-GLITCH: what the last undo / redo changed (the message) */
 UI_SMALL static int undo_swap(int redo)
 {
     int ok = 0;
+    uint32_t e = 0;
     fm1_irq_off();
     uh_close();                                          /* (the session open: its changes first) */
+    kgu_commit();                                        /* (K-GLITCH: the effect lane's changes too) */
     if (!redo && uh.cur) {
-        uh_apply(--uh.cur, 0);
+        uh_apply(e = --uh.cur, 0);
         ok = 1;
     } else if (redo && uh.cur < uh.n) {
-        uh_apply(uh.cur++, 1);
+        uh_apply(e = uh.cur++, 1);
         ok = 1;
     }
     if (ok)
         undo.undone = (uint8_t)!redo;
     fm1_irq_on();
     if (ok) {
+        str_cpy(undo_what, redo ? "REDO " : "UNDO ", sizeof undo_what);
+        uh_desc(e, undo_what + 5, sizeof undo_what - 5u);
         sync_reload = 1;
         ui.force = 1;
     }

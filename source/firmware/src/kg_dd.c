@@ -85,6 +85,8 @@ static volatile uint8_t kd_sintv[KD_SLOTS];       /* its recorded INTENSITY + 1 
 static uint8_t kd_int[DD_N] = {[0 ... DD_N - 1] = 50};
 static volatile int8_t kd_lfo;                   /* the LFO now, -50..50 (kg_route, per block) */
 static volatile uint8_t kg_sel;                  /* the effect ALGORITHM selects (and a pad pressed): DD_* */
+static volatile uint8_t name_pads;               /* UI: SAVE > NAME, the keys type letters (ui_input.c name_key) */
+static void (*name_keyp)(uint32_t k);            /* (ui_input.c name_key: set by ui_input) */
 static volatile uint8_t kg_pads;                 /* UI: the keys are pads (1: the K-GLITCH pages) or SEQ's steps (2) */
 static volatile uint8_t kg_keystep;              /* ISR: a white key pressed on SEQ, + 1 (the UI takes it) */
 static volatile uint8_t kg_keynote;              /* ISR: a key pressed on FILTER: its note + 1 (the UI takes it) */

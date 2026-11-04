@@ -502,6 +502,62 @@ UI_SMALL static void project_new(void)
     ui.force = 1;
 }
 
+/* K-GLITCH SAVE > NAME (after K-WASUB): the keys are a letter keyboard, black A .. K, white L .. Z and a space; a key
+ * writes its letter at the cursor and moves on. K1 the place, K2 a digit or a sign there, K3 deletes it, K4 (twice)
+ * clears the name. The name is the working song's: SAVE keeps it with the song */
+static void name_key(uint32_t k)
+{
+    static const char WH[16] = {'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '};
+    int32_t w = punch_key(k);
+    uint32_t i, n = str_len(song_name);
+    char ch = 0;
+    if (w >= 0 && w < 16)
+        ch = WH[w];
+    for (i = 0; i < PUNCH_NFX - 16u; i++)
+        if (PUNCH_BLACK[i] == k) ch = (char)('A' + i);
+    if (!ch)
+        return;
+    while (n < name_pos) song_name[n++] = ' ';         /* (past the end: spaces up to the cursor) */
+    song_name[name_pos % KGS_NAME] = ch;
+    if (name_pos >= n) song_name[name_pos + 1u] = 0;
+    name_pos = (uint8_t)(name_pos + 1u < KGS_NAME ? name_pos + 1u : KGS_NAME - 1u);
+    ui.force = 1;
+}
+UI_SMALL static void name_knob(uint32_t slot, int32_t steps)
+{
+    static const char SIGNS[] = " 0123456789-.#!&+";
+    uint32_t n = str_len(song_name), i;
+    if (slot == 0u) {
+        name_pos = (uint8_t)clamp((int32_t)name_pos + steps, 0, (int32_t)KGS_NAME - 1);
+    } else if (slot == 1u) {
+        const char *p;
+        int32_t at = 0, ns = (int32_t)sizeof SIGNS - 1;
+        while (n < name_pos) song_name[n++] = ' ';
+        for (p = SIGNS; *p; p++)
+            if (name_pos < n && *p == song_name[name_pos]) at = (int32_t)(p - SIGNS);
+        song_name[name_pos] = SIGNS[((at + steps) % ns + ns) % ns];
+        if (name_pos >= n) song_name[name_pos + 1u] = 0;
+    } else if (slot == 2u) {
+        if (steps <= 0 || name_pos >= n)
+            return;
+        for (i = name_pos; i < n; i++) song_name[i] = song_name[i + 1u];
+    } else {
+        if (steps <= 0)
+            return;
+        if (ui.arm != 0xEAu) {
+            ui.arm = 0xEAu;
+            ui.arm_t = 90;
+            ui_say("AGAIN: ", "CLEAR NAME");
+            return;
+        }
+        ui.arm = 0;
+        song_name[0] = 0;
+        name_pos = 0;
+    }
+    for (n = str_len(song_name); n && song_name[n - 1u] == ' ' && n - 1u > name_pos; n--) song_name[n - 1u] = 0;
+    ui.force = 1;
+}
+
 UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
 {
     int16_t *vp;
@@ -548,6 +604,10 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         }
         ui.arm = 0;
         up_ui(slot - 1u, ui.uslot);
+        return;
+    }
+    if (pg->graph == GR_NAME) {                           /* K-GLITCH NAME: K1 the place, K2 a digit / sign, K3 delete, K4 clear */
+        name_knob(slot, steps);
         return;
     }
     if (pg->graph == GR_SLOTS && slot == 1u) {           /* 2.6: KNOB 2 ERASE, a GO button (the slot KNOB 1 picks) */
@@ -968,7 +1028,81 @@ UI_SMALL static int ly_quiet(void)
 }
 /* K-GLITCH: SEQ held + PRESETS: a tool on the selected track's pattern, OCT+ does it (OCT- undoes it). Every tool is
  * one undo. COPY keeps the pattern (its steps, nudges, length) for PASTE, on a track of the same kind (synth / drums) */
-static struct { step_t st[NSTEP]; int8_t micro[NSTEP]; int16_t len; uint8_t has, drum; } seq_clip;
+static struct { step_t st[NSTEP]; int8_t micro[NSTEP]; plock_t lock[NLOCK]; int16_t len; uint8_t has, drum; } seq_clip;
+/* K-GLITCH: on its pages (FX, SEL...: the effect lane in view) the tools act on the effect sequence and its automation:
+ * RANDOM a new one (CHAOS / DENSITY), MUTATE a quarter of its steps again, COPY / PASTE / CLEAR, SHIFT, REVERSE */
+static struct { int8_t seq[KG_STEPS], seq2[KG_STEPS]; uint8_t sint[KG_STEPS], prob[KG_STEPS], fnote[KG_STEPS], fmode[KG_STEPS]; int16_t len; uint8_t has; } fx_clip;
+UI_SMALL static int seq_tool_fx(void) { return !ui.home && cur_page()->graph == GR_KG; }
+UI_SMALL static void fx_tool_do(uint32_t tool)
+{
+    uint32_t len = kg_seqlen() ? kg_seqlen() : 16u, i;
+    static int8_t a[KG_STEPS], b2[KG_STEPS];
+    static uint8_t c[KG_STEPS], d[KG_STEPS], e[KG_STEPS], f[KG_STEPS];
+    if (tool == ST_COPY) {
+        memcpy(fx_clip.seq, (const void *)kg.seq, KG_STEPS), memcpy(fx_clip.seq2, (const void *)kg.seq2, KG_STEPS);
+        memcpy(fx_clip.sint, (const void *)kg.sint, KG_STEPS), memcpy(fx_clip.prob, (const void *)kg.prob, KG_STEPS);
+        memcpy(fx_clip.fnote, (const void *)kg.fnote, KG_STEPS), memcpy(fx_clip.fmode, (const void *)kg.fmode, KG_STEPS);
+        fx_clip.len = song.g[G_KSEQ];
+        fx_clip.has = 1;
+        ui_message("FX SEQ COPIED");
+        return;
+    }
+    if (tool == ST_PASTE && !fx_clip.has) {
+        ui_message("NO FX SEQ COPIED");
+        return;
+    }
+    if (tool == ST_DOUBLE || tool == ST_HALF || tool == ST_THIN) {
+        ui_message("FX SEQ: RANDOM MUTATE COPY PASTE CLEAR SHIFT REVERSE");
+        return;
+    }
+    kgu_commit();                                     /* (what changed before: its own undo) */
+    fm1_irq_off();
+    memcpy(a, (const void *)kg.seq, KG_STEPS), memcpy(b2, (const void *)kg.seq2, KG_STEPS);
+    memcpy(c, (const void *)kg.sint, KG_STEPS), memcpy(d, (const void *)kg.prob, KG_STEPS);
+    memcpy(e, (const void *)kg.fnote, KG_STEPS), memcpy(f, (const void *)kg.fmode, KG_STEPS);
+    switch (tool) {
+    case ST_RANDOM:
+        fm1_irq_on();
+        kg_mutate(ui.frame + fm1_ms);
+        fm1_irq_off();
+        if (!song.g[G_KSEQ]) song.g[G_KSEQ] = 1;
+        break;
+    case ST_MUTATE:                                   /* a quarter of the steps from a new sequence */
+        fm1_irq_on();
+        kg_mutate(ui.frame * 7u + fm1_ms);
+        fm1_irq_off();
+        for (i = 0; i < KG_STEPS; i++)
+            if (rng() % 4u != 0u)
+                kg.seq[i] = a[i], kg.seq2[i] = b2[i], kg.sint[i] = c[i], kg.prob[i] = d[i], kg.fnote[i] = e[i], kg.fmode[i] = f[i];
+        break;
+    case ST_PASTE:
+        for (i = 0; i < KG_STEPS; i++)
+            kg.seq[i] = fx_clip.seq[i], kg.seq2[i] = fx_clip.seq2[i], kg.sint[i] = fx_clip.sint[i], kg.prob[i] = fx_clip.prob[i],
+            kg.fnote[i] = fx_clip.fnote[i], kg.fmode[i] = fx_clip.fmode[i];
+        song.g[G_KSEQ] = fx_clip.len;
+        break;
+    case ST_CLEAR:
+        fm1_irq_on();
+        kg_clear();
+        fm1_irq_off();
+        break;
+    case ST_SHL:
+    case ST_SHR:
+    case ST_REVERSE:
+        for (i = 0; i < len; i++) {
+            uint32_t from = tool == ST_SHL ? (i + 1u) % len : tool == ST_SHR ? (i + len - 1u) % len : len - 1u - i;
+            kg.seq[i] = a[from], kg.seq2[i] = b2[from], kg.sint[i] = c[from], kg.prob[i] = d[from], kg.fnote[i] = e[from], kg.fmode[i] = f[from];
+        }
+        break;
+    default:
+        break;
+    }
+    fm1_irq_on();
+    kgu_commit();                                     /* (the tool: one undo) */
+    song.g[G_KSFX] = (int16_t)(kg.seq[(uint32_t)(song.g[G_KSTEP] - 1) % KG_STEPS] + 1);
+    ui.force = 1;
+    ui_say("FX SEQ ", SEQ_TOOL[tool]);
+}
 UI_SMALL static void seq_rand_step(track_t *t, uint32_t i, uint32_t dens)   /* a random step: a hit / a note, or nothing */
 {
     if (is_drum(t)) {
@@ -1003,9 +1137,14 @@ UI_SMALL static void seq_tool_do(uint32_t tool)
     uint32_t len = trk_len(t), i;
     static step_t tmp[NSTEP];
     static int8_t tm[NSTEP];
+    if (seq_tool_fx()) {                              /* (K-GLITCH's pages: the effect sequence) */
+        fx_tool_do(tool);
+        return;
+    }
     if (tool == ST_COPY) {
         memcpy(seq_clip.st, t->step, sizeof seq_clip.st);
         memcpy(seq_clip.micro, t->micro, sizeof seq_clip.micro);
+        memcpy(seq_clip.lock, t->lock, sizeof seq_clip.lock);
         seq_clip.len = t->p[P_SLEN];
         seq_clip.has = 1;
         seq_clip.drum = (uint8_t)is_drum(t);
@@ -1030,6 +1169,7 @@ UI_SMALL static void seq_tool_do(uint32_t tool)
     case ST_PASTE:
         memcpy(t->step, seq_clip.st, sizeof seq_clip.st);
         memcpy(t->micro, seq_clip.micro, sizeof seq_clip.micro);
+        memcpy(t->lock, seq_clip.lock, sizeof seq_clip.lock);   /* (K-GLITCH: its automation too) */
         t->p[P_SLEN] = seq_clip.len;
         break;
     case ST_CLEAR:
@@ -1067,7 +1207,7 @@ UI_SMALL static void seq_tool_do(uint32_t tool)
     fm1_irq_on();
     sync_reload = 1;
     ui.force = 1;
-    ui_say(SEQ_TOOL[tool], " DONE");
+    ui_say(is_drum(t) ? "DRUMS " : "PATTERN ", SEQ_TOOL[tool]);
 }
 
 /* K-GLITCH: the page picker's list: the section's pages, the ones visited most first (ui.c pick) */
@@ -1217,9 +1357,9 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
         if (press) {
             used[held] = 1;
             if (press & ob)
-                ui_message(undo_swap(0) ? "UNDO" : "NOTHING TO UNDO");
+                ui_message(undo_swap(0) ? undo_what : "NOTHING TO UNDO");
             else
-                ui_message(undo_swap(1) ? "REDO" : "NOTHING TO REDO");
+                ui_message(undo_swap(1) ? undo_what : "NOTHING TO REDO");
         }
     }
     if (held == LY_STEP) {                                /* SEQ + OCT- / OCT+: the page; a step held: OCT- its nudge, locks and
@@ -1246,7 +1386,7 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
             else if (seq_tool_on && (press & pb))
                 seq_tool_do(seq_tool);                    /* (a tool picked: OCT+ does it, OCT- undoes it) */
             else if (seq_tool_on && (press & ob))
-                ui_message(undo_swap(0) ? "UNDO" : "NOTHING TO UNDO");
+                ui_message(undo_swap(0) ? undo_what : "NOTHING TO UNDO");
             else
                 ui.step_page = (uint8_t)((ui.step_page + ((press & pb) ? 1u : pages - 1u)) % pages);
         }
@@ -1378,9 +1518,31 @@ UI_SMALL static void remote_poll(void)
 }
 
 static void kg_store_poll(void);                    /* K-GLITCH: its state into flash (project.c) */
+/* K-GLITCH: the effect lane's changes into the undo history, once they settle (~0.7 s without one; not while REC
+ * plays: the pass's change is one entry, taken when it stops or at the next undo) */
+UI_SMALL static void kgu_poll(void)
+{
+    static uint32_t h0, quiet;
+    uint32_t h = 2166136261u, i;
+    for (i = 0; i < KG_STEPS; i++)
+        h = (h ^ ((uint32_t)(uint8_t)kg.seq[i] | (uint32_t)(uint8_t)kg.seq2[i] << 8 | (uint32_t)kg.sint[i] << 16 |
+                  (uint32_t)kg.prob[i] << 24)) * 16777619u ^ ((uint32_t)kg.fnote[i] | (uint32_t)kg.fmode[i] << 8);
+    h ^= (uint32_t)song.g[G_KSEQ];
+    if (h != h0) {
+        h0 = h;
+        quiet = 0;
+        return;
+    }
+    if (++quiet == 40u && !(song.rec && song.playing))
+        kgu_commit();
+    if (quiet > 40u && !(song.rec && song.playing) && (quiet & 63u) == 0u)
+        kgu_commit();                                   /* (after a REC pass: when it stops) */
+}
 UI_SMALL static void ui_input(void)
 {
     kg_store_poll();
+    kgu_poll();
+    name_keyp = name_key;
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     uint32_t home = btn_hold(&ui.home_t0, B_HOME, now, 1);
     int32_t s;

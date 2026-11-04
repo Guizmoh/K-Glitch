@@ -58,7 +58,7 @@ UI_SMALL static void ed_live(const uint8_t *a, uint32_t na)
             ui.force = 1;
             break;
         case 5:
-            ui_message(undo_swap(a[1] & 1u) ? (a[1] & 1u ? "REDO" : "UNDO") : "NOTHING TO UNDO");
+            ui_message(undo_swap(a[1] & 1u) ? undo_what : "NOTHING TO UNDO");
             break;
         case 6:                                         /* ROLL: the key 0x80 + note (keyboard_block leaves it alone) */
         case 7:                                         /* ERASE */
