@@ -45,6 +45,7 @@ class AlarmActivity : ComponentActivity() {
             SomniaTheme(forceNight = true) {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.somnia.app.ui.LocalAgent provides com.somnia.app.data.SettingsRepository.get(this).settings.value.agent,
+                    com.somnia.app.ui.LocalMoods provides com.somnia.app.data.SettingsRepository.get(this).settings.value.moods,
                 ) {
                 AlarmScreen(
                     onStop = {

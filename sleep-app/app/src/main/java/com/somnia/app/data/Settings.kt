@@ -6,7 +6,15 @@ import com.somnia.app.audio.SoundType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/** Heures des humeurs du policier (réglables). */
+data class MoodHours(
+    val enabled: Boolean = true,
+    val angryStart: Int = 1, val angryEnd: Int = 6,
+    val joyStart: Int = 6, val joyEnd: Int = 22,
+)
+
 data class Settings(
+    val moods: MoodHours = MoodHours(),
     /** Mode télé : repère une télé / radio allumée et la traite comme bruit de fond. */
     val tvMode: Boolean = false,
     /** Ne garder que les paroles qui ressemblent à la voix enregistrée (si empreinte faite). */
@@ -96,6 +104,10 @@ class SettingsRepository private constructor(context: Context) {
             micSensitivity = prefs.getInt("mic", d.micSensitivity),
             micSource = prefs.getString("mic_source", d.micSource) ?: "auto",
             agent = prefs.getInt("agent", d.agent),
+            moods = MoodHours(
+                prefs.getBoolean("mood_on", true), prefs.getInt("mood_angry_s", 1), prefs.getInt("mood_angry_e", 6),
+                prefs.getInt("mood_joy_s", 6), prefs.getInt("mood_joy_e", 22),
+            ),
             tvMode = prefs.getBoolean("tv_mode", d.tvMode),
             onlyMyVoice = prefs.getBoolean("only_my_voice", d.onlyMyVoice),
             voiceMatch = prefs.getFloat("voice_match", d.voiceMatch),
@@ -123,6 +135,9 @@ class SettingsRepository private constructor(context: Context) {
             putInt("mic", s.micSensitivity)
             putString("mic_source", s.micSource)
             putInt("agent", s.agent)
+            putBoolean("mood_on", s.moods.enabled)
+            putInt("mood_angry_s", s.moods.angryStart); putInt("mood_angry_e", s.moods.angryEnd)
+            putInt("mood_joy_s", s.moods.joyStart); putInt("mood_joy_e", s.moods.joyEnd)
             putBoolean("tv_mode", s.tvMode)
             putBoolean("only_my_voice", s.onlyMyVoice)
             putFloat("voice_match", s.voiceMatch)

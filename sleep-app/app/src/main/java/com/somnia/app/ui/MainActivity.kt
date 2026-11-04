@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 }
                 androidx.compose.runtime.CompositionLocalProvider(
                     LocalAgent provides settingsNow.agent,
+                    LocalMoods provides settingsNow.moods,
                     LocalAgentToggle provides { Agent.next(this@MainActivity) },
                 ) {
                 var showSplash by remember { mutableStateOf(savedInstanceState == null) }

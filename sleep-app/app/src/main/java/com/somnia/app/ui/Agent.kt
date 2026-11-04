@@ -9,6 +9,9 @@ import com.somnia.app.data.SettingsRepository
 /** Personnage affiché : 0 = l'agent moustachu, 1 = le gros agent au nez rouge. */
 val LocalAgent = compositionLocalOf { 0 }
 
+/** Heures d'humeur choisies dans les réglages. */
+val LocalMoods = compositionLocalOf { com.somnia.app.data.MoodHours() }
+
 /** Heure utilisée pour l'humeur de l'agent (null = heure actuelle). */
 val LocalHour = compositionLocalOf<Int?> { null }
 
@@ -18,19 +21,38 @@ val LocalAgentToggle = compositionLocalOf<(() -> Unit)?> { null }
 object Agent {
     const val COUNT = 2
 
-    /** Humeur du gros agent : il rigole de 6 h à minuit, neutre de minuit à 1 h, en colère de 1 h à 6 h. */
-    fun awakeDrawable(hour: Int): Int = when (hour) {
-        in 6..23 -> com.somnia.app.R.drawable.agent2_smile
-        0 -> com.somnia.app.R.drawable.agent2_neutral
-        else -> com.somnia.app.R.drawable.agent2_angry
+    enum class Mood { LAUGH, SMILE, NEUTRAL, ANGRY }
+
+    /** Vrai si [h] est dans la plage [start, end[ (qui peut passer minuit). */
+    fun inRange(h: Int, start: Int, end: Int): Boolean =
+        if (start == end) false else if (start < end) h in start until end else h >= start || h < end
+
+    /**
+     * Humeur selon l'heure. Activées : colère [angryStart, angryEnd[, rire [joyStart, joyEnd[,
+     * sourire de la fin du rire jusqu'à minuit, neutre ensuite.
+     * Désactivées : grand sourire toute la journée, sourire de minuit au début du rire.
+     */
+    fun mood(hour: Int, m: com.somnia.app.data.MoodHours = com.somnia.app.data.MoodHours()): Mood = when {
+        !m.enabled -> if (inRange(hour, 0, m.joyStart)) Mood.SMILE else Mood.LAUGH
+        inRange(hour, m.angryStart, m.angryEnd) -> Mood.ANGRY
+        inRange(hour, m.joyStart, m.joyEnd) -> Mood.LAUGH
+        inRange(hour, m.joyEnd, 24) && m.joyEnd != 0 -> Mood.SMILE
+        else -> Mood.NEUTRAL
     }
 
-    /** Humeur du moustachu : il rigole de 6 h à 22 h, sourit de 22 h à minuit, neutre de minuit à 1 h, en colère de 1 h à 6 h. */
-    fun awakeDrawable1(hour: Int): Int = when (hour) {
-        in 6..21 -> com.somnia.app.R.drawable.agent1_laughing
-        in 22..23 -> com.somnia.app.R.drawable.agent1_smile
-        0 -> com.somnia.app.R.drawable.agent1_neutral
-        else -> com.somnia.app.R.drawable.agent1_angry
+    /** Gros agent (pas d'image « petit sourire » : il rigole aussi). */
+    fun awakeDrawable(hour: Int, m: com.somnia.app.data.MoodHours = com.somnia.app.data.MoodHours()): Int = when (mood(hour, m)) {
+        Mood.LAUGH, Mood.SMILE -> com.somnia.app.R.drawable.agent2_smile
+        Mood.NEUTRAL -> com.somnia.app.R.drawable.agent2_neutral
+        Mood.ANGRY -> com.somnia.app.R.drawable.agent2_angry
+    }
+
+    /** Agent moustachu. */
+    fun awakeDrawable1(hour: Int, m: com.somnia.app.data.MoodHours = com.somnia.app.data.MoodHours()): Int = when (mood(hour, m)) {
+        Mood.LAUGH -> com.somnia.app.R.drawable.agent1_laughing
+        Mood.SMILE -> com.somnia.app.R.drawable.agent1_smile
+        Mood.NEUTRAL -> com.somnia.app.R.drawable.agent1_neutral
+        Mood.ANGRY -> com.somnia.app.R.drawable.agent1_angry
     }
 
     /** Animation de la bave : images 4, 5, 6, 6, 5, 4 en boucle. */

@@ -82,6 +82,21 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             }
         }
 
+        GlassCard(title = "Humeur du policier", icon = "👮") {
+            val m = s.moods
+            SwitchRow("Humeurs selon l'heure", m.enabled) { v -> vm.updateSettings { it.copy(moods = it.moods.copy(enabled = v)) } }
+            if (m.enabled) {
+                HourRangeRow("En colère", m.angryStart, m.angryEnd) { a, b -> vm.updateSettings { it.copy(moods = it.moods.copy(angryStart = a, angryEnd = b)) } }
+                HourRangeRow("Il rigole", m.joyStart, m.joyEnd) { a, b -> vm.updateSettings { it.copy(moods = it.moods.copy(joyStart = a, joyEnd = b)) } }
+                Text(
+                    "Après le rire : il sourit jusqu'à minuit, puis il est neutre jusqu'à la colère.",
+                    style = MaterialTheme.typography.bodySmall, color = TextSoft,
+                )
+            } else {
+                Text("Désactivé : grand sourire toute la journée, sourire à partir de minuit.", style = MaterialTheme.typography.bodySmall, color = TextSoft)
+            }
+        }
+
         GlassCard(title = "Que doit-on capter ?", icon = "🎙️") {
             Segmented(CapturePreset.entries.map { it.label }, preset?.ordinal ?: -1) { i ->
                 vm.updateSettings { CapturePreset.entries[i].apply(it) }
@@ -258,6 +273,19 @@ private fun TranscriptionCard() {
                 ) { Text("Installer le français (42 Mo, une seule fois, Wi-Fi conseillé)") }
             }
         }
+    }
+}
+
+/** « En colère : de [1 h] à [6 h] » — chaque heure se choisit en la touchant. */
+@Composable
+private fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, Int) -> Unit) {
+    val ctx = LocalContext.current
+    fun pick(current: Int, set: (Int) -> Unit) =
+        TimePickerDialog(ctx, { _, h, _ -> set(h) }, current, 0, true).show()
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.weight(1f))
+        TextButton(onClick = { pick(start) { onChange(it, end) } }) { Text("de ${start} h") }
+        TextButton(onClick = { pick(end) { onChange(start, it) } }) { Text("à ${end} h") }
     }
 }
 

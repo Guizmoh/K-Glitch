@@ -45,4 +45,22 @@ class ThemeAndLinesTest {
         assertEquals(com.somnia.app.R.drawable.agent2_smile, Agent.awakeDrawable(6))
         assertEquals(com.somnia.app.R.drawable.agent1_laughing, Agent.awakeDrawable1(6))
     }
+
+    @Test fun customMoodHours() {
+        val m = com.somnia.app.data.MoodHours(angryStart = 23, angryEnd = 3, joyStart = 9, joyEnd = 20)
+        assertEquals(Agent.Mood.ANGRY, Agent.mood(23, m))
+        assertEquals(Agent.Mood.ANGRY, Agent.mood(2, m)) // plage qui passe minuit
+        assertEquals(Agent.Mood.NEUTRAL, Agent.mood(5, m))
+        assertEquals(Agent.Mood.LAUGH, Agent.mood(9, m))
+        assertEquals(Agent.Mood.SMILE, Agent.mood(21, m))
+    }
+
+    @Test fun moodsDisabled() {
+        val off = com.somnia.app.data.MoodHours(enabled = false)
+        assertEquals(Agent.Mood.LAUGH, Agent.mood(15, off))
+        assertEquals(Agent.Mood.LAUGH, Agent.mood(23, off))
+        assertEquals(Agent.Mood.SMILE, Agent.mood(0, off))
+        assertEquals(Agent.Mood.SMILE, Agent.mood(3, off))
+        for (h in 0..23) assertTrue(Agent.mood(h, off) != Agent.Mood.ANGRY)
+    }
 }
