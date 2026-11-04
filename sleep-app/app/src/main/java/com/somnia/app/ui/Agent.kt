@@ -58,7 +58,7 @@ object Agent {
     fun set(context: Context, agent: Int) {
         SettingsRepository.get(context).update { it.copy(agent = agent) }
         com.somnia.app.widget.DodoWidget.refresh(context)
-        requestIcon(agent)
+        // L'icône du téléphone reste toujours le gros policier qui rigole : on ne la change plus.
     }
 
     /** Mémorise l'icône voulue, sans toucher au téléphone. */

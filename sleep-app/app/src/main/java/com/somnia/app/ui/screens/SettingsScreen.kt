@@ -196,7 +196,7 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
 
         GlassCard(title = "Aide", icon = "👮", onClick = onTutorial) {
             Text("Revoir le tuto de l'agent du Dodo", color = TextSoft)
-            Text("Astuce : touchez la tête du policier pour changer de personnage. L'icône du téléphone change quand vous quittez l'appli.", color = TextSoft, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+            Text("Astuce : touchez la tête du policier pour changer de personnage.", color = TextSoft, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
         }
 
         // Rapport du dernier plantage (s'il y en a eu un), à envoyer pour corriger le bug
