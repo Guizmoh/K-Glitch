@@ -540,3 +540,50 @@ static inline void drums_mix(int32_t *ml, int32_t *mr, int32_t *rev, int32_t *dl
 }
 static void drums_render(int32_t *ml, int32_t *mr, int32_t *rev, int32_t *dly, uint32_t n) { drums_mix(ml, mr, rev, dly, 0, n); }
 static void drums_render_mono(int32_t *mono, uint32_t n) { drums_mix(0, 0, 0, 0, mono, n); }
+
+/* K-GLITCH KDRUM: the FM DRUM / C64 DRUM sounds (kg_drum.c, the kits edited on the drum track) on a synth track.
+ * A key plays one of the 16 sounds: C3 = lane 1 (KICK), up by semitones, every 16 keys again; the sound's own
+ * envelope ends the voice (ownenv). Its SAT is the sound's; DLY / REV are the track's sends. */
+static kgb_t kdr_v[NPART][NVOICE];
+static const char *const N_KDRUM_KIT[] = {"FM", "C64"};
+static kgb_t *kdr_of(const track_t *t, const voice_t *v)
+{
+    return &kdr_v[(uint32_t)(t - trk) % NPART][(uint32_t)(v - t->v) % NVOICE];
+}
+static void kdr_note_on(track_t *t, voice_t *v)
+{
+    uint32_t lane = ((uint32_t)v->note + 128u - 48u) & 15u;
+    kgd_on(kdr_of(t, v), (uint32_t)t->p[P_E0] % KGD_NK, lane, v->vel ? v->vel : 100u, (int32_t)t->p[P_E1] * 16);
+    v->s[0] = 1;
+}
+static void kdr_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+{
+    static int32_t b[CTL];
+    uint32_t i;
+    if (!v->s[0])
+        return;
+    v->s[0] = kgd_render(kdr_of(t, v), b, n);
+    for (i = 0; i < n; i++)
+        out[i] += voice_amp(b[i], m, i);
+}
+static int kdr_done(track_t *t, voice_t *v) { (void)t; return !v->s[0]; }
+static const preset_t KDRUM_PRESETS[] = {
+    {"FM KIT", {KGD_FM, 0, 0, 0, 0, 0, 0, 0}, {0, 60, 127, 30}, 0, 0, FX(0, 0, 0, 10)},
+    {"C64 KIT", {KGD_C64, 0, 0, 0, 0, 0, 0, 0}, {0, 60, 127, 30}, 0, 0, FX(0, 0, 0, 10)},
+};
+static const engine_t ENG_KDRUM = {
+    .name = "KDRUM",
+    .page_title = {"KDRUM", "KDRUM"},
+    .edit = {
+        {"KIT", F_ENUM, 0, 1, 0, N_KDRUM_KIT, 0},
+        {"TUNE", F_INT, -24, 24, 0, 0, 0},
+    },
+    .presets = KDRUM_PRESETS,
+    .npresets = NELEM(KDRUM_PRESETS),
+    .note_on = kdr_note_on,
+    .render = kdr_render,
+    .fil_page = -1,
+    .ownenv = 1, .done = kdr_done,
+    .color = 0xFC00u,
+    .macro = {P_E0, P_E1, P_E0, P_E1},
+};

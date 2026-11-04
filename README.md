@@ -133,6 +133,9 @@ Page BANK, K4. **SOLO** : un nouvel effet remplace le précédent. **MULTI** : l
 ### Instruments GLITCH
 Nouveau moteur **GLITCH** pour les pistes synthé (PRESETS, famille GLCH) : 6 modes (BYTE = bytebeat, BITS, BLIP, ZAP, DATA, BEND), retrigger interne, sauts de pitch aléatoires reproductibles (SEED), crush, tone. 10 presets : BYTEBEAT, BYTE CRUSH, BIT SNAP, BLIP RAIN, ZAP GUN, DATA DUST, DATA LOOP, BENT SAW, ROBOT, CRASH BUG.
 
+### Batterie sur une piste synthé (moteur KDRUM)
+N'importe laquelle des 3 pistes synthé peut devenir une batterie : sur la piste, PRESETS > **FM KIT** ou **C64 KIT** (famille FX), ou EDIT > moteur **KDRUM**. Chaque touche joue un des 16 sons de la batterie FM / C64 (Do3 = grosse caisse, puis un son par demi-ton, et ça recommence tous les 16 demi-tons) : ce sont les mêmes sons que ceux édités sur la piste batterie (EDIT > FM TONE…, SAT comprise). EDIT : KIT (FM / C64) et TUNE (±24 demi-tons). Le DLY et la REV sont les envois de la piste. Coût : comme un son de la piste batterie, par note jouée.
+
 ### Police et écran
 Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec des chiffres de largeur fixe, sur les mêmes lignes que SLOOP. Économe : seuls les caractères affichés (tout est en capitales) et 4 niveaux de lissage (2 bits par pixel) : environ **15 Ko** de flash pour les trois tailles (SLOOP : 5 Ko ; `KG_FONT=terminus` remet sa police). Dans l'émulateur, l'écran est agrandi en lissé ; le bouton **PIXELS** montre les vrais pixels du FM-1.
 

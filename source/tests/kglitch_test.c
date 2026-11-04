@@ -560,6 +560,31 @@ int main(int argc, char **argv)
             }
         printf("kglitch: GLITCH: the %u presets sound across the keyboard, bounded                     ok\n", ENG_GLITCH.npresets);
     }
+    /* 17b. KDRUM (drums.c): FM KIT and C64 KIT on a synth track: the 16 keys sound, bounded, and their voices end */
+    {
+        static int32_t o[CTL * 2u];
+        uint32_t pi, b, note, k, pk;
+        assert(ENGINES[ENGI_KDRUM] == &ENG_KDRUM);
+        for (pi = 0; pi < ENG_KDRUM.npresets; pi++)
+            for (note = 48; note < 64; note++) {
+                double e = 0;
+                reset();
+                song.playing = 0;
+                host_preset(&trk[0], ENGI_KDRUM, pi);
+                trk_note_on(&trk[0], note, 110);
+                pk = 0;
+                for (b = 0; b < FS / 4u / CTL; b++) {
+                    mix_block(o, CTL);
+                    for (i = 0; i < CTL * 2u; i++) { e += (double)o[i] * o[i]; if ((uint32_t)abs(o[i]) > pk) pk = (uint32_t)abs(o[i]); }
+                }
+                trk_note_off(&trk[0], note);
+                for (b = 0; b < FS * 3u / CTL; b++) mix_block(o, CTL);
+                for (k = 0; k < NVOICE; k++) assert(!trk[0].v[k].active && "the sound ends its voice");
+                if (note == 48 || note == 50) printf("  KDRUM %s note %u: peak %u\n", ENG_KDRUM.presets[pi].name, note, pk);
+                assert(e > 1e5 && pk <= 32767 && "it sounds, bounded");
+            }
+        printf("kglitch: KDRUM: FM KIT and C64 KIT, the 16 keys sound on a synth track and end             ok\n");
+    }
     /* 18. the state kept in flash (kg_pack / kg_unpack): back exactly; a damaged record changes nothing; the loop's
      * MODE is not brought back (its sound is RAM only) */
     {
