@@ -2,11 +2,18 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* The few libc routines the compiler may call implicitly (struct copies,
  * zeroing). Freestanding: no other libc. */
+typedef unsigned __attribute__((may_alias)) word_t;   /* (a word that may alias anything: no strict-aliasing surprise) */
+/* K-GLITCH 0.9.5 (as K-WASUB 1.0.47): a word at a time once aligned. The loop's 128 KB line is emptied with the
+ * interrupts off (kg_loop.c kl_free), the effects' and the arenas' memories in the audio interrupt: byte by byte that
+ * was ~4x the time */
 void *memset(void *d, int c, unsigned n)
 {
     unsigned char *p = d;
-    while (n--)
-        *p++ = (unsigned char)c;
+    unsigned w = (unsigned char)c * 0x01010101u;
+    while (n && ((unsigned long)p & 3u)) { *p++ = (unsigned char)c; n--; }
+    for (; n >= 16u; n -= 16u, p += 16) { ((word_t *)p)[0] = w; ((word_t *)p)[1] = w; ((word_t *)p)[2] = w; ((word_t *)p)[3] = w; }
+    for (; n >= 4u; n -= 4u, p += 4) *(word_t *)p = w;
+    while (n--) *p++ = (unsigned char)c;
     return d;
 }
 
@@ -14,6 +21,8 @@ void *memcpy(void *d, const void *s, unsigned n)
 {
     unsigned char *p = d;
     const unsigned char *q = s;
+    if (!(((unsigned long)p | (unsigned long)q) & 3u))   /* (both aligned: a word at a time) */
+        for (; n >= 4u; n -= 4u, p += 4, q += 4) *(word_t *)p = *(const word_t *)q;
     while (n--)
         *p++ = *q++;
     return d;
@@ -23,10 +32,12 @@ void *memmove(void *d, const void *s, unsigned n)   /* (K-GLITCH: the undo histo
 {
     unsigned char *p = d;
     const unsigned char *q = s;
-    if (p < q)
+    if (p < q) {
+        if (!(((unsigned long)p | (unsigned long)q) & 3u))   /* (forward, both aligned: a word at a time) */
+            for (; n >= 4u; n -= 4u, p += 4, q += 4) *(word_t *)p = *(const word_t *)q;
         while (n--)
             *p++ = *q++;
-    else
+    } else
         while (n--)
             p[n] = q[n];
     return d;
