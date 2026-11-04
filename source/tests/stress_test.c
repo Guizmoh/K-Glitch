@@ -41,7 +41,9 @@ static void font_ref_build(void)
         for (y = 0; y < 32u; y++)
             for (x = 0; x < wb; x++) {
                 uint32_t sx = x / 2u, v;
-                if (FONT_S.bits == 1u) {                  /* (2.6: S at 1 bit a pixel) */
+                if (sx >= ws || y / 2u >= FONT_S.h)     /* (K-GLITCH's L is wider and taller than S at 2x: blank there) */
+                    v = 0;
+                else if (FONT_S.bits == 1u) {                  /* (2.6: S at 1 bit a pixel) */
                     uint32_t i = (y / 2u) * ws + sx;
                     v = (s[i >> 3] >> (7u - (i & 7u))) & 1u ? 15u : 0u;
                 } else {
@@ -66,7 +68,8 @@ static void t_font(void)
     static uint16_t a[CV_MAX];
     uint32_t c, i, bad = 0, n = 0;
     char s[48];
-    font_ref_build();
+    if (FONT_L.sh)
+        font_ref_build();                              /* (S at 2x: only for a FONT_L drawn from S) */
     if (!FONT_L.sh) {                                  /* K-GLITCH: FONT_L is a font of its own (Carlito at 29 px, its own
                                                         * bitmaps: tests/font_test.c), not S at 2x: its height only here */
         scheck(FONT_L.h == 2u * FONT_S.h, "font: FONT_L twice FONT_S's height (K-GLITCH: its own bitmaps)");
@@ -370,7 +373,7 @@ static void t_bench(void)
         cv_begin(240, 32, C_BLACK); cv_text(2, 0, &FONT_L, TXT[i % 6u], C_HI);
         a += st_ns() - t0;
         t0 = st_ns();
-        cv_begin(240, 32, C_BLACK); cv_text(2, 0, &FONT_L2X, TXT[i % 6u], C_HI);
+        cv_begin(240, 32, C_BLACK); cv_text(2, 0, FONT_L.sh ? &FONT_L2X : &FONT_L, TXT[i % 6u], C_HI);
         b += st_ns() - t0;
     }
     printf("bench: a large value drawn: %.2f us from S at 2x, %.2f us from a stored 2x copy (%+.0f %%)\n",

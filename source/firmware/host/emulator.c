@@ -121,6 +121,7 @@ static int st_read(uint32_t off, void *dst, uint32_t n) { (void)off, (void)dst, 
 static int st_erase(uint32_t off) { (void)off; return -1; }
 static int st_prog(uint32_t off, const void *src, uint32_t n) { (void)off, (void)src, (void)n; return -1; }
 #include "../src/storage.c"
+#include "../src/kg_song.c"                    /* K-GLITCH: NEW / LOAD clear the effects (nothing saved in the browser) */
 
 /* ---- the page's API */
 static float emu_out[CTL * 2u * 64u];

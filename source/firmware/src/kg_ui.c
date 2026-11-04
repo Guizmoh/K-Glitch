@@ -92,7 +92,7 @@ enum { KP_DESTROY, KP_FILTER, KP_DRUMS, KP_CHOP, KP_LOOP, KP_SLICE, KP_GRAIN, KP
 UI_SMALL static uint32_t kg_pageno(void)
 {
     static const uint8_t ID[KG_NPG] = {G_KBANK, G_KFTYPE, G_KSTYLE, G_KDICE, G_KLREC, G_KLSL, G_KGPOS, G_KSTEP, G_KMULTI, G_KCMODE,
-                                       G_KTGT};
+                                       G_KCTGT};
     uint32_t id = cur_page()->id[0], i;
     for (i = 0; i < KG_NPG; i++)
         if (ID[i] == id) return i;
@@ -274,17 +274,16 @@ UI_SMALL static void kg_filterview(void)
 UI_SMALL static void kg_paint(void)
 {
     static const char *const TITLE[KG_NPG] = {"DRUM DESTROYER", "FILTER", "DRUMS", "CHOP / MUTATE", "LOOP SAMPLER", "SLICES",
-                                              "GRAINS", "EFFECT SEQUENCE", "PAD MODES", "MODES", "SETUP / MPC"};
-    static const char *const OUT[3] = {"FM-1", "MPC", "BOTH"};
+                                              "GRAINS", "EFFECT SEQUENCE", "PAD MODES", "MODES", "FX SETUP"};
     static const char *const HINT[KG_NPG] = {"ALGO FX / PRESETS INTENS / OCT+ DICE", "KEYS TUNE / REC: AUTOMATION",
                                              "K4 GENERATE / KEYS PLAY THE DRUMS",
                                              "K1 DICE / K2 MUTATE / K3 RESTORE", "K1 REC: NEXT BAR / KEYS: SLICES",
                                              "KEYS: SLICES / OCT+ DICE / OCT- ORDER", "KEYS: POSITION / CHAOS: SPRAY",
                                              "KEY STEP / OCT+ DICE / OCT- CLEAR", "K1 SOLO OR MULTI / K3 CLEAN: ORIGINAL",
-                                             "AUTO + LFO + MUTATIONS ON THE BAR", "OUT: FM-1, MPC, BOTH / CH: THE MPC'S"};
+                                             "AUTO + LFO + MUTATIONS ON THE BAR", "K1 CHOP: DRUMS OR ALL / K2 CLEAR SEQ"};
     static const char *const SRC[4] = {"", "KEY", "SEQ", "AUTO"};
     const page_t *pg = cur_page();
-    uint32_t pn = kg_pageno(), i, out = (uint32_t)song.g[G_KTGT] % 3u;
+    uint32_t pn = kg_pageno(), i;
     int32_t now = kg.now, play = song.playing ? (int32_t)kg.step : -1, cur = pn == KP_SEQ ? (int32_t)song.g[G_KSTEP] - 1 : -1, x;
     char s[48], k[64];
     cv_rect(0, 0, 240, 240, KG_BG);
@@ -382,17 +381,12 @@ UI_SMALL static void kg_paint(void)
         str_cpy(s + str_len(s), "%", sizeof s - str_len(s));
         break;
     default:
-        str_cpy(s, "OUT ", sizeof s);
-        str_cpy(s + str_len(s), OUT[out], sizeof s - str_len(s));
-        str_cpy(s + str_len(s), " / MPC CH ", sizeof s - str_len(s));
-        if (song.g[G_KCCCH]) kg_u2a(s + str_len(s), (uint32_t)song.g[G_KCCCH]);
-        else str_cpy(s + str_len(s), "OFF", sizeof s - str_len(s));
+        str_cpy(s, song.g[G_KCTGT] ? "CHOP: ALL TRACKS" : "CHOP: DRUMS", sizeof s);
         break;
     }
     kg_t5(11, 39, s, ui.msg_t || (ui.hot_t && ui.hot_col == 4u) ? KG_INK : KG_ACC);
-    {   /* the tags, right to left: OUT, then what runs on its own */
-        int32_t tx = 230 - kg_t5w(OUT[out]) - 8;
-        kg_tag(tx, 24, OUT[out], out == KG_OUT_FM1 ? KG_RULE : KG_ACC, out == KG_OUT_FM1 ? KG_INK : KG_BG);
+    {   /* the tags, right to left: what runs on its own */
+        int32_t tx = 234;
         if (song.g[G_KCMODE]) { tx -= kg_t5w("CHAOS") + 12; kg_tag(tx, 24, "CHAOS", KG_RED, KG_BG); }
         else if (song.g[G_KAUTO]) { tx -= kg_t5w("AUTO") + 12; kg_tag(tx, 24, "AUTO", KG_CYAN, KG_BG); }
         if (song.g[G_KHOLD]) { tx -= kg_t5w("HOLD") + 12; kg_tag(tx, 24, "HOLD", KG_AMB, KG_BG); }

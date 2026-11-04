@@ -5,7 +5,7 @@
  * cleared), NEW clears them; a recorded loop never goes from one song to the next (RAM only: let go).
  * Where: the flash sector 0xFB000 (free in SLOOP), four records of 960 B, none in its last 256 B (where an update
  * record could be looked for, firmware/loader). Not in the sections' own sectors: a project fills them.
- * The drum kits, OUT (FM-1 / MPC) and the MPC channel stay the FM-1's (settings). Main loop only. */
+ * The drum kits stay the FM-1's (settings). Main loop only. */
 #define KGS_BASE 0xFB000u
 #define KGS_REC 960u
 #define KGS_MAGIC 0x31534B47u                     /* "GKS1" */

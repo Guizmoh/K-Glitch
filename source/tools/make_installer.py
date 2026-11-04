@@ -59,7 +59,7 @@ FR = """  fr: {
 PAGE = [
     ("<h1>Firmware for the M-VAVE FM-1</h1>", "<h1>Firmware glitch pour le M-VAVE FM-1</h1>"),
     ('<p class="lead">A groovebox you play live: four tracks — three synths and a drum machine — 12 synth engines (with six-operator FM and DX7 patches), 153 sounds, 37 drum kits from 808 to techno, amapiano and ambient, your own samples and drum kits, 27 punch-in effects. House, techno, hip-hop, drum &amp; bass, synthwave, lo-fi, ambient: make what you want. No factory patterns, nothing to load: everything you hear, you play.</p>',
-     '<p class="lead">K-GLITCH : un destructeur de rythmes, construit sur SLOOP 2.8.4. 16 pads d\'effets en trois banques (DESTROY, BEAT, SLOOP), leur séquence en automation, un sampler de boucle (slices, grains), 11 filtres créatifs, des batteries FM et C64 éditables, CHAOS, DICE et le pilotage d\'une MPC en MIDI. Tout SLOOP reste là.</p>'),
+     '<p class="lead">K-GLITCH : un destructeur de rythmes, construit sur SLOOP 2.8.4. 16 pads d\'effets en trois banques (DESTROY, BEAT, SLOOP), leur séquence en automation, un sampler de boucle (slices, grains), 11 filtres créatifs, des batteries FM et C64 éditables CHAOS et DICE. Tout SLOOP reste là.</p>'),
     ('<div class="tile" style="--c: var(--blue)"><b>153</b><span>sounds, 12 engines, your samples</span></div>',
      '<div class="tile" style="--c: var(--blue)"><b>48</b><span>effets : DESTROY, BEAT, SLOOP</span></div>'),
     ('<div class="tile" style="--c: var(--green)"><b>37</b><span>drum kits, 909 to afro, + your own</span></div>',

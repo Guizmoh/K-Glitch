@@ -2,9 +2,7 @@
 /* K-GLITCH (firmware/src/kglitch.c) over SLOOP's punch-in FX:
  *   the effect sequencer plays its step's effect on its 16th, and only then;
  *   a key (punch.req) wins over the sequencer, the sequencer over AUTO;
- *   OUT MPC: the FM-1's mix stays dry to the sample, and each effect goes out as one CC 127 / 0 on the MPC channel,
- *   with the macros as CC 85..87; OUT BOTH: the mix changes and the CCs go out; FM-1: no MIDI at all;
- *   leaving MPC or changing the channel lets go of the CC still up (no stuck effect on the MPC);
+ *   the effects send no MIDI at all (1.0: no MPC out);
  *   AUTO: DENSITY 0 nothing, 100 a gesture on every 16th, only effects of the CHAOS pool, bounded output;
  *   MUTATE: DENSITY 0 an empty sequence, CHAOS <= 70 leaves the beats dry, the pool follows CHAOS.
  * argv[1]: a WAV demo (a beat through AUTO at CHAOS 100). */
@@ -44,14 +42,12 @@ static void reset(void)
     punch.req = -1, punch.cur = -1, punch.g = 0, punch.hold = 0;
     kg_clear();
     kg.last16 = 0xFFFFFFFFu, kg.auto_fx = -1, kg.auto_left = 0, kg.now = -1;
-    kg.sent_mac[0] = kg.sent_mac[1] = kg.sent_mac[2] = -1;
     song.g[G_KCHAOS] = 40, song.g[G_KDENS] = 50, song.g[G_KMOVE] = 50;
-    song.g[G_KTGT] = KG_OUT_FM1, song.g[G_KSEQ] = 1, song.g[G_KAUTO] = 0, song.g[G_KCCCH] = 16;
+    song.g[G_KSEQ] = 1, song.g[G_KAUTO] = 0;
     song.g[G_KBANK] = 0, song.g[G_KINT] = 50, song.g[G_KHOLD] = 0, song.g[G_KLFO] = 0, song.g[G_KCMODE] = 0, song.g[G_KEVERY] = 0;
     for (cc_n = 0; cc_n < KD_SLOTS; cc_n++) kd_slot[cc_n].cur = -1, kd_slot[cc_n].g = 0, kd_wantv[cc_n] = -1, kd_sintv[cc_n] = 0;
     kg_hold_clear();
     song.g[G_KMULTI] = 0;
-    kg.sent_cc = 0;
     kl.st = KLS_EMPTY, song.g[G_KLMODE] = 0;
     song.g[G_KFTYPE] = 0, kf.cur = KF_OFF, kf_anote = kf_amode = 0, kf_touch = 0;
     clk_beat = 0, clk_pos = 0;
@@ -146,42 +142,13 @@ int main(int argc, char **argv)
     for (i = 0; i < 32u; i++) assert(now16[i] >= 0);   /* (2 bars) */   /* (DENSITY 100: something on every 16th) */
     printf("kglitch: priority key > sequencer > AUTO                                             ok\n");
 
-    /* 3. OUT MPC: the mix dry to the sample, CC 127 then 0 for STUTTER on channel 16, the macros once */
+    /* 3. the effects send no MIDI: a sequence, AUTO and CHAOS on, two bars, not a CC out */
     reset();
     kg.seq[4] = PX_STUT;
-    song.g[G_KTGT] = KG_OUT_MPC;
+    song.g[G_KAUTO] = 1, song.g[G_KDENS] = 100, song.g[G_KCMODE] = 1;
     run(NS, -1, 0, 0, ol, or_);
-    assert(same(ol, dl, 0, NS / CTL * CTL) && same(or_, dr, 0, NS / CTL * CTL));
-    for (i = k = n = 0; i < cc_n; i++) {
-        uint32_t st = cc_log[i] >> 16, cc = cc_log[i] >> 8 & 127u, v = cc_log[i] & 127u;
-        assert(st == 0xBFu);
-        if (cc == KG_CC[PX_STUT]) assert(v == (k++ & 1u ? 0u : 127u));
-        else assert(((cc >= KG_CC_CHAOS && cc <= KG_CC_MOVE) || cc == KG_CC_INT) && n++ < 4u);
-    }
-    assert(k == 4u && n == 4u);                       /* (two bars: two STUTTERs, on and off; 3 macros, INTENSITY) */
-    printf("kglitch: OUT MPC: the FM-1 stays dry, CC %u 127/0 on ch 16, macros CC 85-87          ok\n", KG_CC[PX_STUT]);
-
-    /* 4. leaving MPC while the effect is up lets it go; a new channel too */
-    reset();
-    kg.seq[4] = PX_STUT;
-    song.g[G_KTGT] = KG_OUT_BOTH;
-    run(4u * S16 + S16 / 2u, -1, 0, 0, ol, or_);
-    assert(!same(ol, dl, 4u * S16, 4u * S16 + S16 / 2u) && "BOTH: the mix changes too");
-    assert(kg.sent_cc >> PX_STUT & 1u);
-    song.g[G_KTGT] = KG_OUT_FM1;
-    { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert(!kg.sent_cc && (cc_log[cc_n - 1u] & 0xFFFFu) == (uint32_t)(KG_CC[PX_STUT] << 8));
-    song.g[G_KTGT] = KG_OUT_MPC;
-    { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert((kg.sent_cc >> PX_STUT & 1u) && kg.sent_ch == 15u);
-    song.g[G_KCCCH] = 3;
-    { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert(kg.sent_ch == 2u && cc_log[cc_n - 2u] == (0xBFu << 16 | (uint32_t)KG_CC[PX_STUT] << 8) &&
-           (cc_log[cc_n - 1u] >> 16 == 0xB2u || (cc_log[cc_n - 1u] >> 8 & 127u) >= KG_CC_CHAOS));
-    song.playing = 0;
-    { int32_t l[CTL] = {0}, r[CTL] = {0}; punch_process(l, r, CTL); midi_drain(); }
-    assert(!kg.sent_cc && "stopped: nothing left up");
-    printf("kglitch: OUT BOTH changes the mix; leaving MPC, a new channel, STOP: no stuck CC       ok\n");
+    for (i = 0; i < cc_n; i++) assert((cc_log[i] >> 16 & 0xF0u) != 0xB0u && "no CC");
+    printf("kglitch: the effects send no MIDI (no MPC out)                                         ok\n");
 
     /* 5. AUTO: DENSITY 0 nothing; 100: every 16th, from the CHAOS pool */
     for (k = 0; k <= 100u; k += 50u) {
@@ -257,7 +224,6 @@ int main(int argc, char **argv)
         for (s = 0; s < 27u; s++) { if (punch_fx_of_key(s) == 0) k0 = s; if (punch_fx_of_key(s) == 15) k15 = s; }
         song.g[G_KBANK] = 2;
         assert(kg_fx_of_key(k0) == (int32_t)(PUNCH_NFX + DD_RSTUT) && kg_fx_of_key(k15) == (int32_t)(PUNCH_NFX + DD_HALFT));
-        assert(kg_cc_of((int32_t)(PUNCH_NFX + DD_RSTUT + 3u)) == KG_CC[3] && "a key's CC, whatever the bank");
         song.g[G_KBANK] = 1;
         assert(kg_fx_of_key(k0) == (int32_t)(PUNCH_NFX + DD_LOOP));
         song.g[G_KBANK] = 0;
@@ -481,21 +447,20 @@ int main(int argc, char **argv)
     {
         uint32_t k3;
         reset();
-        song.g[G_KMULTI] = 1, song.g[G_KTGT] = KG_OUT_BOTH;
+        song.g[G_KMULTI] = 1;
         kg_hold_add((int32_t)(PUNCH_NFX + DD_GATE));
         kg_hold_add((int32_t)(PUNCH_NFX + DD_RING));
         kg_hold_add(PX_STUT);
         run(NS / 2u, -1, 0, 0, ol, or_);
         for (k3 = n = 0; k3 < KD_SLOTS; k3++) n += kd_slot[k3].cur >= 0;
         assert(n == 2u && kg.nfx == 3u && punch.cur == PX_STUT);
-        assert((kg.sent_cc >> PX_STUT & 1u) && (kg.sent_cc >> DD_GATE & 1u) && (kg.sent_cc >> DD_RING & 1u));
         assert(!same(ol, dl, S16, NS / 2u / CTL * CTL));
         kg_hold_clear();
         song.g[G_KMULTI] = 0;
         run(S16 * 4u, (int32_t)(PUNCH_NFX + DD_FUZZ), 0, S16 * 4u, ol, or_);
         assert(kg.nfx == 1u);
     }
-    printf("kglitch: MULTI: three at once (two DRUM DESTROYER slots + SLOOP's), their CCs; SOLO one    ok\n");
+    printf("kglitch: MULTI: three at once (two DRUM DESTROYER slots + SLOOP's); SOLO one               ok\n");
     /* 16. LOOP: armed, it records a bar from the next downbeat into the delay's line, then plays it back locked to the
      * bar (the tracks muted: what plays is the loop); SLICE reversed / retriggered differs from LOOP; GRAIN sounds;
      * the delay is silent meanwhile; OFF gives the line back */

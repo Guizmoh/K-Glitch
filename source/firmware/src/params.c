@@ -60,7 +60,6 @@ static const char *const N_NOTE[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", 
 static const char *const N_DASH[] = {"--"};
 static const char *const N_SYNC[] = {"INT", "USB", "TRS"};   /* G_SYNC: the tempo and PLAY / STOP from (seq.c mclk) */
 static const char *const N_GO[] = {"--", "GO"};
-static const char *const N_KOUT[] = {"FM-1", "MPC", "BOTH"};   /* K-GLITCH: where the effects play */
 static const char *const N_KBANK[] = {"SLOOP", "DESTR", "BEAT"};
 /* K-GLITCH DRUMS (kg_drum.c) */
 static const char *const N_KDKIT[] = {"OTHER", "FM", "C64"};
@@ -238,14 +237,12 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KCHAOS] = {"CHAOS", F_INT, 0, 100, 40, 0, "%"},   /* K-GLITCH (kglitch.c) */
     [G_KDENS] = {"DENS", F_INT, 0, 100, 50, 0, "%"},
     [G_KMOVE] = {"MOVE", F_INT, 0, 100, 50, 0, "%"},
-    [G_KTGT] = PE("OUT", N_KOUT, 0),
     [G_KSTEP] = PD("STEP", F_INT, 1, 64, 1),
     [G_KSFX] = PE("FX", N_KFX, 0),
     [G_KSEQ] = PE("LENGTH", N_KSEQ, 1),
     [G_KMUT] = PE("DICE", N_GO, 0),
     [G_KAUTO] = PE("AUTO", N_ONOFF, 0),
     [G_KCLR] = PE("CLR SQ", N_GO, 0),
-    [G_KCCCH] = PE("CH", N_MCH, 16),
     [G_KBANK] = PE("BANK", N_KBANK, 1),
     [G_KINT] = {"INTENS", F_INT, 0, 100, 50, 0, "%"},
     [G_KHOLD] = PE("HOLD", N_ONOFF, 0),
@@ -554,7 +551,7 @@ static const page_t PAGES[] = {
                                                                            * setting in these two pages (IN and OUT on
                                                                            * SYSTEM too, the drums' channel on DRUMS) */
     {"MIDI 3", FAM_GLO, SC_GLOBAL, GR_NONE, {G_FXCH, G_DRMAP, G_RMCH, G_CLKOUT}},   /* 2.7: the punch-in FX over MIDI */
-    {"MPC", FAM_GLO, SC_GLOBAL, GR_KG, {G_KTGT, G_KCCCH, G_KCLR, G_KCTGT}},
+    {"FX SETUP", FAM_GLO, SC_GLOBAL, GR_KG, {G_KCTGT, G_KCLR, 0xFF, 0xFF}},   /* (K-GLITCH: no MPC out any more) */
     {"TEXTURE", FAM_GLO, SC_GLOBAL, GR_NONE, {G_TXSRC, G_TXLVL, G_TXTONE, G_TXMOVE}},   /* 2.6: the bed under the mix */
     {"TEXTURE 2", FAM_GLO, SC_GLOBAL, GR_NONE, {G_TXRATE, G_TXWHEN, G_TXDUCK, 0xFF}},
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: PRESETS knob / KNOB 1 */

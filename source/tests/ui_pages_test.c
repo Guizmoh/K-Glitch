@@ -524,10 +524,10 @@ int main(int argc, char **argv)
         for (j = 0; j < 400u; j++) frame();
         check(song.g[G_KCMODE] && kr.mutated, "K-GLITCH CHAOS: CHAOS mode mutates the rhythm on the bar");
         ui.force = 1; frame(); ppm("page-k-chaos");
-        go_title("MPC", FAM_GLO);
-        check(!strcmp(cur_page()->title, "MPC"), "K-GLITCH: SELECT: SETUP (OUT, CH, CLEAR)");
+        go_title("FX SETUP", FAM_GLO);
+        check(!strcmp(cur_page()->title, "FX SETUP"), "K-GLITCH: GLO > FX SETUP (CHOP target, CLEAR SEQ)");
         encs[panel.enc[EN_K1]] = 1; frame();
-        check(song.g[G_KTGT] == KG_OUT_MPC, "K-GLITCH SETUP: KNOB 1: OUT MPC");
+        check(song.g[G_KCTGT] == 1, "K-GLITCH FX SETUP: KNOB 1: CHOP ALL");
         ui.force = 1; frame(); ppm("page-k-setup");
         encs[panel.enc[EN_K1]] = -1; frame();
         go_title("MODES 2", FAM_ARP);
@@ -1298,7 +1298,7 @@ int main(int argc, char **argv)
             open_family(FAM_SEQ); frame();            /* (round to STEP again: SEQ opens there, as before) */
             go_home(); frame();
             open_family(FAM_GLO); frame();
-            (void)page_pos(&n);                       /* GLO: its ten pages (K-GLITCH: + MPC) */
+            (void)page_pos(&n);                       /* GLO: its ten pages (K-GLITCH: + FX SETUP) */
             go_home(); frame();
             ui.menu = (uint8_t)menu0, ui.menu_sel = (uint8_t)sel0, ui.force = 1; frame();
             ok &= k1 == 1u && n1 == 2u && k2 == 2u && n2 == 2u && k3 == 3u && n3 == 3u && n == 10u;

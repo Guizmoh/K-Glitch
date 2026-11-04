@@ -4,7 +4,7 @@
 
 - [x] Base SLOOP 2.8.4 (isod89/sloop-fm1 `91f3018`), licences conservées.
 - [x] Séquenceur d'effets 16 pas, AUTO, DICE/MUTATE, macros CHAOS / DENSITY / MOVEMENT.
-- [x] OUT FM-1 / MPC / BOTH : effets en MIDI CC, macros en CC 85–87, aucun CC bloqué.
+- [x] ~~OUT FM-1 / MPC / BOTH (effets en MIDI CC)~~ : retiré en 0.9.3, seule la synchro de tempo MIDI reste.
 - [x] Écrans DESTROY / FX SEQ / SETUP (style Ribbon classique de K-WASUB), écran de démarrage K-GLITCH.
 - [x] Break jungle de démo (170 BPM).
 - [x] Émulateur web (WebAssembly) avec journal MIDI et Web MIDI.
@@ -30,7 +30,6 @@
 - [ ] Éditeur web : vérifier la compatibilité (le moteur GLITCH ajoute un numéro de moteur).
 - [ ] Plus de styles DRUMS, et des fills générés.
 - [x] Sauvegarde automatique de l'état K-GLITCH en flash, rechargé au démarrage (0.5).
-- [ ] MPC : CC continus depuis les potards, notes de slices, profils de mapping.
 - [x] Le thème Ribbon classique (palette RIBBON) sur tout le logiciel, par défaut (0.8).
 - [ ] Les bandeaux à onglets du Ribbon sur les pages de SLOOP.
 

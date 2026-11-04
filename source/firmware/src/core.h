@@ -112,14 +112,14 @@ enum {                          /* global parameters */
     G_KCHAOS,                   /* CHAOS 0..100 %: how wild the effects AUTO and MUTATE pick */
     G_KDENS,                    /* DENSITY 0..100 %: how often */
     G_KMOVE,                    /* MOVEMENT 0..100 %: how short (high) or long (low) a gesture */
-    G_KTGT,                     /* OUT: FM-1, MPC (MIDI CC only), BOTH */
+    G_KTGT,                     /* (unused: was OUT FM-1 / MPC / BOTH; kept so saved records keep their order) */
     G_KSTEP,                    /* D-SEQ: the step edited, 1..64 */
     G_KSFX,                     /* D-SEQ: its effect, 0 none, 1 + PX_* */
     G_KSEQ,                     /* D-SEQ: the effect sequence / automation lane: OFF, 16, 32, 64 steps */
     G_KMUT,                     /* D-SEQ: MUTATE (GO) */
     G_KAUTO,                    /* D-SETUP: AUTO (OFF / ON) */
     G_KCLR,                     /* D-SETUP: clear the effect sequence (GO) */
-    G_KCCCH,                    /* D-SETUP: the MPC's MIDI channel (OFF, 1..16) */
+    G_KCCCH,                    /* (unused: was the MPC's MIDI channel) */
     G_KBANK,                    /* D-BANK: the white keys, AUTO and MUTATE: SLOOP's effects or the DRUM DESTROYER bank */
     G_KINT,                     /* D-BANK: INTENSITY 0..100 % of the DRUM DESTROYER effects */
     G_KHOLD,                    /* D-BANK: HOLD, a key's effect stays after its release */

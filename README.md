@@ -20,7 +20,7 @@ Construire le paquet et l'installateur : `cd source && sh tools/get_toolchain.sh
 
 Ouvrir [`emulator/index.html`](emulator/index.html) dans un navigateur (une seule page, fonctionne hors ligne). Le firmware y tourne réellement (son, écran, séquenceur, effets) en WebAssembly. Un break jungle est chargé, au tempo de base de 98 BPM : **PLAY** (ou Espace), puis **FX**.
 
-**Aide-mémoire** : [`docs/cheatsheet.html`](docs/cheatsheet.html) (boutons, pages, effets, filtres, CC MPC, clavier).
+**Aide-mémoire** : [`docs/cheatsheet.html`](docs/cheatsheet.html) (boutons, pages, effets, filtres, clavier).
 
 Reconstruire : `cd source && python3 tools/build_emulator.py` (clang avec la cible wasm32 et wasm-ld, Python 3 + Pillow).
 
@@ -35,7 +35,7 @@ Les pages K-GLITCH sont rangées par bouton (0.9) :
 - **ARP** : … puis **MODES** (mode CHAOS, AUTO, LFO, HOLD), **MODES 2** (SOLO / MULTI, INTENSITÉ, CLEAR), **GEN** (générateur DRUMS) et **CHOP** (mutation).
 - **SEL** : le **FILTER** créatif et le sampler **LOOP**, **SLICE**, **GRAIN** (la gamme se règle avec SEL maintenu : CHORD, SCALE, KEYS, TRANSPOSE).
 - **EDIT** : … et, en dernier, **DJ FILTER** : le filtre DJ de la piste sélectionnée (K1 : passe-bas à gauche, passe-haut à droite), sa **résonance** (K2, propre à chaque piste) et sa **courbe** dessinée avec la fréquence de coupure.
-- **GLO** : … et **MPC** (sortie MIDI vers la MPC).
+- **GLO** : … et **FX SETUP** (cible de CHOP, effacer la séquence d'effets).
 - **SAVE** (un appui, même depuis HOME) : les pages SAVE ; l'écran SONG : SAVE maintenu + 16e touche blanche.
 - **Sélecteur de pages** : bouton d'une section maintenu (FX, EDIT, ARP, SEQ, SEL, GLO, SAVE) + **ALGO** : la liste de ses pages, **les plus visitées en premier** (étoile) ; on relâche le bouton : la page choisie s'ouvre.
 - **Bandeau du haut** : les pages de la section en onglets, la page affichée en pastille orange au milieu de ses voisines (un triangle quand il y en a d'autres à gauche ou à droite) ; à droite le tempo et la batterie en petit chiffre (USB : alimenté).
@@ -55,7 +55,7 @@ Les pages K-GLITCH sont rangées par bouton (0.9) :
 | **FX SEQ** (FX) | séquenceur / automation d'effets | le pas | son effet | sa probabilité | longueur OFF / 16 / 32 / 64 |
 | **MODES 2** (ARP) | les pads | FX : SOLO / MULTI | INTENSITÉ | CLEAR (retour au son original) | |
 | **MODES** (ARP) | mode 3 : performance imprévisible | MODE CHAOS | AUTO | LFO | HOLD |
-| **MPC** (GLO) | sortie vers la MPC | OUT : FM-1 / MPC / BOTH | canal MIDI | effacer la séquence | CHOP : DRUMS / ALL |
+| **FX SETUP** (GLO) | réglages des effets | CHOP : DRUMS / ALL | effacer la séquence | — | — |
 
 ### Jouer en direct
 - Sur les pages K-GLITCH, **les 16 touches blanches sont des pads** : maintenir = l'effet agit, relâcher = le son revient (punch-in). Ailleurs : FX maintenu + touche.
@@ -140,7 +140,7 @@ N'importe laquelle des 3 pistes synthé peut devenir une batterie : sur la piste
 La liste PRESETS est rangée par moteur : ANALOG, puis les FM (DIGITAL, FM6), PHASE, WHEEL, TRIO, LOFI, SAMPLE, VOICE, GRAIN, PHYS, NOISE, GLITCH, KDRUM (le moteur est affiché dans la carte ENG, le type BASS / KEYS… dans la liste). Sur la page TRACKS, le **potard 1** d'une piste synthé choisit son moteur dans le même ordre (sur la piste batterie, il reste le SWING ; le swing reste aussi dans GLO).
 
 ### Les effets enregistrés avec le morceau
-SAVE (PROJECT A..D) enregistre aussi les effets du morceau : la séquence / automation d'effets (les deux couches, intensités, probabilités, notes du filtre), l'INTENSITY de chaque effet, l'ordre des slices et les réglages K-GLITCH (banque, CHAOS, filtre, DJ filter…). LOAD les recharge ; un morceau enregistré sans effets revient sans effets. NEW repart de zéro : aucun effet, aucune automation, slices dans l'ordre, et la boucle enregistrée est effacée (elle reste en RAM seulement, elle ne passe jamais d'un morceau à l'autre). Les kits FM / C64, la sortie (FM-1 / MPC) et le canal MPC restent ceux du FM-1.
+SAVE (PROJECT A..D) enregistre aussi les effets du morceau : la séquence / automation d'effets (les deux couches, intensités, probabilités, notes du filtre), l'INTENSITY de chaque effet, l'ordre des slices et les réglages K-GLITCH (banque, CHAOS, filtre, DJ filter…). LOAD les recharge ; un morceau enregistré sans effets revient sans effets. NEW repart de zéro : aucun effet, aucune automation, slices dans l'ordre, et la boucle enregistrée est effacée (elle reste en RAM seulement, elle ne passe jamais d'un morceau à l'autre). Les kits FM / C64 restent ceux du FM-1.
 
 ### Police et écran
 Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec des chiffres de largeur fixe, sur les mêmes lignes que SLOOP. Économe : seuls les caractères affichés (tout est en capitales) et 4 niveaux de lissage (2 bits par pixel) : environ **15 Ko** de flash pour les trois tailles (SLOOP : 5 Ko ; `KG_FONT=terminus` remet sa police). Dans l'émulateur, l'écran est agrandi en lissé ; le bouton **PIXELS** montre les vrais pixels du FM-1.
@@ -150,10 +150,10 @@ Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec
 - **CHOP** : **DICE** tire une recette au hasard (2 à 5 transformations parmi couper, décaler, accentuer, répéter, roll, ghost, longueur, chacune à une force aléatoire) et l'affiche ; MUTATE transforme le rythme à partir de l'original (jamais d'une mutation précédente) : **décale** des coups (pas voisin ou micro-timing), en **supprime**, **répète** des fragments, ajoute des **rolls** et des **ghost notes**, change des **accents** et, avec TARGET ALL, les **longueurs de notes** des synthés. CHAOS dose la destruction, DENSITY les répétitions et découpes. EVERY remute seul toutes les 1, 2, 4 ou 8 mesures. La grille montre en orange ce qui a changé.
 - **CHAOS** : AUTO + LFO + un DICE du rythme (et parfois de la séquence d'effets) à chaque mesure, avec une probabilité de CHAOS %.
 
-### Séquenceur d'effets, AUTO, MPC
+### Séquenceur d'effets, AUTO
 - **SEQ** : un effet (ou rien) par pas, sur 16, 32 ou 64 pas (K4) ; une **probabilité** par pas (K3 : une barre blanche en haut de la case) ; une touche blanche choisit le pas (sur la page de 16 affichée) ; PRESETS règle l'intensité du pas ; OCT+ (DICE) écrit une séquence selon CHAOS / DENSITY.
 - **AUTO** : à chaque 16e, DENSITY % de chances de lancer un effet choisi selon CHAOS.
-- **MPC** : les effets partent en MIDI CC (voir [docs/MPC_REMOTE.md](docs/MPC_REMOTE.md)). Avec GLO > SYSTEM > MIDI OUT sur SEQ, la MPC reçoit aussi le rythme muté en notes.
+- Les effets jouent sur le son du FM-1 seulement (plus de sortie MIDI CC vers une MPC). La synchro de tempo MIDI de SLOOP reste : GLO > MIDI > SYNC (horloge reçue), et l'horloge envoyée.
 
 Priorité : pad > séquenceur > AUTO.
 
@@ -162,7 +162,7 @@ L'état K-GLITCH (la séquence d'effets avec ses deux couches, intensités et pr
 
 ## Code
 
-- `source/firmware/src/kglitch.c` : le moteur (séquenceur d'effets, AUTO, MUTATE, sortie MPC, break de démo).
+- `source/firmware/src/kglitch.c` : le moteur (séquenceur d'effets, AUTO, MUTATE, break de démo).
 - `source/firmware/src/kg_dd.c` : la banque DRUM DESTROYER (16 effets) ; `kg_beat.c` : la banque BEAT et le SCRATCH.
 - `source/firmware/src/kg_drum.c` : les kits FM DRUM et C64 DRUM.
 - `source/firmware/src/kg_rhythm.c` : DRUMS (générateur par style) et CHOP (mutations du rythme).

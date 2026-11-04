@@ -42,14 +42,12 @@ int main(void)
 {
     boot();
     check(flash_ok, "the flash is there");
-    song.g[G_KTGT] = 1;                                /* (OUT: the FM-1's, not the song's) */
     song_a();
     transport_req = 0, song.playing = 0;
     project_save(0);
     kl.st = KLS_HAS;                                   /* a loop recorded */
     project_new();
     check(is_clear(), "NEW: no effect lane, INTENSITY, slices, settings or loop from the last song");
-    check(song.g[G_KTGT] == 1, "NEW: OUT (FM-1 / MPC) stays");
     transport_req = 0, song.playing = 0;
     project_save(1);                                   /* a section with no effects */
     transport_req = 0, song.playing = 0;
