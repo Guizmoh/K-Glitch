@@ -58,6 +58,7 @@ static uint32_t saves, loads, erases;
 static int project_used(uint32_t i) { return i < 2; }
 static void project_save(uint32_t i) { (void)i; saves++; ui_message("SAVED"); }
 static void project_load(uint32_t i) { (void)i; loads++; }
+static void kgs_clear(void) {}                     /* (kg_song.c: tests/kgsong_test.c) */
 static void project_erase(uint32_t i) { (void)i; erases++; ui_message("ERASED"); }
 static void arrangement_save(void) {}
 static uint32_t arrangement_ready(void) { return 3; }
