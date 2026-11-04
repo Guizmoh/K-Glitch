@@ -495,6 +495,9 @@ UI_SMALL static void project_new(void)
             song.g[i] = GP[i].def;
     song.solo = 0;
     song.octave = 0;
+#ifdef KGLITCH_VERSION
+    kgs_clear();                                        /* (K-GLITCH: no effect, lane or loop from the last song) */
+#endif
     sync_reload = 1;
     ui.force = 1;
 }

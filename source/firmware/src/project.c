@@ -577,6 +577,9 @@ UI_SMALL static void proj_fetch(uint32_t slot)
     if (!proj_import(q, &proj_tmp, n))
         q->magic = 0;
 }
+#ifdef KGLITCH_VERSION
+#include "kg_song.c"                            /* K-GLITCH: each section's effects */
+#endif
 #include "fm6_bank.c"                           /* the FM6 patch bank (eng_fm6.c PTCH B1..B27): staged in proj_tmp */
 #endif
 
@@ -592,8 +595,12 @@ UI_SMALL static void project_save(uint32_t slot)
     if (flash_ok) {
         if (st_save(OBJ_PROJECT0 + (slot & 3u), p, sizeof *p))
             ui_message("SAVE ERROR");
-        else
+        else {
+#ifdef KGLITCH_VERSION
+            kgs_save(slot);                             /* (its effects, kg_song.c) */
+#endif
             ui_say("SAVED SECTION ", SEC_NAME[slot & 3u]);
+        }
         return;
     }
 #endif
@@ -619,6 +626,9 @@ UI_SMALL static void project_erase(uint32_t slot)
         ui_message("ERASE ERROR");
         return;
     }
+#endif
+#ifdef KGLITCH_VERSION
+    kgs_erase(slot);
 #endif
     fm1_irq_off();
     memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
@@ -685,6 +695,9 @@ UI_SMALL static void project_load(uint32_t slot)
         return;
     }
     project_apply(p);
+#ifdef KGLITCH_VERSION
+    kgs_load(slot);                                     /* (its effects; none saved: cleared) */
+#endif
     ui_say("LOADED SECTION ", SEC_NAME[slot & 3u]);
 }
 
@@ -1186,6 +1199,9 @@ UI_SMALL static void section_load(uint32_t s)                    /* stopped: the
 {
     s &= 3u;
     project_apply(&proj_slot[s]);
+#ifdef KGLITCH_VERSION
+    kgs_load(s);
+#endif
     live_sec = (int8_t)s;
 }
 UI_SMALL static void sections_write(void)                        /* the dirty sections and song into flash */

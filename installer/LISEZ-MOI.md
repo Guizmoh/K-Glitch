@@ -39,4 +39,4 @@ python3 fm1_install.py k-glitch-0.9.2.fwsc
 
 - Version de développement : construite et vérifiée par la chaîne de compilation officielle de JieLi (taille, mémoire, accès matériel), testée sur ordinateur et dans l'émulateur, **pas encore sur un FM-1 réel**. À vos risques.
 - Si le FM-1 ne démarre plus du tout après une installation ratée : maintenez **OCT−** en l'allumant (mode de secours USB), puis relancez l'installateur. En dernier recours, un Transporter (github.com/kurogedelic/FM-1-transporter) permet de le récupérer.
-- Paquet : `k-glitch-0.9.2.fwsc`, identité FM-1_909, SHA-256 `9f48f2635bfc828718f32c5540c77d20518e5bb69ff4c1627a318fcf001107ff`.
+- Paquet : `k-glitch-0.9.2.fwsc`, identité FM-1_909, SHA-256 `a8cc9b2e93e4e670a4f37da3bbbb5a661c5332ff80039debaff7609dc0cf2188`.

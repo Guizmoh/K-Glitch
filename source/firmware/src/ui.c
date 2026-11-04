@@ -9,6 +9,9 @@ static void project_save(uint32_t slot);
 static void arrangement_save(void);
 static void panel_setup(void);
 static void project_load(uint32_t slot);
+#ifdef KGLITCH_VERSION
+static void kgs_clear(void);                 /* (kg_song.c) */
+#endif
 static void project_erase(uint32_t slot);        /* SAVE > PROJECT > ERASE (2.6) */
 static int project_used(uint32_t slot);
 static int up_used(uint32_t k);              /* user presets: upreset.c */

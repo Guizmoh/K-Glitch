@@ -139,6 +139,9 @@ N'importe laquelle des 3 pistes synthé peut devenir une batterie : sur la piste
 ### Moteurs groupés, potard 1 = moteur
 La liste PRESETS est rangée par moteur : ANALOG, puis les FM (DIGITAL, FM6), PHASE, WHEEL, TRIO, LOFI, SAMPLE, VOICE, GRAIN, PHYS, NOISE, GLITCH, KDRUM (le type du son, BASS / PAD…, laisse la place au nom du moteur). Sur la page TRACKS, le **potard 1** d'une piste synthé choisit son moteur dans le même ordre (sur la piste batterie, il reste le SWING ; le swing reste aussi dans GLO).
 
+### Les effets enregistrés avec le morceau
+SAVE (PROJECT A..D) enregistre aussi les effets du morceau : la séquence / automation d'effets (les deux couches, intensités, probabilités, notes du filtre), l'INTENSITY de chaque effet, l'ordre des slices et les réglages K-GLITCH (banque, CHAOS, filtre, DJ filter…). LOAD les recharge ; un morceau enregistré sans effets revient sans effets. NEW repart de zéro : aucun effet, aucune automation, slices dans l'ordre, et la boucle enregistrée est effacée (elle reste en RAM seulement, elle ne passe jamais d'un morceau à l'autre). Les kits FM / C64, la sortie (FM-1 / MPC) et le canal MPC restent ceux du FM-1.
+
 ### Police et écran
 Police lissée dérivée de **Carlito Bold** (licence OFL), proportionnelle avec des chiffres de largeur fixe, sur les mêmes lignes que SLOOP. Économe : seuls les caractères affichés (tout est en capitales) et 4 niveaux de lissage (2 bits par pixel) : environ **15 Ko** de flash pour les trois tailles (SLOOP : 5 Ko ; `KG_FONT=terminus` remet sa police). Dans l'émulateur, l'écran est agrandi en lissé ; le bouton **PIXELS** montre les vrais pixels du FM-1.
 

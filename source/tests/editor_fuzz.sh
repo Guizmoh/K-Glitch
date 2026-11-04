@@ -30,3 +30,7 @@ ${CC:-cc} -O1 -g -w -fsanitize=address,undefined -fno-sanitize=shift-base,signed
     -I"$OUT/gen" -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/boot_sound_test" tests/boot_sound_test.c -lm
 "$OUT/boot_sound_test" > "$OUT/boot_sound.log" || { cat "$OUT/boot_sound.log"; exit 1; }
 tail -n 1 "$OUT/boot_sound.log"
+# K-GLITCH: each section's effects saved, loaded, cleared by NEW (firmware/src/kg_song.c)
+${CC:-cc} -O1 -g -w -fsanitize=address,undefined -fno-sanitize=shift-base,signed-integer-overflow -fno-sanitize-recover=all \
+    -I"$OUT/gen" -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/kgsong_test" tests/kgsong_test.c -lm
+"$OUT/kgsong_test" || exit 1
