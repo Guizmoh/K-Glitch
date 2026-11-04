@@ -19,14 +19,14 @@ typedef struct {
     int16_t g[KGS_NG];
     uint32_t sum;
 } kgs_t;
-_Static_assert(sizeof(kgs_t) <= KGS_REC && 4u * KGS_REC <= 4096u - 256u, "four records in the sector, its end free");
+_Static_assert(3u * KGS_REC <= ST_PAYLOAD_MAX && sizeof(kgs_t) <= KGS_REC && 4u * KGS_REC <= 4096u - 256u, "four records in the sector, its end free");
 static kgs_t kgs_buf;
 
-static int kgs_kept(uint32_t id)                  /* a global the section keeps (the others: the FM-1's, or live) */
+UI_SMALL static int kgs_kept(uint32_t id)                  /* a global the section keeps (the others: the FM-1's, or live) */
 {
     return id != G_KTGT && id != G_KCCCH && id != G_KLMODE && id != G_KLREC && !(id >= G_KDKIT && id <= G_KXREV);
 }
-static uint32_t kgs_sum(const kgs_t *b)
+UI_SMALL static uint32_t kgs_sum(const kgs_t *b)
 {
     const uint8_t *p = (const uint8_t *)b;
     uint32_t h = 2166136261u, i;
@@ -35,7 +35,7 @@ static uint32_t kgs_sum(const kgs_t *b)
 }
 /* a new song: no effect playing, the lane empty, every INTENSITY and K-GLITCH setting at its default, the slices in
  * order, no loop */
-static void kgs_clear(void)
+UI_SMALL static void kgs_clear(void)
 {
     uint32_t i;
     kg_clean();
@@ -50,7 +50,7 @@ static void kgs_clear(void)
         kl_free();
     kgd_ui_sync();
 }
-static void kgs_pack(kgs_t *b, uint32_t slot)
+UI_SMALL static void kgs_pack(kgs_t *b, uint32_t slot)
 {
     uint32_t i;
     memset(b, 0, sizeof *b);
@@ -65,7 +65,7 @@ static void kgs_pack(kgs_t *b, uint32_t slot)
     for (i = 0; i < KGS_NG; i++) b->g[i] = song.g[G_KCHAOS + i];
     b->sum = kgs_sum(b);
 }
-static int kgs_take(const kgs_t *b, uint32_t slot)   /* 0: taken; -1: not one (nothing changed) */
+UI_SMALL static int kgs_take(const kgs_t *b, uint32_t slot)   /* 0: taken; -1: not one (nothing changed) */
 {
     uint32_t i, ng;
     if (b->magic != KGS_MAGIC || b->slot != slot || b->sum != kgs_sum(b))
@@ -92,10 +92,11 @@ static int kgs_take(const kgs_t *b, uint32_t slot)   /* 0: taken; -1: not one (n
     kgd_ui_sync();
     return 0;
 }
-static int kgs_write(uint32_t slot, const kgs_t *b)   /* b 0: the slot's record erased; 0 = ok */
+UI_SMALL static int kgs_write(uint32_t slot, const kgs_t *b)   /* b 0: the slot's record erased; 0 = ok */
 {
 #if FELUCCA_FLASH
-    static uint8_t keep[3u * KGS_REC];             /* the other three records, rewritten with the sector */
+    uint8_t *keep = (uint8_t *)st_buf;             /* the other three records, rewritten with the sector (the
+                                                    * store's scratch: free, the section's own save is done) */
     uint32_t i, k = 0;
     int rc;
     if (!flash_ok)
@@ -118,13 +119,13 @@ static int kgs_write(uint32_t slot, const kgs_t *b)   /* b 0: the slot's record 
     return -1;
 #endif
 }
-static void kgs_save(uint32_t slot)               /* SAVE: the section's effects with it */
+UI_SMALL static void kgs_save(uint32_t slot)               /* SAVE: the section's effects with it */
 {
     kgs_pack(&kgs_buf, slot & 3u);
     if (kgs_write(slot & 3u, &kgs_buf))
         ui_message("FX SAVE ERROR");
 }
-static void kgs_load(uint32_t slot)               /* LOAD: the section's effects (none saved: cleared) */
+UI_SMALL static void kgs_load(uint32_t slot)               /* LOAD: the section's effects (none saved: cleared) */
 {
 #if FELUCCA_FLASH
     if (flash_ok && st_read(KGS_BASE + (slot & 3u) * KGS_REC, &kgs_buf, sizeof kgs_buf) == 0 &&
@@ -133,4 +134,4 @@ static void kgs_load(uint32_t slot)               /* LOAD: the section's effects
 #endif
     kgs_clear();
 }
-static void kgs_erase(uint32_t slot) { kgs_write(slot & 3u, 0); }
+UI_SMALL static void kgs_erase(uint32_t slot) { kgs_write(slot & 3u, 0); }

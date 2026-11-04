@@ -842,7 +842,7 @@ UI_SMALL static uint32_t base_at(uint32_t n, uint32_t *k)
     *k = bank_pi[n] == 0xFF ? 0u : bank_pi[n];
     return BANK[bank_ord[n]].e;
 }
-UI_SMALL static const char *base_kind(uint32_t n) { return n < NBANK ? ENGINES[BANK[bank_ord[n]].e % NENGINES]->name : "USER"; }
+UI_SMALL static const char *base_kind(uint32_t n) { return n < NBANK ? BANK_KIND[BANK[bank_ord[n]].kind] : "USER"; }   /* (the engine: the ENG card) */
 
 /* SLOOP 2.7: favourites (PRESETS page, KNOB 4): up to 16 sounds at the top of the PRESETS list, kept in the FM-1's
  * settings (project.c, the settings' side record). An entry: a factory sound, its BANK index; a user preset, FAV_USER |

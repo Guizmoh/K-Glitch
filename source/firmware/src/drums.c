@@ -544,15 +544,21 @@ static void drums_render_mono(int32_t *mono, uint32_t n) { drums_mix(0, 0, 0, 0,
 /* K-GLITCH KDRUM: the FM DRUM / C64 DRUM sounds (kg_drum.c, the kits edited on the drum track) on a synth track.
  * A key plays one of the 16 sounds: C3 = lane 1 (KICK), up by semitones, every 16 keys again; the sound's own
  * envelope ends the voice (ownenv). Its SAT is the sound's; DLY / REV are the track's sends. */
-static kgb_t kdr_v[NPART][NVOICE];
 static const char *const N_KDRUM_KIT[] = {"FM", "C64"};
-static kgb_t *kdr_of(const track_t *t, const voice_t *v)
+_Static_assert(NVOICE * sizeof(kgb_t) <= sizeof(eng_arena_t), "KDRUM's voices in the part's arena (engines.c)");
+static kgb_t *kdr_of(track_t *t, const voice_t *v)   /* (the part's arena: a part plays one engine at a time) */
 {
-    return &kdr_v[(uint32_t)(t - trk) % NPART][(uint32_t)(v - t->v) % NVOICE];
+    kgb_t *a = (kgb_t *)eng_arena_of(t, ENGI_KDRUM);
+    return a ? &a[(uint32_t)(v - t->v) % NVOICE] : 0;
 }
 static void kdr_note_on(track_t *t, voice_t *v)
 {
     uint32_t lane = ((uint32_t)v->note + 128u - 48u) & 15u;
+    v->s[0] = 0;
+    if (t->p[P_VOICE] == V_UNISON && v != t->v)
+        return;                                    /* UNISON: one hit (the same sound stacked in phase: +9 dB) */
+    if (!kdr_of(t, v))
+        return;
     kgd_on(kdr_of(t, v), (uint32_t)t->p[P_E0] % KGD_NK, lane, v->vel ? v->vel : 100u, (int32_t)t->p[P_E1] * 16);
     v->s[0] = 1;
 }

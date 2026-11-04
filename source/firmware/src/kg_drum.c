@@ -74,7 +74,7 @@ static const kgd_snd_t KGD_DEF[KGD_NK][DRUM_LANES] = {
 #undef KS
 static kgd_snd_t kgd_kit[KGD_NK][DRUM_LANES];
 static uint8_t kgd_ready;
-static void kgd_defaults(void)
+UI_SMALL static void kgd_defaults(void)
 {
     memcpy(kgd_kit, KGD_DEF, sizeof kgd_kit);
     kgd_ready = 1;
@@ -85,7 +85,7 @@ static kgd_snd_t *kgd_snd(uint32_t m, uint32_t lane)
         kgd_defaults();
     return &kgd_kit[m % KGD_NK][lane % DRUM_LANES];
 }
-static void kgd_fix(kgd_snd_t *s, uint32_t m)      /* into the ranges (values from flash) */
+UI_SMALL static void kgd_fix(kgd_snd_t *s, uint32_t m)      /* into the ranges (values from flash) */
 {
     uint32_t k;
     for (k = 0; k < KGD_NP; k++)

@@ -422,7 +422,7 @@ static uint32_t kg_blob_sum(const kg_blob_t *b)
     for (i = 0; i < sizeof *b - 4u; i++) h = (h ^ p[i]) * 16777619u;
     return h;
 }
-static void kg_pack(kg_blob_t *b)                 /* (main loop) */
+UI_SMALL static void kg_pack(kg_blob_t *b)                 /* (main loop) */
 {
     uint32_t i;
     memset(b, 0, sizeof *b);
@@ -439,7 +439,7 @@ static void kg_pack(kg_blob_t *b)                 /* (main loop) */
     memcpy(b->kit, kgd_kit, sizeof b->kit);
     b->sum = kg_blob_sum(b);
 }
-static int kg_unpack(const kg_blob_t *b)          /* 0: taken, -1: not one (nothing changed) */
+UI_SMALL static int kg_unpack(const kg_blob_t *b)          /* 0: taken, -1: not one (nothing changed) */
 {
     uint32_t i, ng;
     if (b->magic != KG_BLOB_MAGIC || b->sum != kg_blob_sum(b))
