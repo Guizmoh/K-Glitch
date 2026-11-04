@@ -93,6 +93,26 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
         kf_coef(&c, note8, res);
         break;
     }
+    /* (once a block, not a sample: the FM-1 divides slowly) the combs' delays, their feedback, the phaser's coefficient */
+    uint32_t cd = 8u, md[4] = {6u, 6u, 6u, 6u};
+    int32_t cfb = 0, cgain = 32768, mfb = 0, pha = 0;
+    if (kf.cur == KF_COMBP || kf.cur == KF_COMBN) {
+        cd = kf_period(note8);
+        while (cd > 1023u) cd >>= 1;                  /* (below 43 Hz: octaves up, still in tune) */
+        if (cd < 8u) cd = 8u;
+        cfb = (12000 + res * 19000 / 127) * (kf.cur == KF_COMBN ? -1 : 1);
+        cgain = 32768 - (cfb < 0 ? -cfb : cfb) / 2;
+    } else if (kf.cur == KF_METAL) {
+        uint32_t pp = kf_period(note8), k;
+        for (k = 0; k < 4u; k++) {
+            uint32_t d = (pp * MR[k]) >> 15;
+            while (d > 511u) d >>= 1;                 /* (octaves up: in tune) */
+            md[k] = d < 6u ? 6u : d;
+        }
+        mfb = 20000 + res * 11000 / 127;
+    } else if (kf.cur == KF_PHASER) {
+        pha = clamp(30000 - ((note8 - (24 << 8)) * 27000 / (100 << 8)), 1500, 31000);
+    }
     for (i = 0; i < n; i++) {
         int32_t x[2] = {l[i], r[i]}, y[2], target = want == kf.cur ? 32767 : 0;
         if (kf.g < target) kf.g = kf.g + 512 > target ? target : kf.g + 512;
@@ -107,25 +127,20 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
             case KF_DRIVE: o = kf_svf(&c, softclip(in * 3) >> 1, kf.s[ch][0], &bp); break;
             case KF_COMBP:
             case KF_COMBN: {
-                uint32_t d = kf_period(note8), base = (uint32_t)ch * 1024u;
-                int32_t fb = (12000 + res * 19000 / 127) * (kf.cur == KF_COMBN ? -1 : 1), z;
-                while (d > 1023u) d >>= 1;            /* (below 43 Hz: octaves up, still in tune) */
-                if (d < 8u) d = 8u;
-                z = kf_buf[base + ((kf.w - d) & 1023u)] * 2;
-                o = in + ((z * fb) >> 15);
+                uint32_t base = (uint32_t)ch * 1024u;
+                int32_t z = kf_buf[base + ((kf.w - cd) & 1023u)] * 2;
+                o = in + ((z * cfb) >> 15);
                 kf_buf[base + (kf.w & 1023u)] = (int16_t)clamp(o >> 1, -32768, 32767);
-                o = (o * (32768 - (fb < 0 ? -fb : fb) / 2)) >> 15;
+                o = ((o >> 2) * cgain) >> 13;
                 break;
             }
             case KF_METAL: {
-                uint32_t p = kf_period(note8), k;
-                int32_t z[4], fb = 20000 + res * 11000 / 127;
+                uint32_t k;
+                int32_t z[4];
                 if (ch) break;                     /* (both channels at once, on the left's turn) */
                 for (k = 0; k < 4u; k++) {
-                    uint32_t d = (p * MR[k]) >> 15, b = k * 512u;
-                    while (d > 511u) d >>= 1;      /* (octaves up: in tune) */
-                    if (d < 6u) d = 6u;
-                    z[k] = ((x[0] + x[1]) >> 2) + ((kf_buf[b + ((kf.w - d) & 511u)] * 2 * fb) >> 15);
+                    uint32_t b = k * 512u;
+                    z[k] = ((x[0] + x[1]) >> 2) + ((kf_buf[b + ((kf.w - md[k]) & 511u)] * 2 * mfb) >> 15);
                     kf_buf[b + (kf.w & 511u)] = (int16_t)clamp(z[k] >> 1, -32768, 32767);
                 }
                 y[0] = (x[0] * 6 + (z[0] + z[2] - z[1]) * 4) >> 4;   /* (each side its own mix of the four: wide) */
@@ -136,11 +151,11 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
                 int32_t b2;
                 kf_svf(&c, in, kf.s[ch][0], &bp);
                 kf_svf(&c2, in, kf.s[ch][1], &b2);
-                o = (bp * 2 + b2 * 3 / 2);
+                o = (bp * 2 + ((b2 * 3) >> 1));
                 break;
             }
             case KF_PHASER: {
-                int32_t a = clamp(30000 - ((note8 - (24 << 8)) * 27000 / (100 << 8)), 1500, 31000), v = in + ((kf.fbk[ch] * res) >> 8), k;
+                int32_t a = pha, v = in + ((kf.fbk[ch] * res) >> 8), k;
                 for (k = 0; k < 4; k++) {          /* y = a (x - y[n-1]) + x[n-1] */
                     int32_t yy = ((a * (v - kf.ap[ch][k][1])) >> 15) + kf.ap[ch][k][0];
                     kf.ap[ch][k][0] = v;

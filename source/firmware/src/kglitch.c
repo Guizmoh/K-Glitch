@@ -19,7 +19,7 @@
  * starts, 0 when it stops, one at a time; CHAOS, DENSITY and MOVEMENT go out as CC 85, 86, 87 (0..127) when they
  * change. On the MPC each CC is set with MIDI LEARN. The CC map is in docs/MPC_REMOTE.md (K-GLITCH's root). */
 
-#define KGLITCH_VERSION "0.9"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.9.1"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 static void midi_out_event(uint32_t pkt);         /* usb.c: a USB-MIDI packet, from the audio ISR */
 
 #define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */

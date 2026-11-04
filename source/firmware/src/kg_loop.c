@@ -45,7 +45,9 @@ static struct {
     volatile int8_t pad;          /* a white key held: the slice (or the grain position) it plays, -1 none */
     uint8_t pad_new;              /* (it was just pressed: from the slice's start) */
     uint32_t pad_q8;              /* its position in the loop, Q8 */
-    struct { uint32_t q8, inc, age, len; uint8_t on; } gr[4];   /* GRAIN */
+    struct { uint32_t q8, inc, age, len, wi; uint8_t on; } gr[4];   /* GRAIN (wi: its window's slope, Q16) */
+    uint32_t pf;                  /* the key's slice: where in it (Q8) */
+    uint8_t ps;                   /* .. which (the per-sample paths keep counts: the FM-1 divides slowly) */
     uint32_t gr_next;             /* samples to the next grain */
     uint32_t rnd;
     uint8_t ov[110];              /* the waveform's outline (the screen), 0..20 */
@@ -64,10 +66,16 @@ static int32_t kl_get(uint32_t i)
     uint32_t e = (uint32_t)(kl_b8[KL_MAXS + (i >> 5)] >> ((i >> 2) & 4u)) & 15u;
     return (int32_t)(int8_t)kl_b8[i] << e;
 }
-/* the loop at position q8 (Q8 samples), cubic (Hermite) */
+/* the loop at position q8 (Q8 samples, < its length): linear at 44.1 kHz (one source sample a sample: enough, and half
+ * the reads), cubic (Hermite) at 22.05 kHz */
 static int32_t kl_at(uint32_t q8)
 {
-    uint32_t i = (q8 >> 8) % kl.len, n = kl.len;
+    uint32_t i = q8 >> 8, n = kl.len;
+    if (i >= n) i -= n;
+    if (kl.rate == 1u) {
+        int32_t a = kl_get(i), b = kl_get(i + 1u < n ? i + 1u : 0u);
+        return a + (((b - a) * (int32_t)(q8 & 255u)) >> 8);
+    }
     int32_t xm = kl_get(i ? i - 1u : n - 1u), x0 = kl_get(i), x1 = kl_get(i + 1u < n ? i + 1u : 0u),
             x2 = kl_get(i + 2u < n ? i + 2u : i + 2u - n), t = (int32_t)(q8 & 255u);
     int32_t c1 = (x1 - xm) >> 1, c2 = xm - ((5 * x0) >> 1) + 2 * x1 - (x2 >> 1), c3 = ((x2 - xm) >> 1) + ((3 * (x0 - x1)) >> 1);
@@ -153,7 +161,7 @@ static void kl_pad_up(void)
 /* the loop into the mix (before the punch-in effects) */
 static void kl_play(int32_t *l, int32_t *r, uint32_t n)
 {
-    uint32_t mode = (uint32_t)song.g[G_KLMODE] & 3u, i, total, rq8, pos, L8, len8;
+    uint32_t mode = (uint32_t)song.g[G_KLMODE] & 3u, i, total, rq8, pos, L8, len8;   /* (pos: the loop's sample now) */
     if (kl.st != KLS_HAS || mode == KL_OFF || !song.playing || !kl.len)
         return;
     total = kl_bar_samples() * kl.bars;
@@ -166,61 +174,77 @@ static void kl_play(int32_t *l, int32_t *r, uint32_t n)
     if (kl.pad >= 0 && kl.pad_new) {              /* a key: its slice from the start */
         kl.pad_new = 0;
         kl.pad_q8 = (uint32_t)kl.pad * L8;
+        kl.ps = (uint8_t)kl.pad, kl.pf = 0;
     }
-    for (i = 0; i < n; i++, pos++) {
+    {   /* the place in the loop and in its slice: one divide a block, then counted sample by sample */
         uint32_t q8 = pos * rq8 % len8, s = q8 / L8, f = q8 - s * L8, src;
-        int32_t y, env = 256;
-        if (mode == KL_GRAIN) {
-            uint32_t g, sz = (10u + kg_pct(G_KGSIZE) * 240u / 100u) * (FS / 1000u), live = 0;
-            if (!kl.gr_next--) {                   /* a new grain */
-                uint32_t dens = kg_pct(G_KGDENS), at = kl.pad >= 0 ? (uint32_t)kl.pad * (kl.len / 16u)
-                                                                    : kg_pct(G_KGPOS) * (kl.len - 1u) / 100u;
-                uint32_t spray = kg_pct(G_KCHAOS) * (kl.len / 8u) / 100u, rr = kg_rand(&kl.rnd);
-                kl.gr_next = sz / (1u + dens / 14u);
-                if (spray) at = (at + rr % spray) % kl.len;
-                for (g = 0; g < 4u; g++)
-                    if (!kl.gr[g].on) {
-                        kl.gr[g].on = 1;
-                        kl.gr[g].q8 = at << 8;
-                        kl.gr[g].inc = (rq8 * (uint32_t)dd_semi(song.g[G_KGPIT])) >> 16;   /* (2^9 x 2^18: 32 bits) */
-                        kl.gr[g].age = 0;
-                        kl.gr[g].len = sz;
-                        break;
-                    }
-            }
-            y = 0;
-            for (g = 0; g < 4u; g++)
-                if (kl.gr[g].on) {
-                    uint32_t a = kl.gr[g].age, h = kl.gr[g].len / 2u;
-                    int32_t w = (int32_t)((a < h ? a : kl.gr[g].len - a) * 256u / (h ? h : 1u));
-                    y += (kl_at(kl.gr[g].q8) * w) >> 8;
-                    kl.gr[g].q8 = (kl.gr[g].q8 + kl.gr[g].inc) % len8;
-                    if (++kl.gr[g].age >= kl.gr[g].len) kl.gr[g].on = 0;
-                    live++;
+        uint32_t sz = (10u + kg_pct(G_KGSIZE) * 240u / 100u) * (FS / 1000u);
+        for (i = 0; i < n; i++) {
+            int32_t y, env = 256;
+            uint32_t sl = s > KL_NS - 1u ? KL_NS - 1u : s, ff = f;
+            if (mode == KL_GRAIN) {
+                uint32_t g, live = 0;
+                if (!kl.gr_next--) {                   /* a new grain (its divides: once a grain) */
+                    uint32_t dens = kg_pct(G_KGDENS), at = kl.pad >= 0 ? (uint32_t)kl.pad * (kl.len / 16u)
+                                                                        : kg_pct(G_KGPOS) * (kl.len - 1u) / 100u;
+                    uint32_t spray = kg_pct(G_KCHAOS) * (kl.len / 8u) / 100u, rr = kg_rand(&kl.rnd);
+                    kl.gr_next = sz / (1u + dens / 14u);
+                    if (spray) at = (at + rr % spray) % kl.len;
+                    for (g = 0; g < 4u; g++)
+                        if (!kl.gr[g].on) {
+                            kl.gr[g].on = 1;
+                            kl.gr[g].q8 = at << 8;
+                            kl.gr[g].inc = (rq8 * (uint32_t)dd_semi(song.g[G_KGPIT])) >> 16;   /* (2^9 x 2^18: 32 bits) */
+                            if (kl.gr[g].inc >= len8) kl.gr[g].inc = rq8;
+                            kl.gr[g].age = 0;
+                            kl.gr[g].len = sz;
+                            kl.gr[g].wi = (256u << 16) / (sz / 2u + 1u);
+                            break;
+                        }
                 }
-            y = live > 2u ? y * 2 / (int32_t)live : y;
-        } else if (kl.pad >= 0) {                  /* a key held: its slice, then on */
-            y = kl_at(kl.pad_q8);
-            f = kl.pad_q8 % L8;
-            kl.pad_q8 = (kl.pad_q8 + rq8) % len8;
-            if (song.rec) kl.map[s] = (uint8_t)(kl.pad_q8 / L8);   /* (REC: written into the map) */
-        } else if (mode == KL_SLICE) {
-            uint32_t rt = kl.ret[s] ? kl.ret[s] : 1u, ff = f * rt % L8;
-            src = kl.map[s] % KL_NS;
-            if (kl.rev[s]) ff = L8 - 1u - ff;
-            y = kl_at(src * L8 + ff);
-            f = f * rt % L8;
-        } else
-            y = kl_at(q8);
-        if (mode != KL_GRAIN) {                    /* the seams: 64 samples in and out */
-            uint32_t e = 64u << 8;
-            if (f < e) env = (int32_t)(f >> 6);
-            else if (L8 - f < e) env = (int32_t)((L8 - f) >> 6);
-            if (env > 256) env = 256;
-            y = (y * env) >> 8;
+                y = 0;
+                for (g = 0; g < 4u; g++)
+                    if (kl.gr[g].on) {
+                        uint32_t a = kl.gr[g].age, h = kl.gr[g].len / 2u;
+                        int32_t w = (int32_t)(((a < h ? a : kl.gr[g].len - a) * kl.gr[g].wi) >> 16);
+                        y += (kl_at(kl.gr[g].q8) * w) >> 8;
+                        kl.gr[g].q8 += kl.gr[g].inc;
+                        if (kl.gr[g].q8 >= len8) kl.gr[g].q8 -= len8;
+                        if (++kl.gr[g].age >= kl.gr[g].len) kl.gr[g].on = 0;
+                        live++;
+                    }
+                if (live == 3u) y = (y * 21845) >> 15;     /* (x 2/3) */
+                else if (live == 4u) y >>= 1;
+            } else if (kl.pad >= 0) {                  /* a key held: its slice, then on */
+                y = kl_at(kl.pad_q8);
+                ff = kl.pf;
+                kl.pad_q8 += rq8;
+                kl.pf += rq8;
+                if (kl.pad_q8 >= len8) kl.pad_q8 -= len8, kl.ps = 0, kl.pf = kl.pad_q8;
+                else if (kl.pf >= L8) kl.pf -= L8, kl.ps = (uint8_t)(kl.ps < KL_NS - 1u ? kl.ps + 1u : KL_NS - 1u);
+                if (song.rec) kl.map[sl] = kl.ps;      /* (REC: written into the map) */
+            } else if (mode == KL_SLICE) {
+                uint32_t rt = kl.ret[sl] ? kl.ret[sl] : 1u;
+                ff = f * rt;
+                while (ff >= L8) ff -= L8;             /* (rt <= 8: a few subtractions) */
+                src = kl.map[sl] % KL_NS;
+                y = kl_at(src * L8 + (kl.rev[sl] ? L8 - 1u - ff : ff));
+            } else
+                y = kl_at(q8);
+            if (mode != KL_GRAIN) {                    /* the seams: 64 samples in and out */
+                uint32_t e = 64u << 8;
+                if (ff < e) env = (int32_t)(ff >> 6);
+                else if (L8 - ff < e) env = (int32_t)((L8 - ff) >> 6);
+                if (env > 256) env = 256;
+                y = (y * env) >> 8;
+            }
+            l[i] += y;                                /* (stored at the mix's level) */
+            r[i] += y;
+            q8 += rq8;                                /* the next sample's place */
+            f += rq8;
+            if (q8 >= len8) q8 -= len8, s = 0, f = q8;
+            else if (f >= L8) f -= L8, s++;
         }
-        l[i] += y;                                /* (stored at the mix's level) */
-        r[i] += y;
     }
 }
 

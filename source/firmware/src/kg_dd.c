@@ -70,6 +70,7 @@ typedef struct {
     int32_t acc, lpy, ps, dl, dr, ll, lr;   /* STOP's slowdown; the cartridge's low-pass; the record's last place (Q15);
                                              * the jump's declick and the last output */
     uint8_t op, arg, open, newop, qi, from8, to8;   /* the 16th's operation (BO_*), open (gate, fader, mute) */
+    uint32_t fmul;                /* STUT: 13000 / L, Q8 (once a block: no divide a sample on the FM-1) */
 } kd_t;
 #define KD_SLOTS 3u                               /* MULTI: three DRUM DESTROYER effects at once, one after the other */
 static kd_t kd_slot[KD_SLOTS] = {{.cur = -1, .sub = -1, .rnd = 0x51A3E1B7u}, {.cur = -1, .sub = -1, .rnd = 0x2F6B1D3Bu},
@@ -109,10 +110,14 @@ static int32_t dd_declick(int32_t y, uint32_t k, uint32_t L)
 {
     return k < 64u ? (y * (int32_t)k) >> 6 : L - k < 64u ? (y * (int32_t)(L - k)) >> 6 : y;
 }
-/* the ring's writer leaves a held segment alone once it has been written (punch.c) */
+/* the ring's writer leaves a held segment alone once it has been written (punch.c); kd_anyown: a slot holds one (kd_process,
+ * once a block: the writer's test a sample is then one load) */
+static uint8_t kd_anyown;
 static int kd_owns(uint32_t w)
 {
     uint32_t i;
+    if (!kd_anyown)
+        return 0;
     for (i = 0; i < KD_SLOTS; i++) {
         const kd_t *q = &kd_slot[i];
         uint32_t d = w - q->S;
@@ -292,7 +297,7 @@ static void dd_sample(int32_t x, int32_t y, uint32_t idx, int32_t *wl, int32_t *
     case DD_MICRO:
         m = dd_declick(ring_at(kd.S + kd.k), kd.k, kd.L);
         if (kd.sub == DD_STUT)                        /* each repeat fades a little */
-            m = ((m >> 2) * ((65536 - (int32_t)(kd.k * 13000u / kd.L)) >> 2)) >> 12;
+            m = ((m >> 2) * ((65536 - (int32_t)((kd.k * kd.fmul) >> 8)) >> 2)) >> 12;   /* (fmul: kg_process1, a block) */
         else if (kd.sub == DD_BREP)
             m = (m * kd.rep) >> 15;
         if (++kd.k >= kd.L) {
@@ -411,6 +416,8 @@ static void kd_process(int32_t *l, int32_t *r, uint32_t n)
         kd_process1(l, r, n, kd_wantv[s]);
     }
     kdp = &kd_slot[0];
+    kd_anyown = (uint8_t)((kd_slot[0].cur >= 0 && kd_slot[0].own) || (kd_slot[1].cur >= 0 && kd_slot[1].own) ||
+                          (kd_slot[2].cur >= 0 && kd_slot[2].own));
 }
 static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
 {
@@ -430,6 +437,7 @@ static void kd_process1(int32_t *l, int32_t *r, uint32_t n, int32_t want)
         dd_tick(base, s16);
     }
     I = dd_int();
+    kd.fmul = kd.L ? (13000u << 8) / kd.L : 0u;
     if (kd.sub == DD_GATE) {                           /* the slot of the bar: open or shut */
         uint32_t per = I > 50u ? 32u : 16u, slot = dd_barpos() * per / (dd_beat() * 4u + 1u);
         if (slot < kd.i32 || kd.i32 == 0xFFFFFFFFu) {  /* a new bar: a new pattern */
