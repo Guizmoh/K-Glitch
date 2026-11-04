@@ -36,4 +36,13 @@ class ThemeAndLinesTest {
         for (t in SoundType.entries) { with(com.somnia.app.ui.theme.Themes) { } }
         SoundType.entries.forEach { assertTrue(it.label.isNotBlank()) }
     }
+
+    @Test fun angryOnlyUntil6() {
+        for (h in 1..5) {
+            assertEquals(com.somnia.app.R.drawable.agent2_angry, Agent.awakeDrawable(h))
+            assertEquals(com.somnia.app.R.drawable.agent1_angry, Agent.awakeDrawable1(h))
+        }
+        assertEquals(com.somnia.app.R.drawable.agent2_smile, Agent.awakeDrawable(6))
+        assertEquals(com.somnia.app.R.drawable.agent1_laughing, Agent.awakeDrawable1(6))
+    }
 }
