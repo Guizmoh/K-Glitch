@@ -11,6 +11,6 @@ object AgentLines {
         in 21..23 -> "Profitez bien de votre soirée."
         0 -> "Première sommation ! Au lit, ou c'est une amende."
         1 -> "DEUXIÈME SOMMATION ! Au lit, ou c'est la prison."
-        else -> "Allez, trajet direct à la prison du Dodo ! Vous avez le droit de garder le silence : tout ronflement sera retenu contre vous."
+        else -> "Prison du Dodo ! Tout ronflement sera retenu contre vous !"
     }
 }
