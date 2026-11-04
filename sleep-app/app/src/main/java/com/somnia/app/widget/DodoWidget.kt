@@ -44,7 +44,7 @@ class DodoWidget : AppWidgetProvider() {
                 live != null && agent == 1 -> R.drawable.night_agent2_f3
                 live != null -> R.drawable.night_agent1_f3
                 agent == 1 -> Agent.awakeDrawable(hour)
-                else -> R.drawable.agent_awake
+                else -> Agent.awakeDrawable1(hour)
             }
             v.setImageViewResource(R.id.widget_agent, image)
             v.setTextViewText(

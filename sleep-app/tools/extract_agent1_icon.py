@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Icône du policier moustachu : la 3e tête (il rigole) de art/agent1_expressions.webp."""
+"""Policier moustachu (art/agent1_expressions.webp) : icône = 3e tête (il rigole) ;
+humeurs selon l'heure = 1re (colère), 2e (neutre), 4e (sourire)."""
 import os
 import numpy as np
 from PIL import Image
@@ -16,6 +17,27 @@ border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
 bg = ndimage.binary_opening(np.isin(lab, list(border)), iterations=1)
 alpha = ndimage.gaussian_filter(np.where(bg, 0, 255).astype(float), 0.6).clip(0, 255).astype(np.uint8)
 xx = np.arange(rgb.shape[1])[None, :]
+full_alpha = alpha.copy()
+
+
+def head_at(x0, x1):
+    al = np.where((xx >= x0) & (xx < x1), full_alpha, 0)
+    l2, n = ndimage.label(al > 40)
+    sizes = ndimage.sum(np.ones_like(l2), l2, range(1, n + 1))
+    keep = ndimage.binary_fill_holes(l2 == int(np.argmax(sizes)) + 1)
+    al = np.where(keep, al, 0).astype(np.uint8)
+    ys, xs = np.nonzero(al > 10)
+    return Image.fromarray(np.dstack([rgb.astype(np.uint8), al])[ys.min():ys.max() + 1, xs.min():xs.max() + 1], "RGBA")
+
+
+# Humeurs : carré centré (même cadrage que les anciennes têtes du moustachu)
+for name, (a, b) in {"agent1_angry": (7, 299), "agent1_neutral": (296, 579), "agent1_smile": (852, 1136)}.items():
+    h = head_at(a, b)
+    side = max(h.size)
+    sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    sq.paste(h, ((side - h.width) // 2, (side - h.height) // 2))
+    sq.resize((512, 512), Image.LANCZOS).save(os.path.join(OUT, name + ".png"), optimize=True)
+
 alpha = np.where((xx >= X0) & (xx < X1), alpha, 0)
 l2, n = ndimage.label(alpha > 40)
 sizes = ndimage.sum(np.ones_like(l2), l2, range(1, n + 1))

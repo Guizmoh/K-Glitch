@@ -96,7 +96,9 @@ fun PoliceLogoFrame(size: Dp, open: Float, zzzPhase: Float? = null, awakeBob: Fl
                             com.somnia.app.ui.LocalHour.current ?: java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
                         )
                         agent == 1 -> com.somnia.app.ui.Agent.SLEEP_SEQUENCE[sleepFrame.coerceIn(0, 5)]
-                        awake -> R.drawable.agent_awake
+                        awake -> com.somnia.app.ui.Agent.awakeDrawable1(
+                            com.somnia.app.ui.LocalHour.current ?: java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+                        )
                         else -> R.drawable.agent_asleep
                     },
                 ),

@@ -25,6 +25,13 @@ object Agent {
         else -> com.somnia.app.R.drawable.agent2_angry
     }
 
+    /** Humeur du moustachu selon l'heure : sourire de 8 h à minuit, neutre de minuit à 1 h, en colère ensuite. */
+    fun awakeDrawable1(hour: Int): Int = when (hour) {
+        in 8..23 -> com.somnia.app.R.drawable.agent1_smile
+        0 -> com.somnia.app.R.drawable.agent1_neutral
+        else -> com.somnia.app.R.drawable.agent1_angry
+    }
+
     /** Animation de la bave : images 4, 5, 6, 6, 5, 4 en boucle. */
     val SLEEP_SEQUENCE = intArrayOf(
         com.somnia.app.R.drawable.agent2_sleep1, com.somnia.app.R.drawable.agent2_sleep2, com.somnia.app.R.drawable.agent2_sleep3,

@@ -27,7 +27,7 @@ class ThemeAndLinesTest {
     }
 
     @Test fun agentMoodsCoverEveryHour() {
-        for (h in 0..23) Agent.awakeDrawable(h)
+        for (h in 0..23) { Agent.awakeDrawable(h); Agent.awakeDrawable1(h) }
         assertEquals(6, Agent.SLEEP_SEQUENCE.size)
         assertEquals(Agent.SLEEP_SEQUENCE[0], Agent.SLEEP_SEQUENCE[5]) // 4-5-6-6-5-4 : boucle sans saut
     }
