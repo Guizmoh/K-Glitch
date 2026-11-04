@@ -9,12 +9,12 @@
 Dossier [`installer/`](installer/) : un installateur **en un seul fichier, le firmware dedans, sans internet** — mode d'emploi dans [`installer/LISEZ-MOI.md`](installer/LISEZ-MOI.md).
 
 1. FM-1 branché en USB (câble de données, directement sur l'ordinateur).
-2. Windows : `INSTALLER-WINDOWS.bat` ; Mac : `INSTALLER-MAC.command` ; sinon ouvrir `K-GLITCH-0.9.1-installer.html` avec **Chrome ou Edge**.
+2. Windows : `INSTALLER-WINDOWS.bat` ; Mac : `INSTALLER-MAC.command` ; sinon ouvrir `K-GLITCH-0.9.2-installer.html` avec **Chrome ou Edge**.
 3. **Installer**, autoriser le MIDI, attendre « Terminé » (environ une minute).
 
-Aussi en ligne de commande : `python3 installer/fm1_install.py installer/k-glitch-0.9.1.fwsc` (mido + python-rtmidi). Secours : OCT− maintenu à l'allumage.
+Aussi en ligne de commande : `python3 installer/fm1_install.py installer/k-glitch-0.9.2.fwsc` (mido + python-rtmidi). Secours : OCT− maintenu à l'allumage.
 
-Construire le paquet et l'installateur : `cd source && sh tools/get_toolchain.sh` (une fois), les trois fichiers du SDK AC79 (voir `source/BUILDING.md`), puis `sh build.sh --release 0.9` et `python3 tools/make_installer.py build/felucca-0.9.fwsc 0.9 ../installer/K-GLITCH-0.9.1-installer.html`. Pour tenir dans la flash, quatre jeux de samples de SLOOP (PIANO, BASS, VIBES, HORNS) gardent un son sur deux (chacun couvre deux fois plus de touches) : 66 Ko rendus à K-GLITCH.
+Construire le paquet et l'installateur : `cd source && sh tools/get_toolchain.sh` (une fois), les trois fichiers du SDK AC79 (voir `source/BUILDING.md`), puis `sh build.sh --release 0.9` et `python3 tools/make_installer.py build/felucca-0.9.fwsc 0.9 ../installer/K-GLITCH-0.9.2-installer.html`. Pour tenir dans la flash, quatre jeux de samples de SLOOP (PIANO, BASS, VIBES, HORNS) gardent un son sur deux (chacun couvre deux fois plus de touches) : 66 Ko rendus à K-GLITCH.
 
 ## Essayer : l'émulateur
 
