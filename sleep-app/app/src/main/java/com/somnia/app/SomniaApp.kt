@@ -11,6 +11,7 @@ import com.somnia.app.data.SettingsRepository
 class SomniaApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        CrashLog.install(this)
         com.somnia.app.ui.theme.Themes.init(this)
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(

@@ -31,10 +31,10 @@ object Agent {
         com.somnia.app.R.drawable.agent2_sleep3, com.somnia.app.R.drawable.agent2_sleep2, com.somnia.app.R.drawable.agent2_sleep1,
     )
 
-    /** Change de policier dans l'appli et sur l'icône du téléphone. */
-    fun set(context: Context, agent: Int) {
-        SettingsRepository.get(context).update { it.copy(agent = agent) }
-        com.somnia.app.widget.DodoWidget.refresh(context)
+    /** Change d'icône sur le téléphone (séparé pour pouvoir le tester). */
+    fun interface IconSwitcher { fun enableOnly(index: Int) }
+
+    private fun systemSwitcher(context: Context) = IconSwitcher { agent ->
         val pm = context.packageManager
         for (i in 0 until COUNT) {
             val state = if (i == agent) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
@@ -44,6 +44,31 @@ object Agent {
                 )
             }
         }
+    }
+
+    /** Icône à appliquer quand l'appli passera en arrière-plan (null = rien à faire). */
+    @Volatile var pendingIcon: Int? = null
+        private set
+
+    /**
+     * Change de policier dans l'appli tout de suite. L'icône du téléphone n'est changée
+     * qu'en quittant l'appli : la changer pendant qu'on l'utilise fait fermer l'écran
+     * par Android (retour à l'accueil du téléphone).
+     */
+    fun set(context: Context, agent: Int) {
+        SettingsRepository.get(context).update { it.copy(agent = agent) }
+        com.somnia.app.widget.DodoWidget.refresh(context)
+        requestIcon(agent)
+    }
+
+    /** Mémorise l'icône voulue, sans toucher au téléphone. */
+    fun requestIcon(agent: Int) { pendingIcon = agent }
+
+    /** Appelé quand l'appli n'est plus à l'écran. */
+    fun applyPendingIcon(context: Context, switcher: IconSwitcher = systemSwitcher(context)) {
+        val icon = pendingIcon ?: return
+        pendingIcon = null
+        switcher.enableOnly(icon)
     }
 
     fun next(context: Context) = set(context, (SettingsRepository.get(context).settings.value.agent + 1) % COUNT)

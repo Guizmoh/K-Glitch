@@ -164,6 +164,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        // L'appli n'est plus à l'écran : on peut changer l'icône sans fermer la fenêtre
+        if (!isChangingConfigurations) Agent.applyPendingIcon(this)
         AudioPlayer.stop()
     }
 }

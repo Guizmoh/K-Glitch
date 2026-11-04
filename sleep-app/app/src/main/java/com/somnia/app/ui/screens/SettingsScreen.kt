@@ -15,6 +15,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -195,7 +196,26 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
 
         GlassCard(title = "Aide", icon = "👮", onClick = onTutorial) {
             Text("Revoir le tuto de l'agent du Dodo", color = TextSoft)
-            Text("Astuce : touchez la tête du policier pour changer de personnage (aussi sur l'icône du téléphone).", color = TextSoft, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+            Text("Astuce : touchez la tête du policier pour changer de personnage. L'icône du téléphone change quand vous quittez l'appli.", color = TextSoft, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+        }
+
+        // Rapport du dernier plantage (s'il y en a eu un), à envoyer pour corriger le bug
+        var crash by remember { androidx.compose.runtime.mutableStateOf(com.somnia.app.CrashLog.read(ctx)) }
+        crash?.let { report ->
+            GlassCard(title = "Rapport d'erreur", icon = "💡") {
+                Text("L'appli a planté récemment. Envoyez ce rapport pour aider à corriger le problème.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+                Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    TextButton(onClick = {
+                        ctx.startActivity(android.content.Intent.createChooser(
+                            android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                                .putExtra(android.content.Intent.EXTRA_SUBJECT, "Police du Dodo : rapport d'erreur")
+                                .putExtra(android.content.Intent.EXTRA_TEXT, report),
+                            "Envoyer le rapport",
+                        ))
+                    }) { Text("Envoyer le rapport") }
+                    TextButton(onClick = { com.somnia.app.CrashLog.clear(ctx); crash = null }) { Text("Effacer") }
+                }
+            }
         }
 
         GlassCard(title = "Mes données", icon = "🔒") {
