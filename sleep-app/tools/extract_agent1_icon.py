@@ -31,7 +31,7 @@ def head_at(x0, x1):
 
 
 # Humeurs : carré centré (même cadrage que les anciennes têtes du moustachu)
-for name, (a, b) in {"agent1_angry": (7, 299), "agent1_neutral": (296, 579), "agent1_smile": (852, 1136)}.items():
+for name, (a, b) in {"agent1_angry": (7, 299), "agent1_neutral": (296, 579), "agent1_laughing": (577, 855), "agent1_smile": (852, 1136)}.items():
     h = head_at(a, b)
     side = max(h.size)
     sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
