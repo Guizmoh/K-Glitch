@@ -57,6 +57,12 @@ Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 - **Ma voix** : une empreinte vocale (Vosk, modèle locuteur `vosk-model-spk-0.4`) est créée en lisant un texte de 20 s. La nuit, les paroles dont la ressemblance avec l'empreinte est sous le seuil réglable (45 % par défaut) sont ignorées. Les paroles trop courtes pour être jugées sont gardées.
 - Le test de déclenchement des Réglages montre « Votre voix / Autre voix (télé ?) » avec la ressemblance, et « Télé détectée ».
 
+### Apnée du sommeil (option, désactivée par défaut)
+- Réglages > « Apnée du sommeil » : suivi continu de la respiration (souffles à +5 dB au-dessus du fond, indépendant de la sensibilité).
+- Une pause suspecte = au moins 4 souffles réguliers (2–10 s d'écart), puis un silence de 10 à 90 s, puis une reprise forte (pic +3 dB au-dessus des souffles habituels) ou longue (≥ 1,2 s).
+- Une télé / radio repérée met le suivi en pause ; il reprend après une respiration de nouveau régulière.
+- Chaque pause est enregistrée (4 s avant le silence jusqu'à la reprise) ; le rapport donne le nombre de pauses par heure de sommeil, avec un conseil médical au-delà de 5 par heure. Ce n'est pas un diagnostic.
+
 ### Widget
 - Widget d'écran d'accueil avec l'agent, sa phrase du moment et le bouton « Commencer la nuit » / « Je me réveille ».
 

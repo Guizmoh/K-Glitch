@@ -230,6 +230,34 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
                 )
             }
         }
+        val pauses = events.filter { it.type == SoundType.APNEA.name }
+        if (pauses.isNotEmpty() || settings.apneaMode) item {
+            GlassCard(title = "Pauses respiratoires", icon = "🫁") {
+                val asleepH = (s.deepMinutes + s.lightMinutes) / 60f
+                val perHour = if (asleepH > 0.5f) pauses.size / asleepH else 0f
+                Text(
+                    if (pauses.isEmpty()) "Aucune pause suspecte repérée cette nuit."
+                    else "${pauses.size} pause(s) suspecte(s)" + if (asleepH > 0.5f) " · %.1f par heure de sommeil".format(perHour) else "",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                if (pauses.isNotEmpty()) {
+                    val gaps = pauses.mapNotNull { apneaGap(it) }
+                    if (gaps.isNotEmpty()) Text(
+                        "Silence moyen %.0f s · le plus long %.0f s".format(gaps.average(), gaps.max()),
+                        style = MaterialTheme.typography.bodySmall, color = TextSoft,
+                    )
+                    Text("Chaque pause est dans la liste des sons ci-dessous, à réécouter.", style = MaterialTheme.typography.bodySmall, color = TextSoft)
+                }
+                if (perHour >= 5f && asleepH >= 2f) Text(
+                    "Plus de 5 pauses par heure : ce n'est pas un diagnostic, mais parlez-en à un médecin (un examen du sommeil peut le confirmer).",
+                    style = MaterialTheme.typography.bodySmall, color = com.somnia.app.ui.theme.AwakeColor, modifier = Modifier.padding(top = 6.dp),
+                )
+                Text(
+                    "Estimation au son seulement, moins fiable avec du bruit de fond ou un autre dormeur.",
+                    style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
         val tips = Insights.advice(s, settings.sleepGoalMin)
         if (tips.isNotEmpty()) item {
             GlassCard(title = "Conseils de l'agent", icon = "👮") {
@@ -278,6 +306,9 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel) {
                     tint = if (e.favorite) Color(0xFFFF6B8B) else TextSoft,
                 )
             }
+        }
+        if (t == SoundType.APNEA) apneaGap(e)?.let { g ->
+            Text("Silence de %.0f s puis reprise bruyante".format(g), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
         }
         // Paroles transcrites
         val ctx = LocalContext.current
@@ -363,7 +394,7 @@ private fun CorrectDialog(current: SoundType, onPick: (SoundType) -> Unit, onClo
         text = {
             Column {
                 Text("L'appli s'ajuste à chaque correction.", style = MaterialTheme.typography.bodySmall, color = TextSoft)
-                SoundType.entries.filter { it != current }.forEach { ty ->
+                SoundType.entries.filter { it != current && it != SoundType.APNEA }.forEach { ty ->
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onPick(ty) }.padding(vertical = 10.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -377,6 +408,10 @@ private fun CorrectDialog(current: SoundType, onPick: (SoundType) -> Unit, onClo
         confirmButton = { TextButton(onClick = onClose) { Text("Annuler") } },
     )
 }
+
+/** Durée du silence d'une pause respiratoire (en secondes), lue dans l'événement. */
+private fun apneaGap(e: SoundEventEntity): Double? =
+    e.scores.split(";").firstOrNull { it.startsWith("APNEA_GAP=") }?.substringAfter("=")?.toDoubleOrNull()
 
 private fun fmtMs(ms: Int): String = "%d:%02d".format(ms / 60_000, (ms / 1000) % 60)
 

@@ -17,6 +17,8 @@ data class Settings(
     val moods: MoodHours = MoodHours(),
     /** Mode télé : repère une télé / radio allumée et la traite comme bruit de fond. */
     val tvMode: Boolean = false,
+    /** Suivi des pauses respiratoires (apnée du sommeil, estimation). */
+    val apneaMode: Boolean = false,
     /** Ne garder que les paroles qui ressemblent à la voix enregistrée (si empreinte faite). */
     val onlyMyVoice: Boolean = true,
     /** Ressemblance minimale avec l'empreinte vocale (0..1). */
@@ -30,7 +32,7 @@ data class Settings(
     /** Intensité de captation par catégorie 1..10 (10 = capte les moindres signes). */
     val typeSensitivity: Map<SoundType, Int> = defaultTypeSensitivity(),
     /** Catégories dont on conserve l'enregistrement audio. */
-    val recordTypes: Set<SoundType> = SoundType.entries.toSet() - SoundType.NOISE - SoundType.MEDIA,
+    val recordTypes: Set<SoundType> = SoundType.entries.toSet() - SoundType.NOISE - SoundType.MEDIA - SoundType.APNEA,
     /** Créer automatiquement une version « voix isolée » des paroles, cris, rires, pleurs. */
     val enhanceVoice: Boolean = true,
     /** Ne commencer la détection qu'après N minutes (temps d'endormissement). */
@@ -109,9 +111,10 @@ class SettingsRepository private constructor(context: Context) {
                 prefs.getInt("mood_joy_s", 6), prefs.getInt("mood_joy_e", 22),
             ),
             tvMode = prefs.getBoolean("tv_mode", d.tvMode),
+            apneaMode = prefs.getBoolean("apnea_mode", d.apneaMode),
             onlyMyVoice = prefs.getBoolean("only_my_voice", d.onlyMyVoice),
             voiceMatch = prefs.getFloat("voice_match", d.voiceMatch),
-            typeSensitivity = SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA }.associateWith {
+            typeSensitivity = SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA && it != SoundType.APNEA }.associateWith {
                 prefs.getInt("sens_${it.name}", d.typeSensitivity[it] ?: 5)
             },
             recordTypes = prefs.getStringSet("record", null)?.map { SoundType.fromName(it) }?.toSet() ?: d.recordTypes,
@@ -139,6 +142,7 @@ class SettingsRepository private constructor(context: Context) {
             putInt("mood_angry_s", s.moods.angryStart); putInt("mood_angry_e", s.moods.angryEnd)
             putInt("mood_joy_s", s.moods.joyStart); putInt("mood_joy_e", s.moods.joyEnd)
             putBoolean("tv_mode", s.tvMode)
+            putBoolean("apnea_mode", s.apneaMode)
             putBoolean("only_my_voice", s.onlyMyVoice)
             putFloat("voice_match", s.voiceMatch)
             s.typeSensitivity.forEach { (t, v) -> putInt("sens_${t.name}", v) }

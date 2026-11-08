@@ -231,6 +231,10 @@ private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compo
                     }
                 }
                 l.alarmTarget?.let { Pill("⏰ Réveil au plus tard à ${Fmt.time(it)}", Badge) }
+                l.apneaStatus?.let { st ->
+                    Spacer(Modifier.height(6.dp))
+                    Pill("🫁 Respiration : ${st.replaceFirstChar { it.lowercase() }}" + if (l.apneaCount > 0) " · ${l.apneaCount} pause(s)" else "", TextSoft)
+                }
                 if (l.tvOn || l.ignoredMedia + l.ignoredVoices > 0) {
                     Spacer(Modifier.height(6.dp))
                     Pill(

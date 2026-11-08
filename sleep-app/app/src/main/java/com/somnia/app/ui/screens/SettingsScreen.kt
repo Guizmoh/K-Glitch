@@ -147,6 +147,21 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
 
         TvAndVoiceCard(s, { t -> vm.updateSettings(t) }, live != null)
 
+        GlassCard(title = "Apnée du sommeil", icon = "🫁") {
+            SwitchRow("Repérer les pauses respiratoires", s.apneaMode) { v -> vm.updateSettings { it.copy(apneaMode = v) } }
+            Text(
+                "Repère « ronflement / respiration régulière → silence de 10 s ou plus → reprise bruyante ». " +
+                    "Chaque pause est enregistrée pour être réécoutée. Si une télé ou une radio est allumée, " +
+                    "le suivi se met en pause et reprend tout seul quand elle s'éteint.",
+                style = MaterialTheme.typography.bodySmall, color = TextSoft,
+            )
+            if (s.apneaMode) Text(
+                "Pour plus de fiabilité : téléphone à 30–60 cm de la tête, micro non couvert, branché. " +
+                    "Ce n'est pas un diagnostic : en cas de doute, parlez-en à un médecin.",
+                style = MaterialTheme.typography.bodySmall, color = com.somnia.app.ui.theme.Badge, modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+
         ExpandableCard("Réglage fin par type de son", "🎛️", "Sensibilité du micro et intensité pour rires, pleurs, cris…") {
             Text("Micro : ${s.micSensitivity}/10", style = MaterialTheme.typography.titleSmall)
             Text("Écart nécessaire avec le bruit de fond : +${"%.0f".format(23f - 1.9f * s.micSensitivity)} dB", style = MaterialTheme.typography.bodySmall, color = TextSoft)
@@ -155,7 +170,7 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
                 "Pour chaque type : plus c'est haut, plus les sons discrets ou peu typiques sont retenus.",
                 style = MaterialTheme.typography.bodySmall, color = TextSoft, modifier = Modifier.padding(top = 8.dp),
             )
-            SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA }.forEach { t ->
+            SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA && it != SoundType.APNEA }.forEach { t ->
                 val on = t in s.recordTypes
                 Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(

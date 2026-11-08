@@ -71,6 +71,7 @@ private fun SoundType.baseColor(): Color = when (this) {
     SoundType.BREATHING -> Color(0xFF8CC2BC)
     SoundType.NOISE -> Color(0xFF9AA2C0)
     SoundType.MEDIA -> Color(0xFFA9B6D6)
+    SoundType.APNEA -> Color(0xFFF08FB2)
 }
 
 fun scoreColor(score: Int?): Color = when {
@@ -172,4 +173,5 @@ fun SoundType.icon(): androidx.compose.ui.graphics.vector.ImageVector = when (th
     SoundType.BREATHING -> Icons.Rounded.Air
     SoundType.NOISE -> Icons.Rounded.GraphicEq
     SoundType.MEDIA -> Icons.Rounded.Tv
+    SoundType.APNEA -> Icons.Rounded.Air
 }

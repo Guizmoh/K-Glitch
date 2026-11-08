@@ -164,6 +164,11 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
             val raw = ShortArray(AudioMath.FRAME * factor * rec.channels)
             val detector = SoundEventDetector().apply { setSensitivity(settings.micSensitivity) }
             val tv = com.somnia.app.audio.TvDetector()
+            // Pauses respiratoires : analyse continue + mémoire des 50 dernières secondes de son
+            val apnea = com.somnia.app.audio.ApneaDetector()
+            val apneaTv = com.somnia.app.audio.TvDetector() // la télé met le suivi en pause, même si le mode télé est éteint
+            val ring = ArrayDeque<ShortArray>()
+            var fi = 0L
             val delayUntil = startTime + settings.startDelayMin * 60_000L
             record.startRecording()
             TrackingState.live.value = TrackingState.live.value?.copy(micInfo = rec.describe())
@@ -194,6 +199,22 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         }
                     }
                     val ev = detector.process(frame, hi, rec.rate)
+                    if (settings.apneaMode) {
+                        fi++
+                        ring.addLast(hi ?: frame); while (ring.size > 500) ring.removeFirst()
+                        apneaTv.process(detector.lastDb, detector.noiseFloorDb)
+                        val ep = apnea.process(detector.lastDb, detector.noiseFloorDb, apneaTv.isOn || tv.isOn)
+                        if (ep != null && System.currentTimeMillis() >= delayUntil) {
+                            // Extrait : 4 s avant le silence jusqu'à la fin de la reprise
+                            val startFi = ((ep.silenceStartMs - 4_000) / 100).coerceAtLeast(fi - ring.size + 1)
+                            val parts = ring.toList().takeLast((fi - startFi + 1).toInt().coerceAtMost(ring.size))
+                            val clip = ShortArray(parts.sumOf { it.size }).also { out -> var p = 0; parts.forEach { a -> a.copyInto(out, p); p += a.size } }
+                            val clipRate = if (hi != null) rec.rate else AudioMath.SAMPLE_RATE
+                            val ts = startTime + (fi - parts.size + 1) * 100
+                            val floorNow = detector.noiseFloorDb
+                            launch(Dispatchers.IO) { saveApnea(ep, clip, clipRate, ts, floorNow) }
+                        }
+                    }
                     synchronized(lock) {
                         minuteDbSum += detector.lastDb; minuteDbCount++
                         if (detector.lastDb > minuteDbMax) minuteDbMax = detector.lastDb
@@ -205,6 +226,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         TrackingState.live.value = TrackingState.live.value?.copy(
                             levelDb = detector.lastDb, noiseFloorDb = detector.noiseFloorDb,
                             thresholdDb = detector.threshold, capturing = detector.isRecording,
+                            apneaStatus = if (settings.apneaMode) apnea.status else null,
                         )
                     }
                 }
@@ -318,6 +340,22 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 updateNotification()
             }
         }
+    }
+
+    /** Enregistre une pause respiratoire suspecte (son + ligne dans la nuit). */
+    private suspend fun saveApnea(ep: com.somnia.app.audio.ApneaDetector.Episode, clip: ShortArray, rate: Int, ts: Long, floorDb: Float) {
+        val dir = File(filesDir, "recordings/$sessionId").apply { mkdirs() }
+        val f = File(dir, "${ts}_apnee.wav")
+        WavFile.write(f, com.somnia.app.audio.Resample.polish(clip, rate), rate)
+        dao.insertEvent(
+            SoundEventEntity(
+                sessionId = sessionId, timestamp = ts, durationMs = clip.size * 1000L / rate,
+                type = SoundType.APNEA.name, confidence = 1f, peakDb = ep.recoveryPeakDb, noiseFloorDb = floorDb,
+                scores = "APNEA_GAP=${"%.1f".format(java.util.Locale.US, ep.gapMs / 1000f)}",
+                audioPath = f.absolutePath, enhancedPath = null,
+            ),
+        )
+        TrackingState.live.value = TrackingState.live.value?.let { it.copy(apneaCount = it.apneaCount + 1) }
     }
 
     private fun startMinuteLoop() {

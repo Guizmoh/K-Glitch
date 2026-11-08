@@ -27,6 +27,9 @@ data class LiveState(
     /** Sons ignorés : télé / musique, et voix qui ne sont pas la vôtre. */
     val ignoredMedia: Int = 0,
     val ignoredVoices: Int = 0,
+    /** Suivi des pauses respiratoires (null = désactivé). */
+    val apneaStatus: String? = null,
+    val apneaCount: Int = 0,
 )
 
 object TrackingState {
