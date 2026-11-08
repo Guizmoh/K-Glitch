@@ -103,6 +103,11 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             }
             Spacer(Modifier.height(10.dp))
             Text(preset?.description ?: "Réglage personnalisé (voir « Réglage fin » ci-dessous).", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+            var calibrating by remember { androidx.compose.runtime.mutableStateOf(false) }
+            OutlinedButton(onClick = { calibrating = true }, enabled = live == null, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Text("Calibrer la chambre (1 min, réglage automatique)")
+            }
+            if (calibrating) CalibrationDialog(s, onApply = { n -> vm.updateSettings { n } }) { calibrating = false }
             var testing2 by remember { androidx.compose.runtime.mutableStateOf(false) }
             OutlinedButton(onClick = { testing2 = true }, enabled = live == null, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 Text("Tester : qu'est-ce qui déclenche ?")
@@ -202,6 +207,11 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
                 OutlinedButton(onClick = {
                     TimePickerDialog(ctx, { _, h, m -> vm.updateSettings { it.copy(alarmHour = h, alarmMinute = m) } }, s.alarmHour, s.alarmMinute, true).show()
                 }, Modifier.fillMaxWidth()) { Text("Au plus tard à %02d:%02d".format(s.alarmHour, s.alarmMinute)) }
+                Text("Son du réveil (monte doucement sur 1 minute)", Modifier.padding(top = 8.dp))
+                val sounds = listOf("ringtone" to "Sonnerie", "WAVES" to "Vagues", "RAIN" to "Pluie")
+                Segmented(sounds.map { it.second }, sounds.indexOfFirst { it.first == s.alarmSound }.coerceAtLeast(0)) { i ->
+                    vm.updateSettings { it.copy(alarmSound = sounds[i].first) }
+                }
                 Text("Peut sonner jusqu'à ${s.alarmWindowMin} min plus tôt", Modifier.padding(top = 8.dp), color = TextSoft)
                 Slider(s.alarmWindowMin.toFloat(), { v -> vm.updateSettings { it.copy(alarmWindowMin = (v / 5).roundToInt() * 5) } }, valueRange = 0f..45f, steps = 8)
             }
@@ -251,6 +261,15 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
         GlassCard(title = "Mes données", icon = "🔒") {
             Text("Tout reste sur le téléphone : aucun son n'est envoyé sur Internet. Internet ne sert qu'à télécharger le modèle de transcription, si vous l'installez.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = { vm.exportCsv(ctx) }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Exporter mes nuits (CSV)") }
+            Text("Rapport pour le médecin (PDF + extraits sonores)", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleSmall)
+            var weeks by remember { androidx.compose.runtime.mutableIntStateOf(1) }
+            Segmented(listOf("2 semaines", "3 semaines", "4 semaines"), weeks) { weeks = it }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            var making by remember { androidx.compose.runtime.mutableStateOf(false) }
+            OutlinedButton(
+                onClick = { making = true; scope.launch { runCatching { com.somnia.app.report.PdfReport.share(ctx, weeks + 2) }; making = false } },
+                enabled = !making, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) { Text(if (making) "Préparation du rapport…" else "Créer et envoyer le rapport") }
         }
         Spacer(Modifier.height(16.dp))
     }

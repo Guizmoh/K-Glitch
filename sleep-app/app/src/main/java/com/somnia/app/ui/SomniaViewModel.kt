@@ -96,6 +96,42 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
         context.startActivity(Intent.createChooser(send, "Partager par mail, WhatsApp, MMS…").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
+    /** Partage plusieurs sons d'un coup (mail, WhatsApp…), avec la liste et les textes. */
+    fun shareMany(context: Context, events: List<SoundEventEntity>) {
+        val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+        val uris = ArrayList<android.net.Uri>()
+        val text = StringBuilder("Enregistrements de la nuit – Police du Dodo\n")
+        events.sortedBy { it.timestamp }.forEachIndexed { i, e ->
+            val path = e.enhancedPath ?: e.audioPath ?: return@forEachIndexed
+            val type = com.somnia.app.audio.SoundType.fromName(e.type)
+            val copy = File(dir, "%02d_%s_%s.wav".format(i + 1, type.label.substringBefore(' ').replace("/", ""), Fmt.time(e.timestamp).replace(":", "h")))
+            File(path).copyTo(copy, overwrite = true)
+            uris += FileProvider.getUriForFile(context, "${context.packageName}.files", copy)
+            text.append("\n${i + 1}. ${type.label} à ${Fmt.time(e.timestamp)} (${Fmt.seconds(e.durationMs)})")
+            e.transcript?.let { text.append(" « $it »") }
+        }
+        if (uris.isEmpty()) return
+        val send = Intent(Intent.ACTION_SEND_MULTIPLE).setType("audio/wav")
+            .putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris).putExtra(Intent.EXTRA_TEXT, text.toString())
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        send.clipData = android.content.ClipData.newRawUri("", uris[0]).apply { uris.drop(1).forEach { addItem(android.content.ClipData.Item(it)) } }
+        context.startActivity(Intent.createChooser(send, "Partager ${uris.size} son(s)").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    /** Met en favoris (ou retire si tous le sont déjà). */
+    fun favoriteMany(events: List<SoundEventEntity>) = viewModelScope.launch {
+        val fav = !events.all { it.favorite }
+        events.forEach { dao.updateEvent(it.copy(favorite = fav)) }
+    }
+
+    fun deleteMany(events: List<SoundEventEntity>) = viewModelScope.launch {
+        AudioPlayer.stop()
+        events.forEach { e ->
+            e.audioPath?.let { File(it).delete() }; e.enhancedPath?.let { File(it).delete() }
+            dao.deleteEvent(e)
+        }
+    }
+
     /** Export CSV de toutes les nuits et de tous les événements. */
     fun exportCsv(context: Context) = viewModelScope.launch {
         val file = withContext(Dispatchers.IO) {

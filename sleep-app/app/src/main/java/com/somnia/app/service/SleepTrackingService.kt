@@ -88,6 +88,8 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
     private var minuteEvents = 0
     private val gravity = FloatArray(3)
     private var gravityInit = false
+    private val gSum = DoubleArray(3)
+    private var gCount = 0
     private val recentMovement = ArrayDeque<Float>()
     private var floorSum = 0.0
     private var floorCount = 0
@@ -198,12 +200,16 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                             TrackingState.live.value = TrackingState.live.value?.copy(tvOn = tv.isOn)
                         }
                     }
+                    // Sons pour s'endormir en cours : la détection est en pause (seuil hors d'atteinte)
+                    val soundsOn = com.somnia.app.audio.SleepSounds.activeOrRecent()
+                    if (soundsOn) detector.mediaLevelDb = 0f
+                    else if (!settings.tvMode || !tv.isOn) detector.mediaLevelDb = -96f
                     val ev = detector.process(frame, hi, rec.rate)
                     if (settings.apneaMode) {
                         fi++
                         ring.addLast(hi ?: frame); while (ring.size > 500) ring.removeFirst()
                         apneaTv.process(detector.lastDb, detector.noiseFloorDb)
-                        val ep = apnea.process(detector.lastDb, detector.noiseFloorDb, apneaTv.isOn || tv.isOn)
+                        val ep = apnea.process(detector.lastDb, detector.noiseFloorDb, apneaTv.isOn || tv.isOn || soundsOn)
                         if (ep != null && System.currentTimeMillis() >= delayUntil) {
                             // Extrait : 4 s avant le silence jusqu'à la fin de la reprise
                             val startFi = ((ep.silenceStartMs - 4_000) / 100).coerceAtLeast(fi - ring.size + 1)
@@ -377,8 +383,13 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                 sessionId = sessionId, minute = minute, movement = minuteMovement,
                 avgDb = if (minuteDbCount == 0) -90f else (minuteDbSum / minuteDbCount).toFloat(),
                 maxDb = minuteDbMax, events = minuteEvents,
+                // inclinaison moyenne du téléphone (positions de sommeil)
+                tilt = if (gCount > 0) Math.toDegrees(kotlin.math.atan2(gSum[0], gSum[2])).toFloat() else 0f,
+                pitch = if (gCount > 0) Math.toDegrees(kotlin.math.atan2(gSum[1], gSum[2])).toFloat() else 0f,
+                hasPosition = gCount > 0,
             )
             minuteDbSum = 0.0; minuteDbCount = 0; minuteDbMax = -96f; minuteMovement = 0f; minuteEvents = 0
+            gSum.fill(0.0); gCount = 0
             s
         }
         recentMovement.addLast(stat.movement)
@@ -418,7 +429,11 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
         for (i in 0..2) gravity[i] = a * gravity[i] + (1 - a) * e.values[i]
         val x = e.values[0] - gravity[0]; val y = e.values[1] - gravity[1]; val z = e.values[2] - gravity[2]
         val mag = sqrt(x * x + y * y + z * z)
-        if (mag > 0.05f) synchronized(lock) { minuteMovement += (mag - 0.05f) }
+        synchronized(lock) {
+            if (mag > 0.05f) minuteMovement += (mag - 0.05f)
+            for (i in 0..2) gSum[i] += gravity[i]
+            gCount++
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}

@@ -34,15 +34,30 @@ class SomniaApp : Application() {
                 setBypassDnd(true)
             },
         )
+        // Réveil en douceur : le son est joué par l'appli (volume qui monte), pas par la notification
+        nm.createNotificationChannel(
+            NotificationChannel(CH_ALARM_GENTLE, "Réveil en douceur", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Réveil dont le son monte progressivement"
+                setSound(null, null)
+                enableVibration(false)
+                setBypassDnd(true)
+            },
+        )
+        nm.createNotificationChannel(
+            NotificationChannel(CH_WEEKLY, "Bilan de la semaine", NotificationManager.IMPORTANCE_DEFAULT),
+        )
         nm.createNotificationChannel(
             NotificationChannel(CH_REMINDER, "Rappel du coucher", NotificationManager.IMPORTANCE_DEFAULT),
         )
         AlarmScheduler.scheduleBedtime(this, SettingsRepository.get(this).settings.value)
+        AlarmScheduler.scheduleWeekly(this)
     }
 
     companion object {
         const val CH_TRACKING = "tracking"
         const val CH_ALARM = "alarm"
         const val CH_REMINDER = "reminder"
+        const val CH_ALARM_GENTLE = "alarm_gentle"
+        const val CH_WEEKLY = "weekly"
     }
 }

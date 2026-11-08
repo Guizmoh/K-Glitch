@@ -63,6 +63,16 @@ Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 - Une télé / radio repérée met le suivi en pause ; il reprend après une respiration de nouveau régulière.
 - Chaque pause est enregistrée (4 s avant le silence jusqu'à la reprise) ; le rapport donne le nombre de pauses par heure de sommeil, avec un conseil médical au-delà de 5 par heure. Ce n'est pas un diagnostic.
 
+### Ronflement, calibration, bilan, coucher idéal, sons, réveil doux, rapport PDF
+- **Ronflement** : courbe par tranches de 10 min (hauteur = durée, couleur = intensité), heures, moment le plus fort et, téléphone sur le matelas, part des ronflements par position (inclinaison du téléphone mémorisée chaque minute).
+- **Calibration** au premier lancement (et dans Réglages) : 1 min de mesure, sensibilité réglée selon le bruit de fond, mode télé proposé si un son continu est entendu.
+- **Bilan de la semaine** (Tendances + notification le lundi matin) : sommeil moyen et évolution, régularité du coucher, meilleure / pire nuit, ce qui a aidé ou gêné.
+- **Heure de coucher idéale** : réveil en fin de cycle (6 ou 5 cycles de 90 min + 15 min d'endormissement).
+- **Sons pour s'endormir** synthétisés (pluie, vagues, bruits blanc / rose / brun), minuterie et baisse progressive ; la détection est en pause pendant la lecture.
+- **Réveil en douceur** : sonnerie du téléphone ou ambiance (vagues, pluie), volume qui monte sur 1 min, vibration après 30 s.
+- **Rapport PDF** (2 à 4 semaines) avec résumé, graphique, tableau par nuit et extraits sonores numérotés envoyés avec le PDF.
+- **Sélection multiple** des sons d'une nuit (appui long) : partager, mettre en favoris, supprimer (avec confirmation).
+
 ### Widget
 - Widget d'écran d'accueil avec l'agent, sa phrase du moment et le bouton « Commencer la nuit » / « Je me réveille ».
 

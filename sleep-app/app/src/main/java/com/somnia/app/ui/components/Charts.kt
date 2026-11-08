@@ -221,3 +221,36 @@ fun ScoreRing(score: Int?, modifier: Modifier = Modifier) {
         if ((score ?: 0) > 0) drawArc(scoreColor(score), 135f, 270f * ((score ?: 0) / 100f), false, tl, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
     }
 }
+
+
+/** Courbe du ronflement : une barre par tranche de 10 min (hauteur = durée, couleur = intensité), heures en bas. */
+@Composable
+fun SnoreCurve(events: List<SoundEventEntity>, sessionStart: Long, totalMinutes: Int) {
+    val curve = com.somnia.app.analysis.Snoring.curve(events, sessionStart, totalMinutes)
+    if (curve.all { it.seconds == 0f }) { Text("Pas de ronflement relevé cette nuit.", color = com.somnia.app.ui.theme.TextSoft); return }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = com.somnia.app.ui.theme.TextSoft)
+    val base = SoundType.SNORING.color()
+    val maxSec = curve.maxOf { it.seconds }.coerceAtLeast(30f)
+    val cal = java.util.Calendar.getInstance().apply {
+        timeInMillis = sessionStart; set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        add(java.util.Calendar.HOUR_OF_DAY, 1)
+    }
+    val step = if (totalMinutes > 9 * 60) 2 else 1
+    val ticks = generateSequence(cal.timeInMillis) { it + step * 3_600_000L }.takeWhile { it < sessionStart + totalMinutes * 60_000L }.toList()
+    Canvas(Modifier.fillMaxWidth().height(120.dp)) {
+        val chartH = size.height - 18.dp.toPx()
+        val slot = size.width / curve.size
+        curve.forEachIndexed { i, b ->
+            if (b.seconds <= 0f) return@forEachIndexed
+            val h = chartH * (b.seconds / maxSec).coerceIn(0.04f, 1f)
+            val strength = (b.intensityDb / 30f).coerceIn(0.35f, 1f)
+            drawRoundRect(base.copy(alpha = strength), Offset(i * slot + slot * 0.12f, chartH - h), Size(slot * 0.76f, h), CornerRadius(3.dp.toPx()))
+        }
+        for (t in ticks) {
+            val x = ((t - sessionStart) / 60_000f) / totalMinutes * size.width
+            val label = measurer.measure(com.somnia.app.ui.Fmt.time(t).substringBefore(":") + " h", labelStyle)
+            drawText(label, topLeft = Offset((x - label.size.width / 2f).coerceIn(0f, size.width - label.size.width), chartH + 2.dp.toPx()))
+        }
+    }
+}

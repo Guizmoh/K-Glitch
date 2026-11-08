@@ -53,6 +53,20 @@ fun StatsScreen(vm: SomniaViewModel) {
 
     Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         ScreenHeader("Tendances", "Vos nuits en un coup d'œil")
+        com.somnia.app.analysis.WeeklyReport.compute(all, System.currentTimeMillis())?.let { w ->
+            GlassCard(title = "Bilan de la semaine", icon = "⭐") {
+                Text(w.summary(), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Coucher moyen %02d:%02d · écart ±${w.bedtimeSpreadMin} min".format(w.avgBedtimeMin / 60, w.avgBedtimeMin % 60),
+                    style = MaterialTheme.typography.bodySmall, color = TextSoft,
+                )
+                w.best?.let { Text("Meilleure nuit : ${Fmt.day(it.startTime)} (${it.score})", style = MaterialTheme.typography.bodySmall, color = Good) }
+                w.worst?.let { Text("Nuit la plus difficile : ${Fmt.day(it.startTime)} (${it.score})", style = MaterialTheme.typography.bodySmall, color = AwakeColor) }
+                w.helped.forEach { Text("A aidé : ${it.tag} (+${it.delta} points)", style = MaterialTheme.typography.bodySmall, color = Good) }
+                w.hurt.forEach { Text("A gêné : ${it.tag} (${it.delta} points)", style = MaterialTheme.typography.bodySmall, color = AwakeColor) }
+                if (w.helped.isEmpty() && w.hurt.isEmpty()) Text("Remplissez le rapport du soir pour savoir ce qui aide.", style = MaterialTheme.typography.labelSmall, color = TextSoft)
+            }
+        }
         Segmented(listOf("7 jours", "30 jours", "90 jours"), period) { period = it }
         Spacer(Modifier.height(8.dp))
         if (nights.isEmpty()) {

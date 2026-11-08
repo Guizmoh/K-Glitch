@@ -1,6 +1,7 @@
 package com.somnia.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -90,7 +91,7 @@ private val MOODS = listOf(
     Icons.Rounded.SentimentSatisfied, Icons.Rounded.SentimentVerySatisfied,
 )
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
     val ctx = LocalContext.current
@@ -99,6 +100,9 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
     val minutes by remember(id) { vm.dao.minutesFlow(id) }.collectAsState(initial = emptyList<MinuteStat>())
     val settings by vm.settings.collectAsState()
     var filter by remember { mutableStateOf<SoundType?>(null) }
+    // Sélection multiple (appui long sur un son)
+    var selected by remember(id) { mutableStateOf(setOf<Long>()) }
+    var confirmMany by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     val s = session ?: run { Text("Chargement…", Modifier.padding(20.dp), color = TextSoft); return }
     var notes by remember(s.id) { mutableStateOf(s.notes) }
@@ -181,6 +185,40 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
                 )
             }
         }
+        // --- Ronflement ---
+        if (events.any { it.type == SoundType.SNORING.name } && minutes.isNotEmpty()) item {
+            GlassCard(title = "Ronflement", icon = "🐻") {
+                com.somnia.app.ui.components.SnoreCurve(events, s.startTime, minutes.size)
+                val curve = com.somnia.app.analysis.Snoring.curve(events, s.startTime, minutes.size)
+                val totalMin = (curve.sumOf { it.seconds.toDouble() } / 60).roundToInt()
+                val peak = curve.maxOf { it.intensityDb }
+                Text("$totalMin min au total · intensité max +%.0f dB au-dessus du calme".format(peak), style = MaterialTheme.typography.bodySmall)
+                com.somnia.app.analysis.Snoring.worstWindow(curve)?.let { w ->
+                    val from = s.startTime + w * 60_000L
+                    Text("Surtout entre ${Fmt.time(from)} et ${Fmt.time(from + 2 * 3_600_000L)}", style = MaterialTheme.typography.bodySmall)
+                }
+                val pos = com.somnia.app.analysis.Snoring.positions(minutes, events, s.startTime)
+                if (pos.size >= 2) {
+                    Text("Selon la position (téléphone sur le matelas)", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    val totalSnore = pos.sumOf { it.snoreMinutes }.coerceAtLeast(1)
+                    val totalPos = pos.sumOf { it.minutes }.coerceAtLeast(1)
+                    pos.forEach { p ->
+                        Text(
+                            "${p.label} : ${p.minutes * 100 / totalPos} % de la nuit, ${p.snoreMinutes * 100 / totalSnore} % des ronflements",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    val worst = pos.maxByOrNull { it.snoreMinutes.toFloat() / it.minutes }
+                    if (worst != null && worst.snoreMinutes * 100 / totalSnore > worst.minutes * 100 / totalPos + 15) Text(
+                        "Vous ronflez surtout en ${worst.label.lowercase()} : c'est souvent la position sur le dos.",
+                        style = MaterialTheme.typography.bodySmall, color = com.somnia.app.ui.theme.Badge,
+                    )
+                } else if (minutes.none { it.hasPosition }) Text(
+                    "Posez le téléphone sur le matelas pour voir le lien avec la position.",
+                    style = MaterialTheme.typography.labelSmall, color = TextSoft,
+                )
+            }
+        }
         // --- Sons ---
         item {
             Row(Modifier.padding(top = 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -199,7 +237,31 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         if (shown.isEmpty()) item {
             GlassCard { Text("Rien à signaler, nuit calme !", color = TextSoft) }
         }
-        items(shown, key = { it.id }) { e -> EventCard(e, vm) }
+        if (selected.isNotEmpty()) item {
+            val chosen = events.filter { it.id in selected }
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(14.dp))
+                    .background(com.somnia.app.ui.theme.Badge.copy(alpha = 0.16f)).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("${selected.size} sélectionné(s)", Modifier.weight(1f).padding(start = 6.dp), style = MaterialTheme.typography.titleSmall)
+                IconButton(onClick = { vm.shareMany(ctx, chosen) }) { Icon(Icons.Filled.Share, "Partager la sélection") }
+                IconButton(onClick = { vm.favoriteMany(chosen) }) { Icon(Icons.Filled.Favorite, "Mettre en favoris") }
+                IconButton(onClick = { confirmMany = true }) { Icon(Icons.Filled.Delete, "Supprimer la sélection") }
+                TextButton(onClick = { selected = emptySet() }) { Text("Annuler") }
+            }
+        } else if (shown.isNotEmpty()) item {
+            Text("Astuce : appui long sur un son pour en sélectionner plusieurs.", style = MaterialTheme.typography.labelSmall, color = TextSoft)
+        }
+        items(shown, key = { it.id }) { e ->
+            val isSel = e.id in selected
+            Box(
+                Modifier.combinedClickable(
+                    onLongClick = { selected = if (isSel) selected - e.id else selected + e.id },
+                    onClick = { if (selected.isNotEmpty()) selected = if (isSel) selected - e.id else selected + e.id },
+                ),
+            ) { EventCard(e, vm, isSel) }
+        }
 
         // --- Au réveil ---
         item {
@@ -274,6 +336,20 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         item { Spacer(Modifier.height(16.dp)) }
     }
 
+    if (confirmMany) {
+        AlertDialog(
+            onDismissRequest = { confirmMany = false },
+            title = { Text("Supprimer ${selected.size} son(s) ?") },
+            text = { Text("Les enregistrements seront définitivement effacés.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.deleteMany(events.filter { it.id in selected }); selected = emptySet(); confirmMany = false
+                }) { Text("Supprimer") }
+            },
+            dismissButton = { TextButton(onClick = { confirmMany = false }) { Text("Annuler") } },
+        )
+    }
+
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -286,9 +362,11 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
 }
 
 @Composable
-private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel) {
+private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, isSelected: Boolean = false) {
     val t = SoundType.fromName(e.type)
-    GlassCard {
+    GlassCard(
+        if (isSelected) Modifier.border(2.dp, com.somnia.app.ui.theme.Badge, RoundedCornerShape(16.dp)) else Modifier,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(t.color().copy(alpha = 0.14f)),

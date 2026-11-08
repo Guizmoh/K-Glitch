@@ -93,6 +93,11 @@ class MainActivity : ComponentActivity() {
                         OnboardingScreen { prefs.edit().putBoolean("tuto_done", true).apply(); showTuto = false }
                         return@NightBackground
                     }
+                    // Première utilisation : calibration de la chambre (1 min), une seule fois
+                    var askCalib by remember { mutableStateOf(!prefs.getBoolean("calibrated", false)) }
+                    if (askCalib) com.somnia.app.ui.screens.CalibrationDialog(
+                        settingsNow, onApply = { n -> vm.updateSettings { n } },
+                    ) { prefs.edit().putBoolean("calibrated", true).apply(); askCalib = false }
                     androidx.compose.foundation.layout.Box(
                         androidx.compose.ui.Modifier.fillMaxSize(),
                         contentAlignment = androidx.compose.ui.Alignment.TopCenter,
@@ -127,6 +132,9 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     ) { pad ->
+                        androidx.compose.runtime.LaunchedEffect(Unit) {
+                            if (intent?.getStringExtra("open") == "stats") { intent?.removeExtra("open"); nav.navigate("stats") }
+                        }
                         NavHost(
                             nav, startDestination = "tonight", modifier = Modifier.padding(pad),
                             enterTransition = { fadeIn() }, exitTransition = { fadeOut() },

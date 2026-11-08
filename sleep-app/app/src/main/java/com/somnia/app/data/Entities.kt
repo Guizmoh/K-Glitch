@@ -84,4 +84,9 @@ data class MinuteStat(
     val events: Int,
     /** 0 = profond, 1 = léger, 2 = éveillé (rempli à la fin de la nuit). */
     val stage: Int = 1,
+    /** Inclinaison moyenne du téléphone (degrés) : sert à repérer les changements de position. */
+    val tilt: Float = 0f,
+    val pitch: Float = 0f,
+    /** Vrai si l'accéléromètre a mesuré cette minute. */
+    val hasPosition: Boolean = false,
 )

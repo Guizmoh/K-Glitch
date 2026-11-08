@@ -52,7 +52,7 @@ object AlarmScheduler {
             context, 12, Intent(context, AlarmActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val n = NotificationCompat.Builder(context, SomniaApp.CH_ALARM)
+        val n = NotificationCompat.Builder(context, SomniaApp.CH_ALARM_GENTLE)
             .setSmallIcon(R.drawable.ic_moon)
             .setContentTitle("Bonjour")
             .setContentText("C'est l'heure de se lever")
@@ -62,17 +62,52 @@ object AlarmScheduler {
             .setContentIntent(full)
             .setOngoing(true)
             .build()
-        n.flags = n.flags or android.app.Notification.FLAG_INSISTENT
         if (Build.VERSION.SDK_INT < 33 ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         ) {
             context.getSystemService(NotificationManager::class.java).notify(ALARM_NOTIF, n)
         }
+        // Son qui monte doucement (sonnerie ou ambiance choisie)
+        com.somnia.app.audio.AlarmRinger.start(context, com.somnia.app.data.SettingsRepository.get(context).settings.value.alarmSound)
         runCatching { context.startActivity(Intent(context, AlarmActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 
     fun stopRinging(context: Context) {
+        com.somnia.app.audio.AlarmRinger.stop(context)
         context.getSystemService(NotificationManager::class.java).cancel(ALARM_NOTIF)
+    }
+
+    // ---- Bilan de la semaine (lundi 9 h 37) ----
+    private fun weeklyIntent(context: Context) = PendingIntent.getBroadcast(
+        context, 40, Intent(context, WeeklyReportReceiver::class.java),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    fun scheduleWeekly(context: Context) {
+        val am = context.getSystemService(AlarmManager::class.java)
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY); set(Calendar.HOUR_OF_DAY, 9); set(Calendar.MINUTE, 37)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(Calendar.WEEK_OF_YEAR, 1)
+        }
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, weeklyIntent(context))
+    }
+
+    fun showWeekly(context: Context, text: String) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        val open = PendingIntent.getActivity(
+            context, 41, Intent(context, MainActivity::class.java).putExtra("open", "stats"),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val n = NotificationCompat.Builder(context, SomniaApp.CH_WEEKLY)
+            .setSmallIcon(R.drawable.ic_moon)
+            .setContentTitle("Votre bilan de la semaine")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(open).setAutoCancel(true).build()
+        context.getSystemService(NotificationManager::class.java).notify(79, n)
     }
 
     // ---- Rappel du coucher ----

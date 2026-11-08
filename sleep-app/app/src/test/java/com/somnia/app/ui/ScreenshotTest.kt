@@ -283,4 +283,19 @@ class ScreenshotTest {
             }
         } }
     }
+
+    @Test fun snoreAndSounds() = paparazzi.snapshot {
+        val start = t0 - (t0 % 3_600_000L) + 22 * 60_000L
+        val ev = (120 until 240 step 4).map { m -> com.somnia.app.data.SoundEventEntity(0, 1, start + m * 60_000L, 40_000, "SNORING", 0.7f, -40f + (m % 9), -60f, "", null, null) } +
+            (300 until 330 step 6).map { m -> com.somnia.app.data.SoundEventEntity(0, 1, start + m * 60_000L, 20_000, "SNORING", 0.7f, -48f, -60f, "", null, null) }
+        SomniaTheme { NightBackground {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(20.dp)) {
+                com.somnia.app.ui.components.GlassCard(title = "Ronflement", icon = "🐻") {
+                    com.somnia.app.ui.components.SnoreCurve(ev, start, 480)
+                }
+                com.somnia.app.ui.screens.IdealBedtimeCard(7 * 60 + 15, true)
+                com.somnia.app.ui.screens.SleepSoundsCard()
+            }
+        } }
+    }
 }

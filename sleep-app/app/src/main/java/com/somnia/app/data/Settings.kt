@@ -19,6 +19,8 @@ data class Settings(
     val tvMode: Boolean = false,
     /** Suivi des pauses respiratoires (apnée du sommeil, estimation). */
     val apneaMode: Boolean = false,
+    /** Son du réveil : "ringtone" (sonnerie du téléphone) ou une ambiance (WAVES, RAIN…). */
+    val alarmSound: String = "ringtone",
     /** Ne garder que les paroles qui ressemblent à la voix enregistrée (si empreinte faite). */
     val onlyMyVoice: Boolean = true,
     /** Ressemblance minimale avec l'empreinte vocale (0..1). */
@@ -112,6 +114,7 @@ class SettingsRepository private constructor(context: Context) {
             ),
             tvMode = prefs.getBoolean("tv_mode", d.tvMode),
             apneaMode = prefs.getBoolean("apnea_mode", d.apneaMode),
+            alarmSound = prefs.getString("alarm_sound", d.alarmSound) ?: "ringtone",
             onlyMyVoice = prefs.getBoolean("only_my_voice", d.onlyMyVoice),
             voiceMatch = prefs.getFloat("voice_match", d.voiceMatch),
             typeSensitivity = SoundType.entries.filter { it != SoundType.NOISE && it != SoundType.MEDIA && it != SoundType.APNEA }.associateWith {
@@ -143,6 +146,7 @@ class SettingsRepository private constructor(context: Context) {
             putInt("mood_joy_s", s.moods.joyStart); putInt("mood_joy_e", s.moods.joyEnd)
             putBoolean("tv_mode", s.tvMode)
             putBoolean("apnea_mode", s.apneaMode)
+            putString("alarm_sound", s.alarmSound)
             putBoolean("only_my_voice", s.onlyMyVoice)
             putFloat("voice_match", s.voiceMatch)
             s.typeSensitivity.forEach { (t, v) -> putInt("sens_${t.name}", v) }

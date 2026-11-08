@@ -106,6 +106,9 @@ fun TonightScreen(vm: SomniaViewModel, openSession: (Long) -> Unit) {
             },
             onOpen = openSession,
             hour = hour,
+            usualWakeMin = sessions.mapNotNull { it.wakeTime }.takeLast(7).takeIf { it.isNotEmpty() }?.map {
+                val c = Calendar.getInstance().apply { timeInMillis = it }; c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(Calendar.MINUTE)
+            }?.average()?.toInt(),
         )
     } else {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -129,6 +132,7 @@ fun TonightIdle(
     onStart: () -> Unit,
     onOpen: (Long) -> Unit,
     hour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
+    usualWakeMin: Int? = null,
 ) = androidx.compose.runtime.CompositionLocalProvider(com.somnia.app.ui.LocalHour provides hour) {
     Column(
         Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
@@ -147,6 +151,10 @@ fun TonightIdle(
             if (settings.startDelayMin > 0) Pill("⏳ ${settings.startDelayMin} min", TextSoft, Modifier.padding(bottom = 6.dp))
         }
         Spacer(Modifier.height(8.dp))
+
+        val wakeMin = if (settings.smartAlarmEnabled) settings.alarmHour * 60 + settings.alarmMinute else usualWakeMin ?: 7 * 60
+        IdealBedtimeCard(wakeMin, settings.smartAlarmEnabled)
+        SleepSoundsCard()
 
         GlassCard(title = "Rapport du soir", icon = "📝") {
             Text("Facultatif : ça aide à comprendre ce qui influence vos nuits.", style = MaterialTheme.typography.bodySmall, color = TextSoft)
@@ -231,6 +239,14 @@ private fun TonightLiveContent(l: LiveState, now: Long, topInset: androidx.compo
                     }
                 }
                 l.alarmTarget?.let { Pill("⏰ Réveil au plus tard à ${Fmt.time(it)}", Badge) }
+                val sound by com.somnia.app.audio.SleepSounds.active.collectAsState()
+                sound?.let { a ->
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Pill("🔊 ${a.type.label} · écoute en pause jusqu'à la fin du son", TextSoft)
+                        androidx.compose.material3.TextButton(onClick = { com.somnia.app.audio.SleepSounds.stop() }) { Text("Arrêter", color = Color.White) }
+                    }
+                }
                 l.apneaStatus?.let { st ->
                     Spacer(Modifier.height(6.dp))
                     Pill("🫁 Respiration : ${st.replaceFirstChar { it.lowercase() }}" + if (l.apneaCount > 0) " · ${l.apneaCount} pause(s)" else "", TextSoft)
