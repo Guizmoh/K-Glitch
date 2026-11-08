@@ -278,6 +278,7 @@ class ScreenshotTest {
             androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(20.dp)) {
                 com.somnia.app.ui.components.GlassCard(title = "Phases de la nuit", icon = "🌙") {
                     com.somnia.app.ui.components.Hypnogram(minutes, events, start, initialSelected = 203)
+                    com.somnia.app.ui.screens.StageBreakdown(95, 330, 40)
                 }
             }
         } }

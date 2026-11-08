@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.somnia.app.analysis.Insights
+import kotlin.math.roundToInt
 import com.somnia.app.analysis.JournalTags
 import com.somnia.app.audio.SoundType
 import com.somnia.app.data.MinuteStat
@@ -169,6 +170,7 @@ fun SessionScreen(vm: SomniaViewModel, id: Long, back: () -> Unit) {
         item {
             GlassCard(title = "Phases de la nuit", icon = "🌙") {
                 Hypnogram(minutes, events, s.startTime)
+                StageBreakdown(s.deepMinutes, s.lightMinutes, s.awakeMinutes)
                 if (s.calibrationNights > 0) Text(
                     "Calibré sur vos ${s.calibrationNights} nuits précédentes.",
                     style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 4.dp),
@@ -412,6 +414,31 @@ private fun CorrectDialog(current: SoundType, onPick: (SoundType) -> Unit, onClo
 /** Durée du silence d'une pause respiratoire (en secondes), lue dans l'événement. */
 private fun apneaGap(e: SoundEventEntity): Double? =
     e.scores.split(";").firstOrNull { it.startsWith("APNEA_GAP=") }?.substringAfter("=")?.toDoubleOrNull()
+
+/** Répartition de la nuit : durée et pourcentage de chaque phase, avec une barre. */
+@Composable
+fun StageBreakdown(deep: Int, light: Int, awake: Int) {
+    val total = (deep + light + awake).takeIf { it > 0 } ?: return
+    Column(Modifier.padding(top = 10.dp)) {
+        listOf(
+            Triple("Profond", deep, com.somnia.app.ui.theme.DeepColor),
+            Triple("Léger", light, com.somnia.app.ui.theme.LightColor),
+            Triple("Éveil", awake, com.somnia.app.ui.theme.AwakeColor),
+        ).forEach { (label, min, c) ->
+            val pct = min * 100f / total
+            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, Modifier.width(70.dp), style = MaterialTheme.typography.bodyMedium)
+                Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(c.copy(alpha = 0.18f))) {
+                    Box(Modifier.fillMaxWidth(pct / 100f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(c))
+                }
+                Text(
+                    "  ${Fmt.duration(min)} · ${pct.roundToInt()} %",
+                    Modifier.width(112.dp), style = MaterialTheme.typography.labelLarge, textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                )
+            }
+        }
+    }
+}
 
 private fun fmtMs(ms: Int): String = "%d:%02d".format(ms / 60_000, (ms / 1000) % 60)
 
