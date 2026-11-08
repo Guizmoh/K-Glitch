@@ -19,6 +19,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -54,7 +55,13 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
     val preset = CapturePreset.of(s)
 
     Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
-        ScreenHeader("Réglages", "Simple par défaut, précis si besoin")
+        ScreenHeader("Réglages", "Simple par défaut, précis si besoin") {
+            var showNews by remember { androidx.compose.runtime.mutableStateOf(false) }
+            androidx.compose.material3.IconButton(onClick = { showNews = true }) {
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.HelpOutline, "Nouveautés de la mise à jour", tint = com.somnia.app.ui.theme.Badge)
+            }
+            if (showNews) WhatsNewDialog { showNews = false }
+        }
         if (live != null) Text("Les changements s'appliqueront à la prochaine nuit.", color = Badge, modifier = Modifier.padding(bottom = 6.dp))
 
         GlassCard(title = "Thème", icon = "🎨") {
@@ -321,6 +328,42 @@ private fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, In
         TextButton(onClick = { pick(start) { onChange(it, end) } }) { Text("de ${start} h") }
         TextButton(onClick = { pick(end) { onChange(start, it) } }) { Text("à ${end} h") }
     }
+}
+
+/** Liste des nouveautés de la dernière mise à jour (bouton « ? » en haut des réglages). */
+private val WHATS_NEW = listOf(
+    "Ronflement" to "Courbe sur la nuit (durée et intensité), heures où vous ronflez le plus, et lien avec la position si le téléphone est sur le matelas.",
+    "Calibration de la chambre" to "1 minute de mesure pour régler la sensibilité toute seule (Réglages > Que doit-on capter ?).",
+    "Bilan de la semaine" to "En haut de Tendances, et une notification le lundi matin : sommeil moyen, régularité, meilleure et pire nuit, ce qui a aidé.",
+    "Heure de coucher idéale" to "Sur l'écran Ce soir, calculée d'après l'heure du réveil et des cycles de 90 minutes.",
+    "Sons pour s'endormir" to "Pluie, vagues, bruits blanc, rose ou brun, avec minuterie et baisse progressive. L'écoute de la nuit attend la fin du son.",
+    "Réveil en douceur" to "Sonnerie, vagues ou pluie, avec un volume qui monte sur 1 minute (Réglages > Réveil intelligent).",
+    "Rapport PDF pour le médecin" to "2 à 4 semaines de nuits avec les extraits sonores (Réglages > Mes données).",
+    "Sélection de plusieurs sons" to "Appui long sur un son dans le rapport d'une nuit, puis partager, mettre en favoris ou supprimer.",
+    "Apnée du sommeil" to "Option qui repère les pauses respiratoires suspectes, en pause pendant la télé (Réglages > Apnée du sommeil).",
+    "Phases de la nuit" to "Heures sous le graphique, détail au toucher, et répartition en heures et en pourcentage.",
+    "Humeur du policier" to "Heures de colère et de rire réglables, ou humeurs désactivées (Réglages > Humeur du policier).",
+)
+
+@Composable
+private fun WhatsNewDialog(onClose: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Nouveautés de la mise à jour") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                WHATS_NEW.forEach { (t, d) ->
+                    Text(t, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
+                    Text(d, style = MaterialTheme.typography.bodySmall, color = TextSoft)
+                }
+                Text(
+                    "Vos nuits et vos réglages sont conservés lors des mises à jour (installer par-dessus, sans désinstaller).",
+                    style = MaterialTheme.typography.labelSmall, color = com.somnia.app.ui.theme.Badge, modifier = Modifier.padding(top = 14.dp),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text("Fermer") } },
+    )
 }
 
 @Composable
