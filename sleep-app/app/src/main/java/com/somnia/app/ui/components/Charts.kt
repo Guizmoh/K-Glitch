@@ -1,6 +1,13 @@
 package com.somnia.app.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -33,12 +40,34 @@ import com.somnia.app.ui.theme.Moon
 import com.somnia.app.ui.theme.color
 import com.somnia.app.ui.theme.scoreColor
 
-/** Hypnogramme : éveillé en haut, profond en bas, événements sonores en dessous. */
+/**
+ * Hypnogramme : éveillé en haut, profond en bas, sons en dessous, heures en bas.
+ * Toucher ou glisser dessus affiche le détail de ce moment de la nuit.
+ */
 @Composable
-fun Hypnogram(minutes: List<MinuteStat>, events: List<SoundEventEntity>, sessionStart: Long) {
+fun Hypnogram(minutes: List<MinuteStat>, events: List<SoundEventEntity>, sessionStart: Long, initialSelected: Int? = null) {
     if (minutes.isEmpty()) { Text("Pas encore de données."); return }
     val total = minutes.size.coerceAtLeast(1)
-    Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+    var selected by androidx.compose.runtime.remember(sessionStart) { androidx.compose.runtime.mutableStateOf(initialSelected) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = com.somnia.app.ui.theme.TextSoft)
+    val cursor = com.somnia.app.ui.theme.Themes.cur.text
+    // Une graduation par heure (toutes les 2 h si la nuit est longue)
+    val cal = java.util.Calendar.getInstance().apply {
+        timeInMillis = sessionStart; set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        add(java.util.Calendar.HOUR_OF_DAY, 1)
+    }
+    val step = if (total > 9 * 60) 2 else 1
+    val ticks = generateSequence(cal.timeInMillis) { it + step * 3_600_000L }
+        .takeWhile { it < sessionStart + total * 60_000L }.toList()
+
+    Canvas(
+        Modifier.fillMaxWidth().height(172.dp)
+            .pointerInput(total) { detectTapGestures { selected = ((it.x / size.width) * total).toInt().coerceIn(0, total - 1) } }
+            .pointerInput(total) {
+                detectHorizontalDragGestures { ch, _ -> selected = ((ch.position.x / size.width) * total).toInt().coerceIn(0, total - 1) }
+            },
+    ) {
         val w = size.width / total
         val rowH = 30.dp.toPx()
         for (m in minutes) {
@@ -46,15 +75,76 @@ fun Hypnogram(minutes: List<MinuteStat>, events: List<SoundEventEntity>, session
             drawRect(c, Offset(m.minute * w, row * rowH), Size(w + 0.5f, rowH))
         }
         val y0 = rowH * 3 + 8.dp.toPx()
-        val evH = size.height - y0
+        val evH = 40.dp.toPx()
         for (e in events) {
             val x = ((e.timestamp - sessionStart) / 60_000f) * w
             val ew = (e.durationMs / 60_000f * w).coerceAtLeast(2.dp.toPx())
             drawRect(SoundType.fromName(e.type).color(), Offset(x, y0), Size(ew, evH))
         }
+        // Heures
+        val yt = y0 + evH + 4.dp.toPx()
+        for (t in ticks) {
+            val x = ((t - sessionStart) / 60_000f) * w
+            drawLine(labelStyle.color.copy(alpha = 0.5f), Offset(x, 0f), Offset(x, yt), 1.dp.toPx())
+            val label = measurer.measure(com.somnia.app.ui.Fmt.time(t).substringBefore(":") + " h", labelStyle)
+            val lx = (x - label.size.width / 2f).coerceIn(0f, size.width - label.size.width)
+            drawText(label, topLeft = Offset(lx, yt))
+        }
+        selected?.let { m ->
+            val x = (m + 0.5f) * w
+            drawLine(cursor, Offset(x, 0f), Offset(x, y0 + evH), 2.dp.toPx())
+        }
     }
     Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Legend(AwakeColor, "Éveil"); Legend(LightColor, "Léger"); Legend(DeepColor, "Profond")
+    }
+    val sel = selected
+    if (sel == null) {
+        Text("Touchez le graphique pour voir le détail d'un moment.", style = MaterialTheme.typography.labelSmall, color = com.somnia.app.ui.theme.TextSoft)
+    } else {
+        MinuteDetail(minutes, events, sessionStart, sel)
+    }
+}
+
+/** Détail d'une minute de la nuit : heure, phase, bruit, mouvements, sons proches. */
+@Composable
+private fun MinuteDetail(minutes: List<MinuteStat>, events: List<SoundEventEntity>, sessionStart: Long, minute: Int) {
+    val m = minutes.getOrNull(minute) ?: return
+    val t = sessionStart + minute * 60_000L
+    val stage = when (m.stage) { 2 -> "Éveil" to AwakeColor; 0 -> "Sommeil profond" to DeepColor; else -> "Sommeil léger" to LightColor }
+    val mv = minutes.map { it.movement }.sorted()
+    val med = mv[mv.size / 2].coerceAtLeast(0.1f)
+    val movement = when {
+        m.movement <= 0.05f -> "aucun"
+        m.movement < med * 1.5f -> "calme"
+        m.movement < med * 3f -> "quelques mouvements"
+        else -> "agité"
+    }
+    val floor = minutes.map { it.avgDb }.sorted()[minutes.size / 5]
+    val near = events.filter { kotlin.math.abs(it.timestamp - t) <= 3 * 60_000L || (t >= it.timestamp && t <= it.timestamp + it.durationMs) }
+    Column(
+        Modifier.fillMaxWidth().padding(top = 8.dp)
+            .background(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.07f), androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .padding(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(com.somnia.app.ui.Fmt.time(t), style = MaterialTheme.typography.titleLarge)
+            Text("   ${stage.first}", color = stage.second, style = MaterialTheme.typography.titleMedium)
+        }
+        Text(
+            "Bruit : %+.0f dB par rapport au calme de la nuit (pic %+.0f dB)".format(m.avgDb - floor, m.maxDb - floor),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Text("Mouvements : $movement", style = MaterialTheme.typography.bodySmall)
+        if (near.isEmpty()) Text("Aucun son relevé autour de ce moment.", style = MaterialTheme.typography.bodySmall, color = com.somnia.app.ui.theme.TextSoft)
+        else near.take(4).forEach { e ->
+            val ty = SoundType.fromName(e.type)
+            Text(
+                "• ${com.somnia.app.ui.Fmt.time(e.timestamp)} : ${ty.label} (${com.somnia.app.ui.Fmt.seconds(e.durationMs)})" +
+                    (e.transcript?.let { " « $it »" } ?: ""),
+                style = MaterialTheme.typography.bodySmall, color = ty.color(), maxLines = 2,
+            )
+        }
     }
 }
 

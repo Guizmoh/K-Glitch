@@ -264,4 +264,22 @@ class ScreenshotTest {
             }
         } }
     }
+
+    @Test fun hypnogramHours() = paparazzi.snapshot {
+        val start = t0 - (t0 % 3_600_000L) + 22 * 60_000L // 22 min après l'heure
+        val minutes = (0 until 480).map { m ->
+            com.somnia.app.data.MinuteStat(1, m, if (m % 90 < 15) 2f else 0.2f, -55f + (m % 7), -45f, 0, stage = if (m < 20 || m in 200..206) 2 else if (m % 90 in 30..60) 0 else 1)
+        }
+        val events = listOf(
+            com.somnia.app.data.SoundEventEntity(1, 1, start + 125 * 60_000L, 8000, "SNORING", 0.7f, -40f, -55f, "", null, null),
+            com.somnia.app.data.SoundEventEntity(2, 1, start + 203 * 60_000L, 4000, "SPEECH", 0.6f, -38f, -55f, "", null, null, transcript = "non pas maintenant"),
+        )
+        SomniaTheme { NightBackground {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(20.dp)) {
+                com.somnia.app.ui.components.GlassCard(title = "Phases de la nuit", icon = "🌙") {
+                    com.somnia.app.ui.components.Hypnogram(minutes, events, start, initialSelected = 203)
+                }
+            }
+        } }
+    }
 }
