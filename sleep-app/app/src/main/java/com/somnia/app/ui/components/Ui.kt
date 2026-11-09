@@ -214,8 +214,8 @@ fun BigRoundButton(title: String, subtitle: String, bubble: String? = null, onCl
     ) {
         PoliceLogo(132.dp, awake = true)
         Spacer(Modifier.height(6.dp))
+        // Pas de phrase à cette heure : il ne dit rien
         if (bubble != null) SpeechBubble(bubble)
-        else Text("L'agent est prêt pour la ronde de nuit.", color = TextSoft, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(18.dp))
         Button3D("$title $subtitle", onClick = onClick)
     }

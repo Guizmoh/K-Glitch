@@ -48,10 +48,9 @@ class DodoWidget : AppWidgetProvider() {
                 else -> Agent.awakeDrawable1(hour, st.moods)
             }
             v.setImageViewResource(R.id.widget_agent, image)
-            v.setTextViewText(
-                R.id.widget_line,
-                if (live != null) "Chut… je surveille votre nuit depuis ${Fmt.time(live.startTime)}." else AgentLines.forHour(hour),
-            )
+            val line = if (live != null) "Chut… je surveille votre nuit depuis ${Fmt.time(live.startTime)}." else AgentLines.forHour(hour, st.agentLines)
+            v.setTextViewText(R.id.widget_line, line ?: "")
+            v.setViewVisibility(R.id.widget_line, if (line == null) android.view.View.GONE else android.view.View.VISIBLE)
             v.setTextViewText(R.id.widget_button, if (live != null) "Je me réveille" else "Commencer la nuit")
             val action = if (live != null) {
                 PendingIntent.getService(

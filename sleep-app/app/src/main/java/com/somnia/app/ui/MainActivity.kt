@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                         bottomBar = {
                             NavigationBar(containerColor = com.somnia.app.ui.theme.Themes.cur.nav, tonalElevation = 0.dp) {
                                 tabs.forEach { (r, label, ico) ->
-                                    val selected = route == r || (r == "history" && route?.startsWith("session") == true)
+                                    val selected = route == r || (r == "history" && route?.startsWith("session") == true) || (r == "settings" && route == "agent")
                                     NavigationBarItem(
                                         selected = selected,
                                         onClick = {
@@ -142,7 +142,8 @@ class MainActivity : ComponentActivity() {
                             composable("tonight") { TonightScreen(vm) { nav.navigate("session/$it") } }
                             composable("history") { HistoryScreen(vm) { nav.navigate("session/$it") } }
                             composable("stats") { StatsScreen(vm) }
-                            composable("settings") { SettingsScreen(vm) { showTuto = true } }
+                            composable("settings") { SettingsScreen(vm, onTutorial = { showTuto = true }, onAgent = { nav.navigate("agent") }) }
+                            composable("agent") { com.somnia.app.ui.screens.AgentSettingsScreen(vm) { nav.popBackStack() } }
                             composable("session/{id}", listOf(navArgument("id") { type = NavType.LongType })) {
                                 SessionScreen(vm, it.arguments?.getLong("id") ?: 0L) { nav.popBackStack() }
                             }

@@ -6,6 +6,9 @@ import com.somnia.app.audio.SoundType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/** Une phrase du policier : de [startHour] à [endHour] (exclue), activée ou non. */
+data class AgentLine(val startHour: Int, val endHour: Int, val text: String, val enabled: Boolean = true)
+
 /** Heures des humeurs du policier (réglables). */
 data class MoodHours(
     val enabled: Boolean = true,
@@ -15,6 +18,8 @@ data class MoodHours(
 
 data class Settings(
     val moods: MoodHours = MoodHours(),
+    /** Ce que dit le policier selon l'heure. */
+    val agentLines: List<AgentLine> = com.somnia.app.ui.AgentLines.DEFAULTS,
     /** Mode télé : repère une télé / radio allumée et la traite comme bruit de fond. */
     val tvMode: Boolean = false,
     /** Suivi des pauses respiratoires (apnée du sommeil, estimation). */
@@ -108,6 +113,7 @@ class SettingsRepository private constructor(context: Context) {
             micSensitivity = prefs.getInt("mic", d.micSensitivity),
             micSource = prefs.getString("mic_source", d.micSource) ?: "auto",
             agent = prefs.getInt("agent", d.agent),
+            agentLines = prefs.getString("agent_lines", null)?.let { decodeLines(it) } ?: d.agentLines,
             moods = MoodHours(
                 prefs.getBoolean("mood_on", true), prefs.getInt("mood_angry_s", 1), prefs.getInt("mood_angry_e", 6),
                 prefs.getInt("mood_joy_s", 6), prefs.getInt("mood_joy_e", 22),
@@ -141,6 +147,7 @@ class SettingsRepository private constructor(context: Context) {
             putInt("mic", s.micSensitivity)
             putString("mic_source", s.micSource)
             putInt("agent", s.agent)
+            putString("agent_lines", encodeLines(s.agentLines))
             putBoolean("mood_on", s.moods.enabled)
             putInt("mood_angry_s", s.moods.angryStart); putInt("mood_angry_e", s.moods.angryEnd)
             putInt("mood_joy_s", s.moods.joyStart); putInt("mood_joy_e", s.moods.joyEnd)
@@ -167,6 +174,18 @@ class SettingsRepository private constructor(context: Context) {
     }
 
     companion object {
+        fun encodeLines(lines: List<AgentLine>): String = org.json.JSONArray().apply {
+            lines.forEach { put(org.json.JSONObject().put("s", it.startHour).put("e", it.endHour).put("t", it.text).put("on", it.enabled)) }
+        }.toString()
+
+        fun decodeLines(json: String): List<AgentLine>? = runCatching {
+            val a = org.json.JSONArray(json)
+            (0 until a.length()).map { i ->
+                val o = a.getJSONObject(i)
+                AgentLine(o.getInt("s"), o.getInt("e"), o.getString("t"), o.optBoolean("on", true))
+            }
+        }.getOrNull()
+
         @Volatile private var instance: SettingsRepository? = null
         fun get(context: Context) = instance ?: synchronized(this) {
             instance ?: SettingsRepository(context.applicationContext).also { instance = it }

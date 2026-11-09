@@ -141,7 +141,7 @@ fun TonightIdle(
         val hello = when (hour) { in 5..11 -> "Bonjour"; in 12..17 -> "Bon après-midi"; else -> "Bonsoir" }
         com.somnia.app.ui.components.AppTitle("$hello ! On surveille votre nuit ?")
 
-        BigRoundButton("Commencer", "la nuit", bubble = com.somnia.app.ui.AgentLines.forHour(hour), onClick = onStart)
+        BigRoundButton("Commencer", "la nuit", bubble = com.somnia.app.ui.AgentLines.forHour(hour, settings.agentLines), onClick = onStart)
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), modifier = Modifier.fillMaxWidth()) {
             Pill("🎙️ ${CapturePreset.of(settings)?.label ?: "Personnalisé"}", Moon, Modifier.padding(bottom = 6.dp))

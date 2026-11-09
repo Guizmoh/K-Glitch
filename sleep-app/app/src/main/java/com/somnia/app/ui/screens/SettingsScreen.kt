@@ -48,7 +48,7 @@ import com.somnia.app.ui.theme.TextSoft
 import kotlin.math.roundToInt
 
 @Composable
-fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
+fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}, onAgent: () -> Unit = {}) {
     val s by vm.settings.collectAsState()
     val live by TrackingState.state.collectAsState()
     val ctx = LocalContext.current
@@ -89,19 +89,14 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}) {
             }
         }
 
-        GlassCard(title = "Humeur du policier", icon = "👮") {
+        GlassCard(title = "Humeur du policier", icon = "👮", onClick = onAgent) {
             val m = s.moods
-            SwitchRow("Humeurs selon l'heure", m.enabled) { v -> vm.updateSettings { it.copy(moods = it.moods.copy(enabled = v)) } }
-            if (m.enabled) {
-                HourRangeRow("En colère", m.angryStart, m.angryEnd) { a, b -> vm.updateSettings { it.copy(moods = it.moods.copy(angryStart = a, angryEnd = b)) } }
-                HourRangeRow("Il rigole", m.joyStart, m.joyEnd) { a, b -> vm.updateSettings { it.copy(moods = it.moods.copy(joyStart = a, joyEnd = b)) } }
-                Text(
-                    "Après le rire : il sourit jusqu'à minuit, puis il est neutre jusqu'à la colère.",
-                    style = MaterialTheme.typography.bodySmall, color = TextSoft,
-                )
-            } else {
-                Text("Désactivé : grand sourire toute la journée, sourire à partir de minuit.", style = MaterialTheme.typography.bodySmall, color = TextSoft)
-            }
+            Text(
+                (if (m.enabled) "Colère ${m.angryStart} h–${m.angryEnd} h · rire ${m.joyStart} h–${m.joyEnd} h" else "Humeurs désactivées") +
+                    " · ${s.agentLines.count { it.enabled && it.text.isNotBlank() }} phrase(s)",
+                style = MaterialTheme.typography.bodySmall, color = TextSoft,
+            )
+            Text("Toucher pour modifier ses humeurs et ce qu'il dit", style = MaterialTheme.typography.labelSmall, color = com.somnia.app.ui.theme.Badge)
         }
 
         GlassCard(title = "Que doit-on capter ?", icon = "🎙️") {
@@ -319,7 +314,7 @@ private fun TranscriptionCard() {
 
 /** « En colère : de [1 h] à [6 h] » — chaque heure se choisit en la touchant. */
 @Composable
-private fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, Int) -> Unit) {
+internal fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, Int) -> Unit) {
     val ctx = LocalContext.current
     fun pick(current: Int, set: (Int) -> Unit) =
         TimePickerDialog(ctx, { _, h, _ -> set(h) }, current, 0, true).show()
@@ -342,7 +337,7 @@ private val WHATS_NEW = listOf(
     "Sélection de plusieurs sons" to "Appui long sur un son dans le rapport d'une nuit, puis partager, mettre en favoris ou supprimer.",
     "Apnée du sommeil" to "Option qui repère les pauses respiratoires suspectes, en pause pendant la télé (Réglages > Apnée du sommeil).",
     "Phases de la nuit" to "Heures sous le graphique, détail au toucher, et répartition en heures et en pourcentage.",
-    "Humeur du policier" to "Heures de colère et de rire réglables, ou humeurs désactivées (Réglages > Humeur du policier).",
+    "Le policier" to "Page dédiée (Réglages > Humeur du policier) : heures de colère et de rire, et ce qu'il dit — modifier chaque phrase, ses heures, l'activer ou non, en ajouter.",
 )
 
 @Composable
@@ -372,7 +367,7 @@ private fun LevelSlider(value: Int, onChange: (Int) -> Unit) {
 }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(label, Modifier.weight(1f))
         Switch(checked, onChange)
