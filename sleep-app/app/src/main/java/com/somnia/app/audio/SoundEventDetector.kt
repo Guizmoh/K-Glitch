@@ -36,8 +36,8 @@ class SoundEventDetector(
     private val preRollMs: Int = 1500,
     private val hangoverMs: Int = 2000,
     private val maxEventMs: Int = 60_000,
-    private val minEventMs: Int = 700,
-    private val onsetFrames: Int = 3,
+    private val minEventMs: Int = 450,
+    private val onsetFrames: Int = 2,
     val noiseTracker: NoiseFloorTracker = NoiseFloorTracker(),
 ) {
     private val frame = AudioMath.FRAME

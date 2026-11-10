@@ -68,12 +68,14 @@ class NewFeaturesTest {
 
     @Test fun calibrationPicksSensitivity() {
         val quiet = List(600) { -66f + (it % 3) }
-        assertEquals(5, CalibrationResult.from(quiet).sensitivity)
+        assertEquals(6, CalibrationResult.from(quiet).sensitivity)
+        // chambre bruyante mais stable : la sensibilité n'est plus baissée
         val noisy = List(600) { -40f + (it % 4) }
-        assertEquals(2, CalibrationResult.from(noisy).sensitivity)
+        assertEquals(6, CalibrationResult.from(noisy).sensitivity)
         // télé : fort presque tout le temps, volume régulier
         val tv = List(600) { if (it % 10 == 0) -62f else -42f + (it % 5) }
         assertTrue(CalibrationResult.from(tv).suggestTv)
+        assertTrue("jamais en dessous de 4", CalibrationResult.from(tv).sensitivity >= 4)
         assertTrue(!CalibrationResult.from(quiet).suggestTv)
     }
 

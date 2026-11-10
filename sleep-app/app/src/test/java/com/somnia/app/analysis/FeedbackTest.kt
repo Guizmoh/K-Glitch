@@ -11,13 +11,13 @@ class FeedbackTest {
         val s = Settings()
         val (n, msg) = Feedback.adjust(s, SoundType.LAUGHTER, SoundType.NOISE)
         assertEquals(s.typeSensitivity[SoundType.LAUGHTER]!! - 1, n.typeSensitivity[SoundType.LAUGHTER])
-        assertEquals("Réglage ajusté : Rire 6 → 5", msg)
+        assertEquals("Réglage ajusté : Rire 7 → 6", msg)
     }
 
     @Test fun swapLowersWrongAndRaisesRight() {
         val (n, _) = Feedback.adjust(Settings(), SoundType.SPEECH, SoundType.CRYING)
-        assertEquals(5, n.typeSensitivity[SoundType.SPEECH])
-        assertEquals(7, n.typeSensitivity[SoundType.CRYING])
+        assertEquals(7, n.typeSensitivity[SoundType.SPEECH])
+        assertEquals(8, n.typeSensitivity[SoundType.CRYING])
     }
 
     @Test fun boundsAreKept() {

@@ -29,7 +29,7 @@ data class Settings(
     /** Ne garder que les paroles qui ressemblent à la voix enregistrée (si empreinte faite). */
     val onlyMyVoice: Boolean = true,
     /** Ressemblance minimale avec l'empreinte vocale (0..1). */
-    val voiceMatch: Float = 0.45f,
+    val voiceMatch: Float = 0.35f,
     /** Micro utilisé (voir MicChoice) : auto, bottom, back, all, dev:ID. */
     val micSource: String = "auto",
     /** Personnage : 0 = l'agent moustachu, 1 = le gros agent au nez rouge. */
@@ -66,13 +66,13 @@ data class Settings(
 
     companion object {
         fun defaultTypeSensitivity(): Map<SoundType, Int> = mapOf(
-            SoundType.SPEECH to 6,
-            SoundType.NIGHT_TERROR to 6,
-            SoundType.SNORING to 6,
-            SoundType.LAUGHTER to 6,
-            SoundType.CRYING to 6,
-            SoundType.COUGH to 4,
-            SoundType.BREATHING to 4,
+            SoundType.SPEECH to 8,
+            SoundType.NIGHT_TERROR to 7,
+            SoundType.SNORING to 7,
+            SoundType.LAUGHTER to 7,
+            SoundType.CRYING to 7,
+            SoundType.COUGH to 5,
+            SoundType.BREATHING to 5,
         )
     }
 }
@@ -80,13 +80,17 @@ data class Settings(
 /** Modes de captation prêts à l'emploi (réglage simple). */
 enum class CapturePreset(val label: String, val description: String, val mic: Int, val types: Int) {
     DISCREET("Discret", "Seulement les sons forts et nets : cris, paroles distinctes, gros ronflements.", 2, 4),
-    NORMAL("Normal", "Le bon équilibre : ignore les draps qui bougent et les petits bruits.", 4, 6),
+    NORMAL("Normal", "Le bon équilibre : ignore les draps qui bougent et les petits bruits.", 4, 7),
     ALL("Tout capter", "Chuchotements, petits rires, légers sanglots… plus de fausses alertes.", 8, 9);
 
     fun apply(s: Settings) = s.copy(
         micSensitivity = mic,
         typeSensitivity = s.typeSensitivity.mapValues { (t, _) ->
-            if (t == SoundType.BREATHING || t == SoundType.COUGH) (types - 2).coerceAtLeast(1) else types
+            when (t) {
+                SoundType.BREATHING, SoundType.COUGH -> (types - 2).coerceAtLeast(1)
+                SoundType.SPEECH -> (types + 1).coerceAtMost(10) // la voix d'un dormeur est souvent peu « typique »
+                else -> types
+            }
         },
     )
 
@@ -98,7 +102,25 @@ enum class CapturePreset(val label: String, val description: String, val mic: In
 /** Stockage simple des réglages dans les SharedPreferences, exposés en StateFlow. */
 class SettingsRepository private constructor(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    private val _settings = MutableStateFlow(load())
+    private val _settings = MutableStateFlow(fixOnce(load()))
+
+    /**
+     * Remise à niveau unique (v1.3) : la calibration et les anciens réglages par défaut
+     * pouvaient rendre la détection de la voix trop stricte.
+     */
+    private fun fixOnce(s: Settings): Settings {
+        if (prefs.getBoolean("fix_v13", false)) return s
+        val fixed = s.copy(
+            micSensitivity = s.micSensitivity.coerceAtLeast(4),
+            typeSensitivity = s.typeSensitivity +
+                (SoundType.SPEECH to (s.typeSensitivity[SoundType.SPEECH] ?: 8).coerceAtLeast(8)) +
+                (SoundType.NIGHT_TERROR to (s.typeSensitivity[SoundType.NIGHT_TERROR] ?: 7).coerceAtLeast(7)),
+            voiceMatch = s.voiceMatch.coerceAtMost(0.35f),
+        )
+        save(fixed)
+        prefs.edit().putBoolean("fix_v13", true).apply()
+        return fixed
+    }
     val settings: StateFlow<Settings> = _settings
 
     fun update(transform: (Settings) -> Settings) {

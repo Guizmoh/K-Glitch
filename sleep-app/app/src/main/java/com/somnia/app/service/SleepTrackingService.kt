@@ -96,6 +96,8 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
     private var alarmTarget: Long? = null
     private var alarmFired = false
     @Volatile private var stopping = false
+    /** Dernière fois qu'une télé / radio a été repérée (le filtre « ma voix » ne sert que dans ce cas). */
+    @Volatile private var lastTvSeen = 0L
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -166,6 +168,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
             val raw = ShortArray(AudioMath.FRAME * factor * rec.channels)
             val detector = SoundEventDetector().apply { setSensitivity(settings.micSensitivity) }
             val tv = com.somnia.app.audio.TvDetector()
+            val tvWatch = com.somnia.app.audio.TvDetector() // toujours actif : sert au filtre « ma voix »
             // Pauses respiratoires : analyse continue + mémoire des 50 dernières secondes de son
             val apnea = com.somnia.app.audio.ApneaDetector()
             val apneaTv = com.somnia.app.audio.TvDetector() // la télé met le suivi en pause, même si le mode télé est éteint
@@ -200,6 +203,8 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                             TrackingState.live.value = TrackingState.live.value?.copy(tvOn = tv.isOn)
                         }
                     }
+                    tvWatch.process(detector.lastDb, detector.noiseFloorDb)
+                    if (tvWatch.isOn || tv.isOn) lastTvSeen = System.currentTimeMillis()
                     // Sons pour s'endormir en cours : la détection est en pause (seuil hors d'atteinte)
                     val soundsOn = com.somnia.app.audio.SleepSounds.activeOrRecent()
                     if (soundsOn) detector.mediaLevelDb = 0f
@@ -244,7 +249,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
     }
 
     private fun startProcessing(c: SoundClassifier) {
-        val ec = EventClassifier(c, settings.thresholds())
+        val ec = EventClassifier(c, settings.thresholds(), useMedia = settings.tvMode)
         val dir = File(filesDir, "recordings/$sessionId").apply { mkdirs() }
         processJob = lifecycleScope.launch(Dispatchers.Default) {
             // Son long découpé toutes les 60 s : les morceaux suivants sont recollés ici
@@ -288,7 +293,9 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                     continue // bruit non identifié : on ne garde rien
                 }
                 // Paroles : on ne garde que VOTRE voix (si l'empreinte vocale est faite)
-                if (cls.type == SoundType.SPEECH && settings.onlyMyVoice) {
+                // (seulement si une télé / radio a été repérée dans les 10 dernières minutes :
+                // sans télé, une voix endormie qui ressemble peu à l'empreinte est quand même gardée)
+                if (cls.type == SoundType.SPEECH && settings.onlyMyVoice && System.currentTimeMillis() - lastTvSeen < 10 * 60_000L) {
                     val print = com.somnia.app.transcribe.VoiceId.voiceprint(this@SleepTrackingService)
                     if (print != null) {
                         val v = runCatching { com.somnia.app.transcribe.VoiceId.vector(this@SleepTrackingService, ev.pcm) }.getOrNull()

@@ -80,7 +80,7 @@ fun TvAndVoiceCard(s: Settings, update: ((Settings) -> Settings) -> Unit, live: 
         Spacer(Modifier.height(14.dp))
         Text("Ma voix", style = MaterialTheme.typography.titleSmall)
         Text(
-            "Enregistrez votre voix une fois : la nuit, seules les paroles qui vous ressemblent sont gardées (pas celles de la télé).",
+            "Enregistrez votre voix une fois : quand une télé ou une radio est repérée, seules les paroles qui vous ressemblent sont gardées. Sans télé, toutes les paroles sont gardées.",
             style = MaterialTheme.typography.bodySmall, color = TextSoft,
         )
         Spacer(Modifier.height(8.dp))

@@ -19,6 +19,8 @@ data class Classification(
 class EventClassifier(
     private val classifier: SoundClassifier,
     var minConfidence: Map<SoundType, Float> = defaultThresholds(),
+    /** Faux = la catégorie « Télé / musique » n'écarte jamais un son (mode télé désactivé). */
+    var useMedia: Boolean = true,
 ) {
     fun classify(pcm: ShortArray): Classification {
         val win = SoundClassifier.WINDOW
@@ -54,7 +56,8 @@ class EventClassifier(
         // Télé / musique : si c'est le score le plus fort, le son est considéré comme du fond
         val media = agg[SoundType.MEDIA] ?: 0f
         val bestOther = agg.filterKeys { it != SoundType.MEDIA }.maxOfOrNull { it.value } ?: 0f
-        if (media >= 0.3f && media >= bestOther) return Classification(SoundType.MEDIA, media, agg)
+        val speech = maxOf(agg[SoundType.SPEECH] ?: 0f, agg[SoundType.NIGHT_TERROR] ?: 0f)
+        if (useMedia && media >= 0.35f && media >= bestOther && media > speech + 0.1f) return Classification(SoundType.MEDIA, media, agg)
         // Ordre de priorité si deux catégories passent le seuil avec des
         // scores proches : un cri ou des pleurs priment sur la parole.
         val priority = listOf(

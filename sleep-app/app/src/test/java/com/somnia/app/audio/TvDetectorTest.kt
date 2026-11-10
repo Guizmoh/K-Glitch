@@ -45,4 +45,22 @@ class TvDetectorTest {
         })
         assertEquals(SoundType.MEDIA, c.classify(ShortArray(8000)).type)
     }
+
+    @Test fun speechIsKeptWhenTvModeIsOff() {
+        val scores = mapOf(SoundType.MEDIA to 0.5f, SoundType.SPEECH to 0.45f)
+        val fixed = object : SoundClassifier { override val name = "t"; override fun classify(window: FloatArray) = scores }
+        assertEquals(SoundType.SPEECH, EventClassifier(fixed, useMedia = false).classify(ShortArray(8000)).type)
+        // même avec le mode télé, une parole presque aussi forte que la « télé » est gardée
+        assertEquals(SoundType.SPEECH, EventClassifier(fixed, useMedia = true).classify(ShortArray(8000)).type)
+    }
+
+    @Test fun shortWordIsKept() {
+        val d = SoundEventDetector().apply { setSensitivity(4) }
+        val rnd = kotlin.random.Random(9)
+        fun noise() = ShortArray(AudioMath.FRAME) { (rnd.nextDouble(-1.0, 1.0) * 0.01 * 32767).toInt().toShort() }
+        fun word() = ShortArray(AudioMath.FRAME) { (kotlin.math.sin(it * 0.08) * 0.2 * 32767).toInt().toShort() }
+        val frames = List(300) { noise() } + List(5) { word() } + List(40) { noise() } // « non » de 0,5 s
+        val evs = frames.mapNotNull { d.process(it) } + listOfNotNull(d.flush())
+        assertEquals(1, evs.size)
+    }
 }

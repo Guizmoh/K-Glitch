@@ -327,6 +327,7 @@ internal fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, I
 
 /** Liste des nouveautés de la dernière mise à jour (bouton « ? » en haut des réglages). */
 private val WHATS_NEW = listOf(
+    "Détection de la voix améliorée (1.3)" to "La calibration ne baisse plus la sensibilité, les mots courts sont de nouveau gardés, la catégorie télé ne s'applique qu'avec le mode télé, et le filtre « ma voix » seulement quand une télé est repérée. Vos réglages ont été remis à niveau automatiquement.",
     "Ronflement" to "Courbe sur la nuit (durée et intensité), heures où vous ronflez le plus, et lien avec la position si le téléphone est sur le matelas.",
     "Calibration de la chambre" to "1 minute de mesure pour régler la sensibilité toute seule (Réglages > Que doit-on capter ?).",
     "Bilan de la semaine" to "En haut de Tendances, et une notification le lundi matin : sommeil moyen, régularité, meilleure et pire nuit, ce qui a aidé.",

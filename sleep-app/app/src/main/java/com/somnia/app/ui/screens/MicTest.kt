@@ -86,7 +86,7 @@ fun MicTestDialog(settings: Settings, label: String, onSensitivity: (Int) -> Uni
         // Classification en arrière-plan, comme la nuit
         launch(Dispatchers.Default) {
             val c = YamnetClassifier.create(ctx) ?: HeuristicClassifier()
-            val ec = EventClassifier(c, settings.thresholds())
+            val ec = EventClassifier(c, settings.thresholds(), useMedia = settings.tvMode)
             try {
                 for (ev in events) {
                     val cls = ec.classify(ev.pcm)

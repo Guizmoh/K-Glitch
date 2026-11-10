@@ -54,11 +54,13 @@ data class CalibrationResult(val floorDb: Float, val spreadDb: Float, val sensit
             val s = levels.sorted()
             val floor = s[(s.size * 0.2f).toInt()]
             val p90 = s[(s.size * 0.9f).toInt().coerceAtMost(s.size - 1)]
+            // Le seuil est déjà relatif au bruit de fond : on règle selon la STABILITÉ de la chambre,
+            // jamais en dessous de 4 (sinon la voix n'est plus captée, surtout avec une télé).
+            val spread = p90 - floor
             val sens = when {
-                floor < -62f -> 5
-                floor < -52f -> 4
-                floor < -42f -> 3
-                else -> 2
+                spread < 8f -> 6
+                spread < 14f -> 5
+                else -> 4
             }
             // son fort et régulier presque tout le temps (au-dessus des rares vrais silences) : télé / radio
             val silence = s[(s.size * 0.05f).toInt()]
