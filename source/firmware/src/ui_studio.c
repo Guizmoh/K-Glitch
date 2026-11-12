@@ -211,7 +211,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     *cache = sig;
     if (pal_ribbon) {                                   /* K-GLITCH: the screens as tabs (this one an orange pill), the beat, the
                                                          * tempo; under them where the loop is, and the tags */
-        static const char *const TABS[3] = {"tracks", "drums", "song"};
+        static const char *const TABS[3] = {"grid", "drums", "song"};
         int32_t x = 3, tw;
         uint32_t own = 3;
         const char *tag = 0;                           /* (DRUMS: the kit's style, a tag under the tabs) */
@@ -317,7 +317,7 @@ UI_SMALL static void studio_tracks_draw(void)
     static uint32_t head, rows[NTRK], footer;
     uint32_t i, j;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;   /* (2.7.2) the section playing */
-    te_header("tracks", TE_G3, &head, sect);
+    te_header("grid", TE_G3, &head, sect);
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         char b[24], e[16];
@@ -339,56 +339,67 @@ UI_SMALL static void studio_tracks_draw(void)
         for (j = 0; j < len; j++) h = h * 31u + (uint32_t)trk_step_on(t, j);
         if (!ui.force && h == rows[i]) continue;
         rows[i] = h;
-        cv_begin(240, 36, C_BLACK);
+        /* K-GLITCH 1.0: the GRID. A lane a track: its tile (number, name, state), then the 16 steps of the page playing,
+         * a beat's first step lighter, the playhead a white bar above and under; under the four, the FX lane */
+        cv_begin(240, 29, C_BLACK);
         {
         uint16_t bg0 = pal_bg;
-        if (pal_ribbon) {                               /* K-GLITCH: each track a row card, the selected one outlined */
-            cv_card(1, 1, 238, 34, pal_row, selected ? C_WHITE : pal_row);
-            pal_bg = pal_row;
-        }
-        cv_rect(2, 3, 26, 30, selected ? col : dim);   /* the track tile */
+        cv_card(1, 1, 238, 27, pal_row, selected ? C_WHITE : pal_row);
+        pal_bg = pal_row;
+        (void)dim;
+        cv_rect(3, 3, 56, 23, selected ? col : rgb565_mix(pal_row, col, 70));
         {
             char n[2] = {(char)('1' + i), 0};
-            cv_text(11, 10, &FONT_S, n, selected ? C_BLACK : col);
+            cv_text(5, 6, &FONT_S, n, selected ? C_BLACK : col);
+            b[7] = 0;
+            cv_text(17, 3, &FONT_T, rec ? "REC" : solo ? "SOLO" : silent ? "MUTE" : b, rec && !selected ? TE_RED : selected ? C_BLACK : TE_G4);
+            e[7] = 0;
+            cv_text(17, 14, &FONT_T, e, selected ? C_BLACK : TE_G3);
+            cv_rect(59, 2, 180, 25, pal_row);          /* (a long name: cut at the tile's edge) */
         }
-        cv_text(34, 1, &FONT_S, b, selected ? C_WHITE : TE_G4);
-        if (34 + text_w(&FONT_S, b) + 6 + text_w(&FONT_S, e) < 196)
-            cv_text(34 + text_w(&FONT_S, b) + 6, 1, &FONT_S, e, selected ? col : TE_G3);
-        if (rec) {
-            cv_rect(200, 2, 36, 15, TE_RED);
-            cv_text(206, 1, &FONT_S, "rec", C_WHITE);
-        } else if (solo) {
-            cv_rect(200, 2, 36, 15, C_WHITE);
-            cv_text(202, 1, &FONT_S, "solo", C_BLACK);
-        } else if (silent) {
-            cv_text(204, 1, &FONT_S, "mute", TE_G3);
-        }
-        for (j = 0; j < 16u; j++) {                    /* the 16 steps in view */
-            uint32_t p = bank * 16u + j, on = 0;
-            if (len <= 16u) {
-                if (p < len) on = trk_step_on(t, p) ? 2u : 1u;
-            } else {                                    /* > 16 and stopped: the whole pattern, folded */
-                uint32_t a = j * len / 16u, z = (j + 1u) * len / 16u, k;
-                if (song.playing) {
-                    if (p < len) on = trk_step_on(t, p) ? 2u : 1u;
-                } else {
-                    on = 1;
-                    for (k = a; k < z; k++) if (trk_step_on(t, k)) on = 2;
-                }
-            }
-            cv_rect(34 + (int32_t)j * 10, 21, 8, 9,
-                    !on ? C_BLACK : on == 2u ? (silent ? TE_G3 : selected ? col : dim) : TE_G1);
-            if (on == 2u && !selected && !silent)
-                cv_rect(34 + (int32_t)j * 10, 21, 8, 2, col);
+        for (j = 0; j < 16u; j++) {
+            uint32_t p = bank * 16u + j;
+            int32_t x = 62 + (int32_t)j * 11;
+            if (p >= len)
+                continue;
+            cv_rect(x, 5, 10, 19, trk_step_on(t, p) ? (silent ? TE_G3 : selected ? col : TE_MID[i])
+                                                    : rgb565_mix(pal_row, C_GRAY, (j & 3u) ? 45 : 110));
             if (song.playing && p == pos)
-                cv_rect(34 + (int32_t)j * 10, 31, 8, 2, C_WHITE);
+                cv_rect(x, 2, 10, 2, C_WHITE), cv_rect(x, 25, 10, 2, C_WHITE);
         }
-        cv_rect(198, 23, 36, 5, TE_G1);                /* the level */
-        if (!silent)
-            cv_rect(198, 23, (int32_t)level * 36 / 127, 5, selected ? col : TE_G3);
         pal_bg = bg0;
         }
-        cv_blit(0, 40 + i * 36);
+        cv_blit(0, 40 + i * 29);
+    }
+    {   /* the FX lane: the effect sequence's page playing (SLOOP's effects cyan, DESTROY orange, BEAT yellow; a
+         * filter step: a green foot), dim while the sequencer is off */
+        static uint32_t fxh;
+        uint32_t len = kg_seqlen(), on = len != 0u, pg = on && song.playing ? kg.step / 16u : 0u, h = on * 7u + pg * 31u + song.playing;
+        if (!len) len = 16;
+        h = h * 31u + (song.playing ? kg.step : 99u);
+        for (j = 0; j < 16u; j++)
+            h = h * 31u + (uint32_t)(uint8_t)kg.seq[(pg * 16u + j) % KG_STEPS] + ((uint32_t)(uint8_t)kg.seq2[(pg * 16u + j) % KG_STEPS] << 8) +
+                ((uint32_t)kg.fnote[(pg * 16u + j) % KG_STEPS] << 16);
+        if (ui.force || h != fxh) {
+            fxh = h;
+            cv_begin(240, 28, C_BLACK);
+            cv_card(1, 1, 238, 25, pal_row, pal_row);
+            cv_rect(3, 3, 56, 21, on ? C_WHITE : rgb565_mix(pal_row, C_WHITE, 70));
+            cv_text(8, 4, &FONT_S, on ? "FX SEQ" : "FX off", on ? C_BLACK : TE_G4);
+            for (j = 0; j < 16u; j++) {
+                uint32_t p = pg * 16u + j;
+                int32_t x = 62 + (int32_t)j * 11, fx = kg.seq[p % KG_STEPS] >= 0 ? kg.seq[p % KG_STEPS] : kg.seq2[p % KG_STEPS];
+                uint16_t c = fx < 0 ? rgb565_mix(pal_row, C_GRAY, (j & 3u) ? 45 : 110) : fx < (int32_t)PUNCH_NFX ? C_HI : fx < (int32_t)PUNCH_NFX + 16 ? C_WHITE : TE_COL[2];
+                if (p >= len)
+                    continue;
+                cv_rect(x, 5, 10, 17, on || fx < 0 ? c : rgb565_mix(pal_row, c, 110));
+                if (kg.fnote[p % KG_STEPS])
+                    cv_rect(x, 19, 10, 3, TE_COL[1]);
+                if (on && song.playing && p == kg.step)
+                    cv_rect(x, 2, 10, 2, C_WHITE), cv_rect(x, 23, 10, 2, C_WHITE);
+            }
+            cv_blit(0, 156);
+        }
     }
     {   /* KNOB 1 swing (the global groove), 2 level, 3 steps, 4 pan of the selected track */
         track_t *t = TSEL;

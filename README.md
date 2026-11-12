@@ -139,6 +139,20 @@ N'importe laquelle des 3 pistes synthé peut devenir une batterie : sur la piste
 ### Moteurs groupés, potard 1 = moteur
 La liste PRESETS est rangée par moteur : ANALOG, puis les FM (DIGITAL, FM6), PHASE, WHEEL, TRIO, LOFI, SAMPLE, VOICE, GRAIN, PHYS, NOISE, GLITCH, KDRUM (le moteur est affiché dans la carte ENG, le type BASS / KEYS… dans la liste). Sur la page TRACKS, le **potard 1** d'une piste synthé choisit son moteur dans le même ordre (sur la piste batterie, il reste le SWING ; le swing reste aussi dans GLO).
 
+### 0.10 : la GRID, SHIFT, l'aide, COLOR, le thème PAPER
+- **Accueil = GRID** (ce n'est plus l'écran de SLOOP) : les 4 pistes en 4 lignes de 16 pas, la tête de lecture, et dessous la **ligne FX** (la séquence d'effets : cyan = effets SLOOP, orange = DESTROY, jaune = BEAT, pied vert = automation du filtre). ALGO choisit la piste, les touches la jouent, K1 moteur, K2 niveau, K3 pas, K4 pan.
+- **SHIFT = HOME maintenu.** Dès que HOME est enfoncé, une ligne au pied de l'écran dit ce que SHIFT fait sur cette page :
+  - sur la GRID : **SHIFT + touche blanche = le pas allumé / éteint** sur la piste choisie (batterie : le son choisi ; synthé : la dernière note jouée). Avec le moteur KDRUM sur les pistes synthé, on écrit un rythme à 4 instruments sans quitter l'accueil ;
+  - **SHIFT + potard** : efface l'automation (les verrous) de ce paramètre sur la piste ; sur une page globale, remet la valeur par défaut ;
+  - **SHIFT + pad** (pages FX) : retire cet effet de la séquence, à la volée ; sur FILTER, SHIFT + une touche efface l'automation du filtre ;
+  - **SHIFT + OCT−** : efface toute l'automation de la piste (pages FX : toute la séquence d'effets) ;
+  - **SHIFT + GLO** : le menu (couleurs, thème, audio…). HOME maintenu n'ouvre plus le menu.
+- **Aide** : HOME maintenu 0,7 s sans rien toucher affiche la fiche d'aide de la page (ce que font les potards et les touches, ce que fait SHIFT, les raccourcis communs), tant qu'il reste enfoncé.
+- **SEL > COLOR** (nouvelle page) : **DRIVE** sur tout le mix, 7 saturations (TAPE, TUBE, FUZZ, FOLD, HARD, BIT, OCTAV) avec AMT ; **DELAY** en 5 modes (MONO, PING ping-pong, MULTI trois répétitions, TAPE qui flotte et s'assombrit, DUB qui sature et peut chanter) et son FDBK.
+- **FILTER** : 3 types de plus (14) : **LP24**, **RING** (modulateur en anneau accordé), **CRUSH** (réduction d'échantillonnage accordée).
+- **Thème PAPER** (SHIFT + GLO > SCREEN > COLOR) : feuille claire, encre noire, cadres carrés, rouge ; RIBBON reste le thème par défaut. Les pages K-GLITCH suivent maintenant la palette choisie.
+- Pour faire la place : les jeux de samples STRGS et FLUTE gardent un son sur deux (17 Ko).
+
 ### 16 morceaux, avec un nom
 SAVE > **SONGS** : 16 morceaux, **A à P** (KNOB 1 choisit, KNOB 2 efface — deux crans —, KNOB 3 LOAD, KNOB 4 SAVE). A–D restent les sections du mode SONG ; E–P sont des morceaux rangés en flash (la place des emplacements de samples **USR3 et USR4**, retirés : il reste USR1 et USR2). La liste affiche le nom de chaque morceau.
 

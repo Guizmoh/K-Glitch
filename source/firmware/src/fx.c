@@ -228,8 +228,17 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         ma = (REV_MOD << 8) + ((m0 * REV_MOD) >> 7), mb = (REV_MOD << 8) + ((m1 * REV_MOD) >> 7);
         dca = (ca1 - ca0) >> CTL_LOG2, dcb = (cb1 - cb0) >> CTL_LOG2;
     }
+    uint32_t dmode = (uint32_t)song.g[G_KDMODE] % 5u, dl2 = dl * 2u < DLY_LEN ? dl * 2u : dl;
+    int32_t tw0 = 0, dtw = 0;
+    if (dmode == 3u) {                                  /* TAPE: the flutter, 0..12 samples, ramped over the block */
+        static uint32_t tph;
+        int32_t w0 = (osc_sine(tph) + 32768) * 12 >> 8, w1;
+        tph += LFO_INC[52];
+        w1 = (osc_sine(tph) + 32768) * 12 >> 8;
+        tw0 = w0, dtw = (w1 - w0) >> CTL_LOG2;
+    }
     for (i = 0; i < n; i++) {
-        int32_t yl, yr, x, a, o0, o1, o2, o3;
+        int32_t yl, yr, x, xr, a, o0, o1, o2, o3;
         /* chorus: two modulated short delays, 5..15 ms, the LFO half a turn apart: left and right move apart */
         cho_buf[fx.cho_w & (CHO_LEN - 1u)] = (int16_t)clamp(cho_in[i] >> 1, -32768, 32767);
         {
@@ -243,17 +252,43 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         fx.cho_w++;
         /* delay with a low-passed feedback (in the middle) */
         if (kl_line()) {                            /* (K-GLITCH: the line is a loop's) */
-            x = 0;
-        } else {
+            x = xr = 0;
+        } else if (!dmode) {                        /* MONO: SLOOP's delay, bit for bit */
             x = dly_buf[(fx.dly_w - dl) & (DLY_LEN - 1u)];
             fx.dly_lp += mulq15(x - fx.dly_lp, col);
             dly_buf[fx.dly_w & (DLY_LEN - 1u)] =
                 (int16_t)clamp((dly_in[i] >> 1) + mulq15(fx.dly_lp, fb), -32768, 32767);
+            xr = x;
+        } else {                                    /* K-GLITCH 1.0: SEL > COLOR, the delay's MODE (more taps on the same line) */
+            int32_t t1 = dly_buf[(fx.dly_w - dl) & (DLY_LEN - 1u)], fbk = t1, wr;
+            static int32_t dub_hp;
+            x = xr = t1;
+            if (dmode == 1u) {                      /* PING: left, right, left: the loop twice as long, a tap half way */
+                xr = fbk = dly_buf[(fx.dly_w - dl2) & (DLY_LEN - 1u)];
+            } else if (dmode == 2u) {               /* MULTI: three taps (1/2 in the middle, 3/4 right, 1 left) */
+                int32_t t3 = dly_buf[(fx.dly_w - (dl >> 1)) & (DLY_LEN - 1u)] >> 1;
+                xr = dly_buf[(fx.dly_w - ((dl * 3u) >> 2)) & (DLY_LEN - 1u)] + t3;
+                x += t3;
+            } else if (dmode == 3u) {               /* TAPE: the read point drifts (flutter), each echo darker and softer */
+                int32_t q = tw0 + dtw * (int32_t)i;
+                uint32_t a0 = (fx.dly_w - dl - ((uint32_t)q >> 8)) & (DLY_LEN - 1u);
+                t1 = dly_buf[a0] + (((dly_buf[(a0 - 1u) & (DLY_LEN - 1u)] - dly_buf[a0]) * (q & 255)) >> 8);
+                x = xr = fbk = t1;
+            } else {                                /* DUB: the lows out of the loop, the feedback driven: it can sing */
+                dub_hp += (t1 - dub_hp) >> 6;
+                fbk = (t1 - dub_hp) + ((t1 - dub_hp) >> 2);
+            }
+            fx.dly_lp += mulq15(fbk - fx.dly_lp, dmode >= 3u ? col - (col >> 2) : col);
+            wr = (dly_in[i] >> 1) + mulq15(fx.dly_lp, fb);
+            if (dmode >= 3u)
+                wr = softclip(wr * 2) >> 1;
+            dly_buf[fx.dly_w & (DLY_LEN - 1u)] = (int16_t)clamp(wr, -32768, 32767);
         }
         fx.dly_w++;
         x = mulq15(x << 1, dmix);
+        xr = mulq15(xr << 1, dmix);
         yl += x;
-        yr += x;
+        yr += xr;
         /* reverb: two diffusers, then the four lines */
         a = mulq15(rev_in[i], 13000);
         {
@@ -1245,6 +1280,7 @@ static void mix_block(int32_t *out, uint32_t n)
     punch_process(mix_l, mix_r, n);
     kd_process(mix_l, mix_r, n);                        /* K-GLITCH: the DRUM DESTROYER bank (kg_dd.c) */
     kf_process(mix_l, mix_r, n);                        /* K-GLITCH FILTER (kg_filter.c) */
+    kdrive_process(mix_l, mix_r, n);                    /* K-GLITCH 1.0: the mix's DRIVE (SEL > COLOR) */
     kl_capture(mix_l, mix_r, n);                        /* K-GLITCH LOOP: what plays, recorded */
     djf_process(mix_l, mix_r, n);
     m1 = (int32_t)song.master_q12;

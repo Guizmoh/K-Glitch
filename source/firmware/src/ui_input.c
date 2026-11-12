@@ -558,6 +558,92 @@ UI_SMALL static void name_knob(uint32_t slot, int32_t steps)
     ui.force = 1;
 }
 
+/* K-GLITCH 1.0: SHIFT (HOME held). + a knob: its parameter's automation (locks) off the track, or a global back to
+ * its default; + OCT-: all the track's automation off (K-GLITCH's pages: the effect sequence); + GLO: the menu;
+ * + a pad: its effect out of the sequence; + a white key on the GRID: its step (seq.c key_down) */
+UI_SMALL static void layer_unlock(void);
+UI_SMALL static int home_grid(void) { return !ui.home && !ui.menu && cur_page()->scope == SC_TRK; }
+UI_SMALL static uint32_t locks_off(track_t *t, uint32_t param)   /* param P_COUNT: every one; -> how many went */
+{
+    uint32_t k, n = 0;
+    for (k = 0; k < NLOCK; k++)
+        if (t->lock[k].step != LOCK_FREE && (param == P_COUNT || t->lock[k].param == param)) n++;
+    if (!n)
+        return 0;
+    undo_mark(t, (undo_sess += 4u) | 3u);
+    for (k = 0; k < NLOCK; k++)
+        if (t->lock[k].step != LOCK_FREE && (param == P_COUNT || t->lock[k].param == param))
+            lock_del(t, t->lock[k].step, t->lock[k].param);
+    return n;
+}
+UI_SMALL static void shift_knob(uint32_t slot)
+{
+    const page_t *pg = cur_page();
+    int16_t *vp = 0;
+    const param_desc_t *d;
+    uint32_t id = 0xFF;
+    shift_used = 1;
+    if (home_grid())
+        id = slot == 1u ? P_LEVEL : slot == 3u ? P_PAN : 0xFFu;
+    else if (!ui.home && (pg->scope == SC_TRACK || pg->scope == SC_ENGINE))
+        id = pg->id[slot];
+    if (id < P_COUNT && !is_drum(TSEL)) {
+        ui_say(locks_off(TSEL, id) ? "AUTOMATION OFF: " : "NO AUTOMATION: ", id >= P_E0 ? "EDIT" : TP[id].label);
+        return;
+    }
+    if (ui.home || pg->scope != SC_GLOBAL || pg->id[slot] == 0xFFu)
+        return;
+    d = page_desc(pg, slot, &vp);
+    if (d && vp && d->max != d->min && d->names != N_GO) {
+        *vp = d->def;
+        ui_say("DEFAULT: ", d->label);
+        ui.force = 1;
+    }
+}
+UI_SMALL static void shift_input(uint32_t *pressed)
+{
+    uint32_t ob = 1u << panel.btn[B_OCTDN], gb = 1u << panel.btn[B_GLO], i, n = 0;
+    int kgp = !ui.home && cur_page()->graph == GR_KG;
+    if (home_grid()) {                                  /* (the keys' steps: the page playing) */
+        uint32_t len = trk_len(TSEL);
+        ui.step_page = (uint8_t)(song.playing ? (TSEL->seq_idx % len) / 16u : 0u);
+    }
+    if (kg_wipe) {
+        uint32_t w = kg_wipe;
+        kg_wipe = 0;
+        kgu_commit();
+        for (i = 0; i < KG_STEPS; i++) {
+            if (w == 0xFFu) { n += kg.fnote[i] != 0; kg.fnote[i] = kg.fmode[i] = 0; continue; }
+            if (kg.seq[i] == (int8_t)(w - 1u)) kg.seq[i] = -1, kg.sint[i] = 0, n++;
+            if (kg.seq2[i] == (int8_t)(w - 1u)) kg.seq2[i] = -1, n++;
+        }
+        kgu_commit();
+        if (w == 0xFFu) ui_message(n ? "FILTER AUTOMATION OFF" : "NO FILTER AUTOMATION");
+        else ui_say(n ? "OUT OF THE SEQ: " : "NOT IN THE SEQ: ", N_KFX[w % NELEM(N_KFX)]);
+        ui.force = 1;
+    }
+    if (*pressed & gb) {                                /* the menu (HOME held alone: HELP) */
+        layer_unlock();
+        ui.menu = 1, ui.menu_sel = 0, ui.confirm = 0, ui.force = 1;
+        song.seq_mode = 0;
+        shift_used = 1;
+    }
+    if (*pressed & ob) {
+        shift_used = 1;
+        if (kgp) {
+            kgu_commit();
+            kg_clear();
+            kgu_commit();
+            ui_message("FX AUTOMATION CLEARED");
+        } else
+            ui_message(!is_drum(TSEL) && locks_off(TSEL, P_COUNT) ? "TRACK AUTOMATION CLEARED" : "NO AUTOMATION HERE");
+        ui.force = 1;
+    }
+    *pressed &= ~(gb | ob);
+    if (shift_used)
+        ui.home_t0 |= 2u;                               /* (its release: no tap, no HELP) */
+}
+
 UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
 {
     int16_t *vp;
@@ -565,6 +651,10 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
     const param_desc_t *d;
     uint32_t id = pg->id[slot];
     int32_t v;
+    if (shift_dn) {                                     /* (K-GLITCH 1.0: SHIFT + the knob) */
+        shift_knob(slot);
+        return;
+    }
     if (is_drum(TSEL) && !page_for_drum(pg))
         return;                                           /* "DRUM TRACK": nothing to edit here */
     if (pg->scope == SC_STEP) {
@@ -1307,8 +1397,9 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
             if ((e >> 8) == KB_GRID) {                    /* the DRUMS grid page: a step key */
                 if (((e >> 7) & 1u) && grid_keys_on())
                     grid_key(e & 31u);
-            } else if (!((e >> 7) & 1u)) {
-                layer_key(e >> 8, e & 31u, 0);
+            } else if (!((e >> 7) & 1u) || (shift_dn == 2u && (e >> 8) == LY_STEP)) {   /* (K-GLITCH 1.0: SHIFT + a key on
+                                                           * the GRID: its step, down and up) */
+                layer_key(e >> 8, e & 31u, (e >> 7) & 1u);
             }
         }
         if (ui.layer != LY_PLAY) {
@@ -1557,18 +1648,28 @@ UI_SMALL static void ui_input(void)
     ml_poll();                                          /* MIDI LEARN: a CC came for the picked parameter (2.6) */
     page_fix();                                         /* (a page the track does not have: its neighbour, 2.6) */
     midi_entry();                                       /* (the STEP page's MIDI notes: read every frame, 2.6) */
-    if (home == BT_HOLD) {                              /* HOME held: open the menu, or leave it */
-        if (ui.menu) {
-            menu_close();
-        } else {
-            layer_unlock();
-            ui.menu = 1;
-            ui.menu_sel = 0;
-            ui.confirm = 0;
+    /* K-GLITCH 1.0: HOME held is SHIFT; held 0.7 s with nothing touched: the page's HELP, while it is held. The menu:
+     * SHIFT + GLO (HOME held in the menu still leaves it) */
+    {
+        uint32_t dn = (fm1_in.buttons >> panel.btn[B_HOME]) & 1u;
+        if (!dn && (shift_dn || ui_help)) {
+            ui_help = 0;
             ui.force = 1;
-            song.seq_mode = 0;
+        }
+        if (!dn)
+            shift_used = 0;
+        shift_dn = (uint8_t)(dn && !ui.menu ? (home_grid() ? 2u : 1u) : 0u);
+    }
+    if (home == BT_HOLD) {
+        if (ui.menu)
+            menu_close();
+        else {
+            ui_help = 1;
+            ui.force = 1;
         }
     }
+    if (shift_dn)
+        shift_input(&pressed);
     kb_grid = (uint8_t)grid_keys_on();                  /* (seq.c: the keys are the grid's steps) */
     if (ui.menu) {                                      /* HOME / REC taps do nothing here */
         punch.hold = 0;

@@ -81,7 +81,9 @@ static const char *const N_KLSRC[] = {"MUTE", "MIX"};
 static const char *const N_KLRET[] = {"X1", "X2", "X3", "X4", "X8"};
 static const char *const N_KMULTI[] = {"SOLO", "MULTI"};
 static const char *const N_KFTYPE[] = {"OFF", "LP", "HP", "BP", "NOTCH", "DRIVE", "COMB+", "COMB-", "METAL", "VOWEL",
-                                       "PHASR", "RESON"};   /* (kg_filter.c) */
+                                       "PHASR", "RESON", "LP24", "RING", "CRUSH"};   /* (kg_filter.c) */
+static const char *const N_KSTYPE[] = {"OFF", "TAPE", "TUBE", "FUZZ", "FOLD", "HARD", "BIT", "OCTAV"};   /* (kg_filter.c kdrive_process) */
+static const char *const N_KDMODE[] = {"MONO", "PING", "MULTI", "TAPE", "DUB"};   /* (fx.c fx_buses) */
 static const char *const N_KFX[] = {"--", "LOOP4", "LOOP8", "LOOP16", "LOOP32", "STUTT", "REV", "STOP", "HALF", "LOW",
                                     "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBL", "K LOW", "K MID", "K HI",
                                     "RWIND", "OCTUP", "FLANG", "PAN", "FREEZ", "LP8T", "MONO", "FADE",
@@ -307,6 +309,9 @@ static const param_desc_t GP[G_COUNT] = {
     [G_KXREV] = PD("REV", F_INT, 0, 127, 0),
     [G_KTFLT] = PD("FILT", F_FILT, -64, 63, 0),
     [G_KTRES] = {"RESO", F_INT, 0, 100, 0, 0, "%"},
+    [G_KSTYPE] = PE("DRIVE", N_KSTYPE, 0),
+    [G_KSAMT] = {"AMT", F_INT, 0, 100, 50, 0, "%"},
+    [G_KDMODE] = PE("DELAY", N_KDMODE, 0),
     [G_KTR1] = {"RES1", F_INT, 0, 100, 0, 0, "%"},
     [G_KTR2] = {"RES2", F_INT, 0, 100, 0, 0, "%"},
     [G_KTR3] = {"RES3", F_INT, 0, 100, 0, 0, "%"},
@@ -523,6 +528,7 @@ static const page_t PAGES[] = {
     {"INSERT 2", FAM_FX, SC_TRACK, GR_INS, {P_IMIX, 0xFF, 0xFF, 0xFF}},  /* .. its dry / wet; the drum track too */
     /* K-GLITCH: SEL is the FILTER and the LOOP sampler (the scale: the SEL layer's knobs, SEL held) */
     {"FILTER", FAM_SCL, SC_GLOBAL, GR_KG, {G_KFTYPE, G_KFCUT, G_KFRES, G_KFMOD}},   /* (kg_filter.c; the keys: FREQ) */
+    {"COLOR", FAM_SCL, SC_GLOBAL, GR_NONE, {G_KSTYPE, G_KSAMT, G_KDMODE, G_DFDBK}},   /* 1.0: the mix's drive, the delay's mode */
     {"LOOP", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLREC, G_KLBARS, G_KLMODE, G_KLSRC}},   /* the sampler (kg_loop.c) */
     {"SLICE", FAM_SCL, SC_GLOBAL, GR_KG, {G_KLSL, G_KLPLAY, G_KLREV, G_KLRET}},
     {"GRAIN", FAM_SCL, SC_GLOBAL, GR_KG, {G_KGPOS, G_KGSIZE, G_KGDENS, G_KGPIT}},

@@ -163,6 +163,8 @@ enum {                          /* global parameters */
     /* K-GLITCH: EDIT > DJ FILTER, the selected track's FILTER (a mirror of its P_TFLT) and its resonance (each track's
      * kept in G_KTR1..4: K-GLITCH's record, not the project) */
     G_KTFLT, G_KTRES, G_KTR1, G_KTR2, G_KTR3, G_KTR4,
+    /* K-GLITCH 1.0: SEL > COLOR: the mix's DRIVE (kg_filter.c kdrive_process: type, amount) and the delay's MODE (fx.c) */
+    G_KSTYPE, G_KSAMT, G_KDMODE,
     G_COUNT
 };
 

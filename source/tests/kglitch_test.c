@@ -550,6 +550,47 @@ int main(int argc, char **argv)
             }
         printf("kglitch: KDRUM: FM KIT and C64 KIT, the 16 keys sound on a synth track and end             ok\n");
     }
+    /* 17c. 1.0: the mix's DRIVE (every type changes the mix, bounded; OFF: the mix bit for bit) and the delay's modes
+     * (each sounds, bounded, differs from MONO) */
+    {
+        static int32_t xl[FS / 2u], yl[FS / 2u], yr[FS / 2u], o[CTL * 2u];
+        static double em[5];
+        uint32_t t, b, j, m;
+        int32_t seed = 777;
+        for (j = 0; j < FS / 2u; j++) xl[j] = ((int32_t)(noise32(&seed) >> 18) - 8192) + sine_i(j * 21474836u) / 2;
+        for (t = 0; t < KS2_N; t++) {
+            uint32_t diff = 0;
+            reset();
+            memset(&kdrv, 0, sizeof kdrv);
+            song.g[G_KSTYPE] = (int16_t)t, song.g[G_KSAMT] = 80;
+            for (b = 0; b < FS / 2u / CTL; b++) {
+                for (j = 0; j < CTL; j++) yl[b * CTL + j] = yr[b * CTL + j] = xl[b * CTL + j];
+                kdrive_process(yl + b * CTL, yr + b * CTL, CTL);
+            }
+            for (j = 0; j < FS / 2u / CTL * CTL; j++) {
+                assert(yl[j] > -(1 << 18) && yl[j] < (1 << 18) && yr[j] == yl[j]);
+                diff += yl[j] != xl[j];
+            }
+            assert(t ? diff > FS / 8u : diff == 0u);
+        }
+        song.g[G_KSTYPE] = 0;
+        for (m = 0; m < 5u; m++) {
+            reset();
+            song.playing = 0;
+            host_preset(&trk[0], 0, 0);
+            trk[0].p[P_DLY] = 110, song.g[G_DFDBK] = 100, song.g[G_DMIX] = 100, song.g[G_KDMODE] = (int16_t)m;
+            trk_note_on(&trk[0], 60, 110);
+            em[m] = 0;
+            for (b = 0; b < FS * 2u / CTL; b++) {
+                if (b == 20u) trk_note_off(&trk[0], 60);
+                mix_block(o, CTL);
+                for (i = 0; i < CTL * 2u; i++) { assert(o[i] >= -32768 && o[i] <= 32767); if (b > FS / CTL) em[m] += (double)o[i] * o[i]; }
+            }
+            assert(em[m] > 1e4 && (m == 0u || em[m] != em[0]));
+        }
+        song.g[G_KDMODE] = 0;
+        printf("kglitch: DRIVE: 7 types change the mix, bounded, OFF bit for bit; DELAY: 5 modes sound   ok\n");
+    }
     /* 18. the state kept in flash (kg_pack / kg_unpack): back exactly; a damaged record changes nothing; the loop's
      * MODE is not brought back (its sound is RAM only) */
     {

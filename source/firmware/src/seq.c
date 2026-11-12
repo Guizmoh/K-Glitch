@@ -2380,6 +2380,22 @@ static void key_down(uint32_t k)
         if (name_keyp) name_keyp(k);
         return;
     }
+    if (layer == LY_PLAY && shift_dn) {              /* K-GLITCH 1.0: SHIFT (HOME held) + a key */
+        shift_used = 1;
+        if (kg_pads == 1u) {                          /* a pad: its effect out of the sequence */
+            int32_t fx = kg_fx_of_key(k);
+            if (fx >= 0 && fx < (int32_t)KG_NFX)
+                kg_wipe = (uint8_t)(fx + 1);
+            return;
+        }
+        if (kg_pads == 4u) {                          /* FILTER: its automation off */
+            kg_wipe = 0xFF;
+            return;
+        }
+        if (shift_dn != 2u)
+            return;
+        layer = LY_STEP;                              /* the GRID: the white key's step on / off (ui_layers.c step_down) */
+    }
     if (layer == LY_PLAY && kg_pads == 2u && !(song.rec && song.playing)) {   /* K-GLITCH SEQ: a white key picks the step
                                                      * (recording: the keys are the pads, the lane fills up) */
         int32_t w = punch_key(k);

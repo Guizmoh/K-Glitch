@@ -18,7 +18,7 @@
  * release (until another key or HOLD off).
  * The effects play on the FM-1's mix only (1.0: no MIDI CC out to an MPC any more; the tempo sync is SLOOP's). */
 
-#define KGLITCH_VERSION "0.9.5"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
+#define KGLITCH_VERSION "0.10.0"                     /* K-GLITCH's own version (SLOOP's: FELUCCA_VERSION, ui.c) */
 
 #define KG_STEPS 64u                              /* the effect sequence / automation lane: up to 4 bars of 16ths */
 /* the effects AUTO and MUTATE pick, gentle to wild: CHAOS 0 uses the first 4, 100 all of them (BANK SLOOP; BANK

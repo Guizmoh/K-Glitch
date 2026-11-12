@@ -1314,7 +1314,86 @@ UI_SMALL static void ui_timers(void)
 static void vis_draw(void);                     /* ui_vis.c */
 static int vis_shown(void);
 static uint8_t vis_on, vis_shown_last, vis_name_t;   /* the visualiser (ui_vis.c): on, drawn last frame, its name's time */
-UI_SMALL static void ui_draw(void)
+/* K-GLITCH 1.0: HELP (HOME held 0.7 s): what the page does, what SHIFT (HOME held) does on it, the keys common to
+ * every page; and SHIFT's line at the foot the moment HOME goes down. By kind of page (help_kind) */
+enum { HK_GRID, HK_PADS, HK_FILTER, HK_KG, HK_TRACK, HK_SAVE, HK_SEQ, HK_DRUMS, HK_GLOBAL, HK_N };
+static const char *const HELP_TXT[HK_N][4] = {
+    {"4 TRACKS, 16 STEPS EACH, THE FX LANE", "ALGO: THE TRACK - THE KEYS PLAY IT", "K1 ENGINE  K2 LEVEL  K3 STEPS  K4 PAN",
+     "REC: RECORD - FX: THE 16 EFFECT PADS"},
+    {"WHITE KEYS: THE 16 EFFECT PADS", "K1: THE BANK - PRESETS: INTENSITY", "REC + PLAY: THE PADS ARE RECORDED",
+     "OCT- HELD: ERASE AS IT PLAYS - OCT+: DICE"},
+    {"A FILTER ON THE WHOLE MIX, 14 TYPES", "THE KEYS: ITS NOTE, IN TUNE", "REC + PLAY: THE KEYS ARE RECORDED",
+     "NEXT PAGE, COLOR: DRIVE AND DELAY MODE"},
+    {"THE ORANGE LINE AT THE FOOT SAYS HOW", "K1..K4: THE FOUR VALUES", "A 'GO' VALUE: TURN TWICE TO DO IT",
+     "ITS BUTTON AGAIN: THE NEXT PAGE"},
+    {"K1..K4: THE TRACK'S FOUR VALUES", "REC + PLAY + A KNOB: AUTOMATION,", "ITS VALUE KEPT ON EACH STEP",
+     "ALGO: THE TRACK - BUTTON AGAIN: NEXT PAGE"},
+    {"PRESETS: K1 SOUND  K2 ENGINE  K4 FAVOURITE", "SONGS: K1 A..P  K2 ERASE  K3 LOAD  K4 SAVE", "NAME: THE KEYS ARE LETTERS",
+     "TOOLS: CLEAR, INIT THE SOUND, NEW SONG"},
+    {"NOTES: A STEP'S NOTES, LENGTH, FORCE", "PATTERN: LENGTH, DIVISION, SWING, GATE", "SEQ HELD + WHITE KEYS: THE STEPS",
+     "SEQ HELD + PRESETS: TOOLS, OCT+ DOES IT"},
+    {"WHITE KEYS: THE 16 DRUM SOUNDS", "SEQ: THE GRID, THE KEYS ARE ITS STEPS", "EDIT: THE FM AND C64 KITS' SOUNDS",
+     "REC: RECORD - EDIT HELD + KEY: ERASE"},
+    {"K1..K4: FOUR VALUES OF THE WHOLE SONG", "A 'GO' VALUE: TURN TWICE TO DO IT", "ALGO: THE TRACK",
+     "ITS BUTTON AGAIN: THE NEXT PAGE"},
+};
+static const char *const HELP_SH[HK_N][2] = {
+    {"+ WHITE KEY: ITS STEP ON / OFF", "+ K2 OR K4: ITS AUTOMATION OFF"},
+    {"+ PAD: ITS EFFECT OUT OF THE SEQ", "+ OCT-: THE FX SEQUENCE CLEARED"},
+    {"+ ANY KEY: FILTER AUTOMATION OFF", "+ KNOB: BACK TO ITS DEFAULT"},
+    {"+ KNOB: BACK TO ITS DEFAULT", "+ OCT-: THE FX SEQUENCE CLEARED"},
+    {"+ KNOB: ITS AUTOMATION OFF", "+ OCT-: ALL THE TRACK'S AUTOMATION OFF"},
+    {"+ OCT-: THE TRACK'S AUTOMATION OFF", "+ GLO: THE MENU"},
+    {"+ OCT-: THE TRACK'S AUTOMATION OFF", "+ GLO: THE MENU"},
+    {"+ GLO: THE MENU", "+ OCT-: (SYNTH TRACKS) AUTOMATION OFF"},
+    {"+ KNOB: BACK TO ITS DEFAULT", "+ GLO: THE MENU"},
+};
+UI_SMALL static uint32_t help_kind(void)
+{
+    const page_t *pg = cur_page();
+    if (ui.home || pg->scope == SC_TRK) return HK_GRID;
+    if (pg->scope == SC_DRUM) return HK_DRUMS;
+    if (pg->graph == GR_KG) return pg->id[0] == G_KFTYPE ? HK_FILTER : pg->fam == FAM_FX ? HK_PADS : HK_KG;
+    if (pg->fam == FAM_SAVE) return HK_SAVE;
+    if (pg->fam == FAM_SEQ) return HK_SEQ;
+    return pg->scope == SC_GLOBAL ? HK_GLOBAL : HK_TRACK;
+}
+UI_SMALL static void help_draw(void)
+{
+    uint32_t k = help_kind(), pass, i;
+    char t[32];
+    str_cpy(t, "HELP  ", sizeof t);
+    str_cpy(t + 6, ui.home || cur_page()->scope == SC_TRK ? "GRID" : cur_page()->title, sizeof t - 6u);
+    for (pass = 0; pass < 2u; pass++) {
+        int32_t y = 26;
+        cv_begin(240, 120, C_BLACK);
+        cv_oy = pass ? -120 : 0;
+        cv_card(2, 2, 236, 236, pal_row, C_WHITE);
+        cv_text(10, 5, &FONT_S, t, C_WHITE);
+        for (i = 0; i < 4u; i++, y += 16) cv_text(10, y, &FONT_T, HELP_TXT[k][i], C_HI);
+        cv_rect(10, y + 3, 220, 1, C_WHITE);
+        cv_text(10, y + 6, &FONT_S, "SHIFT = HOLD HOME", C_WHITE);
+        y += 27;
+        for (i = 0; i < 2u; i++, y += 16) cv_text(10, y, &FONT_T, HELP_SH[k][i], C_HI);
+        cv_text(10, y, &FONT_T, "+ GLO: MENU   + OCT-: CLEAR AUTOMATION", C_GRAY);
+        cv_rect(10, y + 19, 220, 1, C_LINE);
+        cv_text(10, y + 23, &FONT_T, "HOLD A BUTTON + ALGO: PICK ITS PAGE", C_GRAY);
+        cv_text(10, y + 39, &FONT_T, "EDIT OR SAVE + OCT- / OCT+: UNDO / REDO", C_GRAY);
+        cv_text(10, y + 55, &FONT_T, "REC + PLAY + PAD / KNOB: AUTOMATION", C_GRAY);
+        cv_oy = 0;
+        cv_blit(0, pass * 120u);
+    }
+}
+UI_SMALL static void help_banner(void)                  /* HOME down: SHIFT's first action on this page, at the foot */
+{
+    char b[48];
+    str_cpy(b, "SHIFT ", sizeof b);
+    str_cpy(b + 6, HELP_SH[help_kind()][0], sizeof b - 6u);
+    cv_begin(240, 15, C_WHITE);
+    cv_text(6, 1, &FONT_T, b, C_BLACK);
+    cv_blit(0, 225);
+}
+UI_SMALL static void ui_draw_page(void)
 {
     ui.frame++;
     if (ui.home || ui.menu || cur_page()->graph != GR_KG)
@@ -1374,6 +1453,12 @@ UI_SMALL static void ui_draw(void)
         rec_shown = 0;
         lcd_fill(0, 0, 240, 240, C_BLACK);
         ui.force = 1;
+    }
+    if (ui_help && !ui.menu) {                          /* K-GLITCH 1.0: the HELP sheet, while HOME is held */
+        if (ui.force)
+            help_draw();
+        ui.force = 0;
+        return;
     }
 #if FELUCCA_ARRANGER
     if (!ui.menu && on_song_page()) {
@@ -1438,4 +1523,10 @@ UI_SMALL static void ui_draw(void)
     felucca_dbg.stage = 6;
     draw_foot();
     ui.force = 0;
+}
+UI_SMALL static void ui_draw(void)
+{
+    ui_draw_page();
+    if (shift_dn && !ui_help && !ui.menu)               /* (over the page: SHIFT's line) */
+        help_banner();
 }

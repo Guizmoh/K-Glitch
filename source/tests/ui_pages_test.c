@@ -375,8 +375,8 @@ int main(int argc, char **argv)
         go_title("FILTER", FAM_SCL);
         check(!strcmp(cur_page()->title, "FILTER"), "K-GLITCH: SELECT: FILTER (TYPE, FREQ, RESO, MOVE)");
         {   /* FILTER: TYPE through the eleven, a key tunes FREQ, a screen of each type */
-            static const char *const FN[12] = {"off", "lp", "hp", "bp", "notch", "drive", "combp", "combn", "metal", "vowel",
-                                               "phaser", "reson"};
+            static const char *const FN[KF_N] = {"off", "lp", "hp", "bp", "notch", "drive", "combp", "combn", "metal", "vowel",
+                                                 "phaser", "reson", "lp24", "ring", "crush"};
             char nm[32];
             uint32_t t;
             fm1_in.notes = 1u << 7; frame();           /* (C4's key: MIDI 60) */
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
                 snprintf(nm, sizeof nm, "page-k-filter-%s", FN[t]);
                 ui.force = 1; frame(); ppm(nm);
             }
-            check(song.g[G_KFTYPE] == KF_RESON && kf.cur >= 0, "K-GLITCH FILTER: KNOB 1 through the eleven types");
+            check(song.g[G_KFTYPE] == KF_N - 1 && kf.cur >= 0, "K-GLITCH FILTER: KNOB 1 through the fourteen types");
             encs[panel.enc[EN_K1]] = -20; frames(6);
             check(song.g[G_KFTYPE] == KF_OFF && kf.cur == KF_OFF, "K-GLITCH FILTER: OFF: back to the dry mix");
             song.g[G_KFMOD] = 0;
@@ -721,8 +721,8 @@ int main(int argc, char **argv)
     check(ly_lock == LY_PLAY && ui.layer == LY_FX, "locked SEQ, FX held: unlocked, the FX layer");
     release(B_FX); frames(2); check(ui.layer == LY_PLAY, "and FX let go: back to playing");
     press(B_FX); frames(3); tap(B_HOME); release(B_FX); frames(3);
-    press(B_HOME); frames(50); release(B_HOME); frames(2);
-    check(ui.menu && ly_lock == LY_PLAY, "locked, HOME held: the menu, unlocked");
+    press(B_HOME); frames(3); tap(B_GLO); release(B_HOME); frames(2);   /* (K-GLITCH 1.0: the menu is SHIFT + GLO) */
+    check(ui.menu && ly_lock == LY_PLAY, "locked, SHIFT (HOME held) + GLO: the menu, unlocked");
     ui.menu = 0; ui.force = 1; frames(2);
     song.g[G_DUST] = 0; song.g[G_FILT] = 0;
 
@@ -2217,6 +2217,66 @@ int main(int argc, char **argv)
         key_down(0); key_up(0);
         check(song_name[0] == 'L' && trk[song.sel].v[0].active == 0, "NAME: a key types, it plays no note");
         song_name[0] = 0; name_pos = 0;
+        go_home(); frames(4);
+    }
+    {   /* K-GLITCH 1.0: SHIFT (HOME held) and HELP; the GRID; the COLOR page; the PAPER look */
+        track_t *t = &trk[0];
+        uint32_t k, n = 0, pal0 = settings.palette;
+        ui.menu = 0; song.playing = 0; song.sel = 0; go_home(); frames(3);
+        if (!home_grid()) { tap(B_HOME); frames(3); }
+        steps_clear(t);
+        ui.force = 1; frame(); ppm("grid");
+        press(B_HOME); frames(3);
+        check(shift_dn == 2u && !ui_help, "HOME down on the GRID: SHIFT, no HELP yet");
+        ppm("grid-shift");
+        key_down(0); key_up(0); key_down(4); key_up(4); frames(3);   /* (white keys 1 and 3: F, A) */
+        check(step_on(&t->step[0]) && step_on(&t->step[2]) && !step_on(&t->step[1]), "SHIFT + white keys on the GRID: their steps on");
+        key_down(0); key_up(0); frames(3);
+        check(!step_on(&t->step[0]), "SHIFT + the key again: the step off");
+        frames(60); release(B_HOME); frames(3);
+        check(!ui_help && home_grid() && !ui.menu, "SHIFT used: its release is no tap, no HELP, no menu");
+        press(B_HOME); frames(60);
+        check(ui_help, "HOME held 0.7 s, nothing touched: HELP");
+        ppm("help-grid");
+        release(B_HOME); frames(3);
+        check(!ui_help && home_grid(), "HOME let go: the GRID back");
+        for (k = 0; k < NLOCK; k++) if (t->lock[k].step == LOCK_FREE) break;
+        t->lock[k].step = 2, t->lock[k].param = P_PAN, t->lock[k].val = 20;
+        press(B_HOME); frames(3);
+        encs[panel.enc[EN_K4]] = 1; frames(2);
+        release(B_HOME); frames(3);
+        for (k = 0; k < NLOCK; k++) n += t->lock[k].step != LOCK_FREE && t->lock[k].param == P_PAN;
+        check(!n && t->p[P_PAN] == 0, "SHIFT + K4 on the GRID: PAN's automation off, PAN not turned");
+        go_title("PADS", FAM_FX); frames(3);
+        kg_clear(); kgu_sync(); song.g[G_KBANK] = 1;
+        frames(2);
+        kg.seq[3] = (int8_t)kg_fx_of_key(0); kg.seq[9] = (int8_t)kg_fx_of_key(0); kg.seq[5] = (int8_t)kg_fx_of_key(2);
+        press(B_HOME); frames(3);
+        key_down(0); key_up(0); frames(3);
+        check(kg.seq[3] == -1 && kg.seq[9] == -1 && kg.seq[5] >= 0 && punch.req == -1, "SHIFT + a pad: its effect out of the sequence, not played");
+        tap(B_OCTDN); frames(3);
+        check(kg.seq[5] == -1, "SHIFT + OCT- on the pads: the FX sequence cleared");
+        release(B_HOME); frames(3);
+        press(B_HOME); frames(60); ppm("help-pads"); release(B_HOME); frames(3);
+        go_title("COLOR", FAM_SCL); frames(2);
+        check(!strcmp(cur_page()->title, "COLOR"), "SEL > COLOR (DRIVE, AMOUNT, DELAY mode, FDBK)");
+        encs[panel.enc[EN_K1]] = 2; frames(2);
+        encs[panel.enc[EN_K3]] = 3; frames(2);
+        check(song.g[G_KSTYPE] == 2 && song.g[G_KDMODE] == 3, "COLOR: K1 DRIVE TUBE, K3 DELAY TAPE");
+        ui.force = 1; frame(); ppm("page-color");
+        press(B_HOME); frames(3); encs[panel.enc[EN_K1]] = 1; frames(2); release(B_HOME); frames(3);
+        check(song.g[G_KSTYPE] == 0, "SHIFT + K1 on a global: back to its default");
+        song.g[G_KDMODE] = 0;
+        settings.palette = PAL_PAPER; palette_set(PAL_PAPER);
+        ui.force = 1; frame(); ppm("paper-color");
+        go_title("PADS", FAM_FX); ui.force = 1; frames(3); ppm("paper-pads");
+        go_home(); frames(2); if (!home_grid()) { tap(B_HOME); frames(3); }
+        t->step[0].n = 1, t->step[0].note[0] = 60, t->step[0].time = ST_NOTE, t->step[4] = t->step[0], t->step[10] = t->step[0];
+        kg.seq[2] = 5, kg.seq[6] = 30, kg.seq[12] = 50, song.g[G_KSEQ] = 1;
+        ui.force = 1; frames(3); ppm("paper-grid");
+        settings.palette = pal0; palette_set(pal0);
+        ui.force = 1; frames(3); ppm("grid-full");
+        steps_clear(t); kg_clear(); kgu_sync(); song.g[G_KSEQ] = 0; song.g[G_KBANK] = 0;
         go_home(); frames(4);
     }
     {   /* 2.7: favourites: the PRESETS page, KNOB 4 right adds the sound to the top of the list, left removes it */

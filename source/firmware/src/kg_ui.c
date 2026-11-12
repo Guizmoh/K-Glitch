@@ -11,18 +11,18 @@
  * Families of effects: loops and stutters cyan, filters and kills violet, time and pitch amber, destruction red. */
 
 /* the K-WASUB "ribbon classic" palette: slate, an orange accent, cyan values */
-#define KG_BG RGB(20, 27, 35)
-#define KG_BAR RGB(20, 27, 35)
-#define KG_CARD RGB(34, 44, 56)
-#define KG_PANEL RGB(24, 32, 42)
-#define KG_ROW RGB(32, 42, 55)
-#define KG_RULE RGB(66, 82, 100)
-#define KG_INK RGB(236, 240, 244)
-#define KG_MUTE RGB(138, 150, 164)
-#define KG_ACC RGB(255, 136, 56)                  /* the accent: orange */
-#define KG_ACCD RGB(120, 52, 18)                  /* the active row's fill */
-#define KG_VAL RGB(84, 200, 240)                  /* values: cyan */
-#define KG_CYAN RGB(84, 200, 240)
+#define KG_BG pal_bg
+#define KG_BAR pal_bg
+#define KG_CARD pal_card
+#define KG_PANEL pal_row
+#define KG_ROW pal_card
+#define KG_RULE pal[1]
+#define KG_INK pal[3]
+#define KG_MUTE pal[2]
+#define KG_ACC pal_hi                  /* the accent: orange */
+#define KG_ACCD rgb565_mix(pal_bg, pal_hi, 110)                  /* the active row's fill */
+#define KG_VAL pal[4]                  /* values: cyan */
+#define KG_CYAN pal[4]
 #define KG_VIO RGB(170, 132, 255)
 #define KG_AMB RGB(255, 196, 48)
 #define KG_RED RGB(255, 84, 72)
@@ -41,7 +41,7 @@ UI_SMALL static uint16_t kg_fam(int32_t fx)
     if (fx >= (int32_t)PUNCH_NFX) {                   /* the DRUM DESTROYER bank */
         static const uint8_t F[DD_N] = {0, 0, 3, 2, 2, 2, 1, 1, 0, 1, 0, 2, 3, 3, 3, 3,
                                         0, 3, 3, 0, 1, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2};   /* (BEAT) */
-        static const uint16_t C[4] = {KG_CYAN, KG_VIO, KG_AMB, KG_RED};
+        const uint16_t C[4] = {KG_CYAN, KG_VIO, KG_AMB, KG_RED};
         return C[F[(fx - (int32_t)PUNCH_NFX) % DD_N]];
     }
     if (fx <= PX_STUT || fx == PX_LOOP8T) return KG_CYAN;
@@ -110,6 +110,10 @@ UI_SMALL static uint32_t kg_seqpage(void)
 
 UI_SMALL static void kg_rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t fill, uint16_t edge)   /* rounded */
 {
+    if (pal_flat) {                                /* (PAPER: square, framed) */
+        cv_card(x, y, w, h, fill, edge);
+        return;
+    }
     cv_rect(x + 2, y, w - 4, h, edge);
     cv_rect(x, y + 2, w, h - 4, edge);
     cv_rect(x + 1, y + 1, w - 2, h - 2, edge);

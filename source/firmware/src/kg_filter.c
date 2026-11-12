@@ -12,7 +12,10 @@
  *   RESONATOR       three very sharp band-passes at the note, its octave and its fifth: the mix rings in a chord
  * Each type change fades out and in (64 samples); the output is clamped. Memory: 4 KB for the combs. */
 
-enum { KF_OFF, KF_LP, KF_HP, KF_BP, KF_NOTCH, KF_DRIVE, KF_COMBP, KF_COMBN, KF_METAL, KF_VOWEL, KF_PHASER, KF_RESON, KF_N };
+enum { KF_OFF, KF_LP, KF_HP, KF_BP, KF_NOTCH, KF_DRIVE, KF_COMBP, KF_COMBN, KF_METAL, KF_VOWEL, KF_PHASER, KF_RESON,
+       KF_LP24, KF_RING, KF_CRUSH,                /* 1.0: 24 dB low-pass, ring modulator at the note, sample-rate crusher */
+       KF_N };
+_Static_assert(KF_N <= 15, "a step's filter automation keeps TYPE + 1 in 4 bits");
 #define KF_BUF 2048u
 static int16_t kf_buf[KF_BUF];                    /* COMB: left 0..1023, right 1024..2047; METAL: four of 512 */
 static struct {
@@ -22,6 +25,8 @@ static struct {
     int32_t ap[2][4][2];                           /* PHASER: per channel, four stages: x[n-1], y[n-1] */
     int32_t fbk[2];                                /* PHASER: the feedback */
     uint32_t w;                                    /* the comb buffer's write position */
+    uint32_t rph;                                  /* RING, CRUSH: the oscillator's phase */
+    int32_t hold[2];                               /* CRUSH: the sample held */
 } kf = {.cur = KF_OFF};
 static volatile uint32_t kg_lfo_ph;               /* kg_route: the LFO's phase on the transport (MOVEMENT's speed) */
 
@@ -94,7 +99,7 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
         break;
     }
     /* (once a block, not a sample: the FM-1 divides slowly) the combs' delays, their feedback, the phaser's coefficient */
-    uint32_t cd = 8u, md[4] = {6u, 6u, 6u, 6u};
+    uint32_t cd = 8u, md[4] = {6u, 6u, 6u, 6u}, rinc = pitch_inc((uint32_t)clamp(note8 >> 4, 0, 2047)), rq = (uint32_t)res / 12u;
     int32_t cfb = 0, cgain = 32768, mfb = 0, pha = 0;
     if (kf.cur == KF_COMBP || kf.cur == KF_COMBN) {
         cd = kf_period(note8);
@@ -115,6 +120,7 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
     }
     for (i = 0; i < n; i++) {
         int32_t x[2] = {l[i], r[i]}, y[2], target = want == kf.cur ? 32767 : 0;
+        uint32_t cap = 0;
         if (kf.g < target) kf.g = kf.g + 512 > target ? target : kf.g + 512;
         else if (kf.g > target) kf.g = kf.g - 512 < target ? target : kf.g - 512;
         for (ch = 0; ch < 2; ch++) {
@@ -174,6 +180,20 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
                 o = (in >> 2) + bp + b2 + (b3 >> 1);
                 break;
             }
+            case KF_LP24:
+                lp = kf_svf(&c, in, kf.s[ch][0], &bp);
+                o = kf_svf(&c, lp, kf.s[ch][1], &bp);
+                break;
+            case KF_RING:                          /* x a sine at the note; RESO: the dry kept under it */
+                if (!ch) kf.rph += rinc;
+                o = ((in >> 4) * (sine_i(kf.rph) >> 4)) >> 7;
+                o += (in * (127 - res)) >> 9;
+                break;
+            case KF_CRUSH:                         /* a new sample only at the note's rate; RESO: fewer bits */
+                if (!ch) kf.rph += rinc, cap = kf.rph < rinc;
+                if (cap) kf.hold[ch] = in;
+                o = (kf.hold[ch] >> rq) << rq;
+                break;
             default:
                 break;
             }
@@ -185,4 +205,66 @@ static void kf_process(int32_t *l, int32_t *r, uint32_t n)
     }
     if (kf.g == 0 && want != kf.cur)               /* faded out: the next type (or none) on the next block */
         kf.cur = KF_OFF;
+}
+
+/* K-GLITCH 1.0: the mix's DRIVE (SEL > COLOR): seven colours of saturation after the FILTER, AMOUNT the gain into it
+ * (the level held), faded in and out (no click); OFF and faded out: nothing done, the mix bit for bit */
+enum { KS2_OFF, KS2_TAPE, KS2_TUBE, KS2_FUZZ, KS2_FOLD, KS2_HARD, KS2_BIT, KS2_OCT, KS2_N };
+static struct { int32_t lp[2], dc[2], g; uint8_t cur; } kdrv;
+static void kdrive_process(int32_t *l, int32_t *r, uint32_t n)
+{
+    uint32_t type = (uint32_t)song.g[G_KSTYPE] % KS2_N, amt = (uint32_t)clamp(song.g[G_KSAMT], 0, 100), i, ch;
+    int32_t target = type ? 32767 : 0, pre, post, lpk, bsh;
+    if (!type && !kdrv.g)
+        return;
+    if (type && (!kdrv.g || kdrv.cur == type))
+        kdrv.cur = (uint8_t)type;
+    else if (type)
+        target = 0;                                /* (another type: this one out first) */
+    pre = 256 + (int32_t)amt * (kdrv.cur == KS2_FUZZ ? 80 : 24);   /* Q8: x1 .. x10 (FUZZ x32) */
+    post = 256 - (int32_t)amt * (kdrv.cur == KS2_FOLD || kdrv.cur == KS2_BIT ? 0 : 1);
+    lpk = 30000 - (int32_t)amt * 200;              /* TAPE: darker with more */
+    bsh = 4 + (int32_t)amt / 12;                   /* BIT: 12 .. 4 bits */
+    for (i = 0; i < n; i++) {
+        int32_t x[2] = {l[i], r[i]};
+        if (kdrv.g < target) kdrv.g = kdrv.g + 256 > target ? target : kdrv.g + 256;
+        else if (kdrv.g > target) kdrv.g = kdrv.g - 256 < target ? target : kdrv.g - 256;
+        for (ch = 0; ch < 2u; ch++) {
+            int32_t in = clamp(x[ch], -(1 << 17), 1 << 17), v = (in * pre) >> 8, y;
+            switch (kdrv.cur) {
+            case KS2_TAPE:
+                y = softclip(v);
+                kdrv.lp[ch] += mulq15(y - kdrv.lp[ch], lpk);
+                y = kdrv.lp[ch];
+                break;
+            case KS2_TUBE:                         /* the top half pushed harder: even harmonics, the offset taken out */
+                y = softclip(v + ((v > 0 ? v : 0) >> 1));
+                kdrv.dc[ch] += (y - kdrv.dc[ch]) >> 10;
+                y -= kdrv.dc[ch];
+                break;
+            case KS2_FUZZ:
+                y = softclip(clamp(v, -(1 << 20), 1 << 20));
+                break;
+            case KS2_FOLD: {                       /* past full scale it folds back */
+                uint32_t u = (uint32_t)(v + 32768) & 0x1FFFFu;
+                y = u < 65536u ? (int32_t)u - 32768 : 98304 - (int32_t)u;
+                break;
+            }
+            case KS2_HARD:
+                y = (clamp(v, -20000, 20000) * 3) >> 1;
+                break;
+            case KS2_BIT:
+                y = ((in >> bsh) << bsh) + (1 << (bsh - 1));
+                break;
+            default:                               /* OCTAV: rectified, an octave up, then clipped */
+                y = v < 0 ? -v : v;
+                kdrv.dc[ch] += (y - kdrv.dc[ch]) >> 9;
+                y = softclip((y - kdrv.dc[ch]) * 2);
+                break;
+            }
+            y = (y * post) >> 8;
+            x[ch] += (((y - in) >> 3) * (kdrv.g >> 3)) >> 9;
+        }
+        l[i] = x[0], r[i] = x[1];
+    }
 }

@@ -85,6 +85,11 @@ static volatile uint8_t kd_sintv[KD_SLOTS];       /* its recorded INTENSITY + 1 
 static uint8_t kd_int[DD_N] = {[0 ... DD_N - 1] = 50};
 static volatile int8_t kd_lfo;                   /* the LFO now, -50..50 (kg_route, per block) */
 static volatile uint8_t kg_sel;                  /* the effect ALGORITHM selects (and a pad pressed): DD_* */
+/* K-GLITCH 1.0: SHIFT = HOME held (ui_input.c shift_input). shift_dn: 1 down, 2 down on the GRID (the keys: its steps);
+ * shift_used: something was done with it (its release is no tap, no HELP); kg_wipe: SHIFT + a pad, its effect + 1
+ * (0xFF: the FILTER's automation) for the UI to take out of the sequence */
+static volatile uint8_t shift_dn, shift_used, kg_wipe;
+static uint8_t ui_help;                          /* HOME held 0.7 s, nothing touched: the page's HELP sheet (ui_draw.c) */
 static volatile uint8_t name_pads;               /* UI: SAVE > NAME, the keys type letters (ui_input.c name_key) */
 static void (*name_keyp)(uint32_t k);            /* (ui_input.c name_key: set by ui_input) */
 static volatile uint8_t kg_pads;                 /* UI: the keys are pads (1: the K-GLITCH pages) or SEQ's steps (2) */

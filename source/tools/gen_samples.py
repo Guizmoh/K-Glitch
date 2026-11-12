@@ -133,7 +133,7 @@ def name_note(name):
 ONE_SOUND = {"SCRCH"}
 # K-GLITCH: sets that keep every other sound (each then spans twice the keys), 66 KB of flash for K-GLITCH's code (its
 # drum kits, effects, filters, sampler and screens): the set and its number stay, projects and presets unchanged
-HALF_SOUNDS = {"PIANO", "BASS", "VIBES", "HORNS"}
+HALF_SOUNDS = {"PIANO", "BASS", "VIBES", "HORNS", "STRGS", "FLUTE"}
 
 
 def cc0_entries(setname, kind):
