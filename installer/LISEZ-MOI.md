@@ -1,4 +1,4 @@
-# Installer K-GLITCH 0.9.4 sur le M-VAVE FM-1
+# Installer K-GLITCH 0.10.0 sur le M-VAVE FM-1
 
 Tout est dans ce dossier : l'installateur contient le firmware, il marche **sans internet**.
 
@@ -14,8 +14,8 @@ Tout est dans ce dossier : l'installateur contient le firmware, il marche **sans
 2. Ouvrez l'installateur :
    - **Windows** : double-cliquez sur `INSTALLER-WINDOWS.bat` (il ouvre la page dans Chrome ou Edge) ;
    - **Mac** : double-cliquez sur `INSTALLER-MAC.command` (la première fois : clic droit > Ouvrir) ;
-   - ou ouvrez directement `K-GLITCH-0.9.4-installer.html` avec Chrome ou Edge.
-3. La page affiche « K-GLITCH 0.9.4 (SLOOP 2.8.4) » : le firmware est chargé et vérifié.
+   - ou ouvrez directement `K-GLITCH-0.10.0-installer.html` avec Chrome ou Edge.
+3. La page affiche « K-GLITCH 0.10.0 (SLOOP 2.8.4) » : le firmware est chargé et vérifié.
 4. Cliquez sur **Installer**, puis acceptez l'accès MIDI (« contrôle total des appareils MIDI ») que demande le navigateur.
 5. Attendez « Terminé » (environ une minute) sans débrancher le câble. Le FM-1 redémarre sur K-GLITCH.
 
@@ -26,7 +26,7 @@ Si l'écriture est coupée (câble débranché, page fermée), le FM-1 reste en 
 Avec Python 3 et `pip install mido python-rtmidi` :
 
 ```
-python3 fm1_install.py k-glitch-0.9.4.fwsc
+python3 fm1_install.py k-glitch-0.10.0.fwsc
 ```
 
 ## Revenir en arrière
@@ -37,6 +37,6 @@ python3 fm1_install.py k-glitch-0.9.4.fwsc
 
 ## Bon à savoir
 
-- Version de développement : construite et vérifiée par la chaîne de compilation officielle de JieLi (taille, mémoire, accès matériel), testée sur ordinateur et dans l'émulateur, **pas encore sur un FM-1 réel**. À vos risques.
+- Version de développement : construite et vérifiée par la chaîne de compilation officielle de JieLi (taille, mémoire, accès matériel), testée sur ordinateur et dans l'émulateur ; les versions 0.9 ont tourné sur un FM-1 réel, **la 0.10 pas encore**. À vos risques.
 - Si le FM-1 ne démarre plus du tout après une installation ratée : maintenez **OCT−** en l'allumant (mode de secours USB), puis relancez l'installateur. En dernier recours, un Transporter (github.com/kurogedelic/FM-1-transporter) permet de le récupérer.
-- Paquet : `k-glitch-0.9.4.fwsc`, identité FM-1_909, SHA-256 `585869d8101feb168bc88f021bdeac67e5483c374de6274dc1a7e3191a993b65`.
+- Paquet : `k-glitch-0.10.0.fwsc`, identité FM-1_909, SHA-256 `585869d8101feb168bc88f021bdeac67e5483c374de6274dc1a7e3191a993b65`.
