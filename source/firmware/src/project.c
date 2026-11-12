@@ -570,7 +570,7 @@ static union {
     project_v1_t v1;
 } proj_tmp;
 UI_SMALL static void *up_stage(void) { return &proj_tmp; }   /* upreset.c: a user preset bank staged for a write (sloop-lab) */
-static project_t song_buf __attribute__((section(".pool")));   /* K-GLITCH: songs E..P, loaded / saved through it */
+static project_t song_buf;   /* K-GLITCH: songs E..P, loaded / saved through it */
 UI_SMALL static void proj_fetch(uint32_t slot)
 {
     project_t *q;
