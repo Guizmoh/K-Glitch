@@ -43,11 +43,6 @@ Tout est traité **sur le téléphone**. Aucun son n'est envoyé sur Internet.
 - Si deux catégories ont des scores proches, l'ordre de priorité est le suivant : cris, pleurs, rires, puis paroles.
 - Si le modèle ne se charge pas, un classifieur acoustique simple prend le relais. Il s'appuie sur la hauteur de la voix, les basses fréquences et le rythme des syllabes.
 
-### Écrire ce qui a été dit (transcription)
-- Réglages > « Transcription des paroles » : installer le modèle français **Vosk** (42 Mo, une seule fois).
-- Ensuite, les paroles et les cris sont transcrits automatiquement, **sur le téléphone**, et affichés sous chaque son (« … »). Un bouton « Écrire ce qui est dit » transcrit aussi les anciens sons.
-- Internet ne sert qu'à ce téléchargement ; aucun son n'est jamais envoyé.
-
 ### L'appli apprend
 - **Calibration** : l'activité habituelle de chaque nuit est mémorisée ; à partir de 3 nuits, l'analyse des phases s'appuie sur la médiane des 14 dernières nuits (indiqué « Calibré sur vos N nuits précédentes »).
 - **Corrections** : bouton « Corriger » sur chaque son (« c'était quoi, en vrai ? »). Le type est corrigé et la sensibilité s'ajuste d'un cran : moins pour la catégorie qui s'est trompée, plus pour la bonne.
@@ -167,6 +162,6 @@ app/src/main/java/com/somnia/app/
 ## Crédits
 - Police du titre et du gros bouton : **Fredoka** (Google Fonts), licence SIL Open Font License 1.1.
 - Modèle de reconnaissance des sons : **YAMNet** (Google), licence Apache 2.0.
-- Transcription : **Vosk** et modèle `vosk-model-small-fr-0.22` (Alpha Cephei), licence Apache 2.0.
+- Empreinte vocale : **Vosk**, modèles `vosk-model-small-fr-0.22` et `vosk-model-spk-0.4` (Alpha Cephei), licence Apache 2.0.
 - Police de l'écran de nuit : **Nunito** (Google Fonts), licence SIL Open Font License 1.1.
 - Police du gros bouton : **Quicksand** (Google Fonts), licence SIL Open Font License 1.1.

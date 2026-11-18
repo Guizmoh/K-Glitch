@@ -140,8 +140,7 @@ private fun MinuteDetail(minutes: List<MinuteStat>, events: List<SoundEventEntit
         else near.take(4).forEach { e ->
             val ty = SoundType.fromName(e.type)
             Text(
-                "• ${com.somnia.app.ui.Fmt.time(e.timestamp)} : ${ty.label} (${com.somnia.app.ui.Fmt.seconds(e.durationMs)})" +
-                    (e.transcript?.let { " « $it »" } ?: ""),
+                "• ${com.somnia.app.ui.Fmt.time(e.timestamp)} : ${ty.label} (${com.somnia.app.ui.Fmt.seconds(e.durationMs)})",
                 style = MaterialTheme.typography.bodySmall, color = ty.color(), maxLines = 2,
             )
         }

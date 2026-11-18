@@ -150,8 +150,6 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}, onAgent: ()
             )
         }
 
-        TranscriptionCard()
-
         TvAndVoiceCard(s, { t -> vm.updateSettings(t) }, live != null)
 
         GlassCard(title = "Apnée du sommeil", icon = "🫁") {
@@ -261,7 +259,7 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}, onAgent: ()
         }
 
         GlassCard(title = "Mes données", icon = "🔒") {
-            Text("Tout reste sur le téléphone : aucun son n'est envoyé sur Internet. Internet ne sert qu'à télécharger le modèle de transcription, si vous l'installez.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
+            Text("Tout reste sur le téléphone : aucun son n'est envoyé sur Internet. Internet ne sert qu'à télécharger la reconnaissance de votre voix, si vous l'installez.", color = TextSoft, style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = { vm.exportCsv(ctx) }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Exporter mes nuits (CSV)") }
             Text("Rapport pour le médecin (PDF + extraits sonores)", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleSmall)
             var weeks by remember { androidx.compose.runtime.mutableIntStateOf(1) }
@@ -277,42 +275,6 @@ fun SettingsScreen(vm: SomniaViewModel, onTutorial: () -> Unit = {}, onAgent: ()
     }
 }
 
-/** Installer / supprimer le modèle de transcription des paroles. */
-@Composable
-private fun TranscriptionCard() {
-    val ctx = LocalContext.current
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val state by com.somnia.app.transcribe.Transcriber.state.collectAsState()
-    androidx.compose.runtime.LaunchedEffect(Unit) { com.somnia.app.transcribe.Transcriber.refresh(ctx) }
-    GlassCard(title = "Transcription des paroles", icon = "🗣️") {
-        Text(
-            "Écrit ce qui est dit pendant la nuit, directement sur le téléphone : aucun son n'est envoyé sur Internet.",
-            style = MaterialTheme.typography.bodySmall, color = TextSoft,
-        )
-        Spacer(Modifier.height(8.dp))
-        when (val st = state) {
-            is com.somnia.app.transcribe.Transcriber.State.Ready -> {
-                Text("Installée : les paroles seront écrites automatiquement.", color = com.somnia.app.ui.theme.Good)
-                OutlinedButton(onClick = { com.somnia.app.transcribe.Transcriber.delete(ctx) }, Modifier.fillMaxWidth().padding(top = 6.dp)) {
-                    Text("Supprimer (libère 50 Mo)")
-                }
-            }
-            is com.somnia.app.transcribe.Transcriber.State.Downloading -> {
-                Text("Téléchargement… ${(st.progress * 100).toInt()} %")
-                androidx.compose.material3.LinearProgressIndicator({ st.progress }, Modifier.fillMaxWidth().padding(top = 6.dp))
-            }
-            else -> {
-                if (st is com.somnia.app.transcribe.Transcriber.State.Failed) Text(st.message, color = MaterialTheme.colorScheme.error)
-                OutlinedButton(
-                    onClick = { scope.launch { com.somnia.app.transcribe.Transcriber.download(ctx) } },
-                    Modifier.fillMaxWidth().padding(top = 6.dp),
-                ) { Text("Installer le français (42 Mo, une seule fois, Wi-Fi conseillé)") }
-            }
-        }
-    }
-}
-
-/** « En colère : de [1 h] à [6 h] » — chaque heure se choisit en la touchant. */
 @Composable
 internal fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, Int) -> Unit) {
     val ctx = LocalContext.current
@@ -327,6 +289,7 @@ internal fun HourRangeRow(label: String, start: Int, end: Int, onChange: (Int, I
 
 /** Liste des nouveautés de la dernière mise à jour (bouton « ? » en haut des réglages). */
 private val WHATS_NEW = listOf(
+    "Transcription retirée (1.4)" to "L'écriture automatique des paroles en texte a été retirée (pas assez fiable). Les sons restent enregistrés et réécoutables, avec la version voix claire.",
     "Détection de la voix améliorée (1.3)" to "La calibration ne baisse plus la sensibilité, les mots courts sont de nouveau gardés, la catégorie télé ne s'applique qu'avec le mode télé, et le filtre « ma voix » seulement quand une télé est repérée. Vos réglages ont été remis à niveau automatiquement.",
     "Ronflement" to "Courbe sur la nuit (durée et intensité), heures où vous ronflez le plus, et lien avec la position si le téléphone est sur le matelas.",
     "Calibration de la chambre" to "1 minute de mesure pour régler la sensibilité toute seule (Réglages > Que doit-on capter ?).",

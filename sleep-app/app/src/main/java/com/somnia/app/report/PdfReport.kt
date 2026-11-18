@@ -142,7 +142,6 @@ object PdfReport {
                 val t = SoundType.fromName(e.type)
                 val extra = when {
                     t == SoundType.APNEA -> e.scores.substringAfter("APNEA_GAP=", "").takeIf { it.isNotEmpty() }?.let { " – silence de ${it.substringBefore(';').toFloat().roundToInt()} s" } ?: ""
-                    e.transcript != null -> " – « ${e.transcript.take(70)} »"
                     else -> ""
                 }
                 line("${i + 1}. ${f.name} : ${t.label}, ${Fmt.day(e.timestamp)} à ${Fmt.time(e.timestamp)} (${Fmt.seconds(e.durationMs)})$extra")

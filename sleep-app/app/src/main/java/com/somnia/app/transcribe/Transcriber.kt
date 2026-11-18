@@ -1,21 +1,18 @@
 package com.somnia.app.transcribe
 
 import android.content.Context
-import com.somnia.app.audio.WavFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.vosk.Model
-import org.vosk.Recognizer
 import java.io.File
 import java.net.URL
 import java.util.zip.ZipInputStream
 
 /**
- * Transcription des paroles en texte, entièrement sur le téléphone (Vosk).
- * Le modèle français (~42 Mo) est téléchargé une seule fois, à la demande.
+ * Modèle de langue français Vosk (~42 Mo), téléchargé à la demande.
+ * Il ne sert plus qu'à l'empreinte vocale (« Ma voix ») : la transcription en texte a été retirée.
  */
 object Transcriber {
     private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip"
@@ -83,21 +80,4 @@ object Transcriber {
 
     /** Modèle de langue partagé (transcription + empreinte vocale). */
     fun loadModel(ctx: Context): Model = synchronized(this) { model ?: Model(modelDir(ctx).absolutePath).also { model = it } }
-
-    /** Texte reconnu dans un fichier WAV 16 kHz mono, ou null si rien / modèle absent. */
-    suspend fun transcribe(ctx: Context, wavPath: String): String? = withContext(Dispatchers.Default) {
-        if (!isReady(ctx)) return@withContext null
-        val m = loadModel(ctx)
-        val pcm = WavFile.read16k(File(wavPath))
-        Recognizer(m, 16000f).use { rec ->
-            var i = 0
-            while (i < pcm.size) {
-                val n = minOf(4000, pcm.size - i)
-                rec.acceptWaveForm(pcm.copyOfRange(i, i + n), n)
-                i += n
-            }
-            JSONObject(rec.finalResult).optString("text").trim().takeIf { it.isNotEmpty() }
-                ?.replaceFirstChar { it.uppercase() }
-        }
-    }
 }

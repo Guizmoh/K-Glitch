@@ -39,8 +39,8 @@ android {
         applicationId = "com.policedudodo.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.4"
         // Seulement les téléphones ARM (quasiment tous) : APK bien plus léger
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -109,8 +109,8 @@ dependencies {
 
     implementation("com.google.mediapipe:tasks-audio:0.10.20")
 
-    // Transcription des paroles hors ligne (Vosk, Apache 2.0) ; le modèle français
-    // (~42 Mo) est téléchargé dans l'appli seulement si l'utilisateur l'active.
+    // Empreinte vocale hors ligne (Vosk, Apache 2.0) ; les modèles (~56 Mo) sont
+    // téléchargés dans l'appli seulement si l'utilisateur active « Ma voix ».
     implementation("com.alphacephei:vosk-android:0.3.47")
     implementation("net.java.dev.jna:jna:5.13.0@aar")
 

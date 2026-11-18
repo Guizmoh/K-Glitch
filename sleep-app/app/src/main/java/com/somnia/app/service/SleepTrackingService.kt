@@ -267,14 +267,7 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                         }
                         o.enhanced?.let { p -> WavFile.write(File(p), WavFile.read(File(p)) + VoiceEnhancer.enhance(chunk, null, rate), rate) }
                         dao.event(o.id)?.let { e ->
-                            var upd = e.copy(durationMs = e.durationMs + ev.durationMs, peakDb = maxOf(e.peakDb, ev.peakDb))
-                            if (!ev.continues && (o.type == SoundType.SPEECH || o.type == SoundType.NIGHT_TERROR)) {
-                                (o.enhanced ?: o.audio)?.let { path ->
-                                    runCatching { com.somnia.app.transcribe.Transcriber.transcribe(this@SleepTrackingService, path) }
-                                        .getOrNull()?.let { upd = upd.copy(transcript = it) }
-                                }
-                            }
-                            dao.updateEvent(upd)
+                            dao.updateEvent(e.copy(durationMs = e.durationMs + ev.durationMs, peakDb = maxOf(e.peakDb, ev.peakDb)))
                         }
                     }
                     if (!ev.continues) open = null
@@ -336,13 +329,6 @@ class SleepTrackingService : LifecycleService(), SensorEventListener {
                     ),
                 )
                 if (ev.continues) open = OpenChunk(eventId, audio, enhanced, gain, cls.type)
-                // Paroles et cris : transcription en texte si le modèle est installé (à la fin d'un son long)
-                if (!ev.continues && (cls.type == SoundType.SPEECH || cls.type == SoundType.NIGHT_TERROR)) {
-                    (enhanced ?: audio)?.let { path ->
-                        runCatching { com.somnia.app.transcribe.Transcriber.transcribe(this@SleepTrackingService, path) }
-                            .getOrNull()?.let { text -> dao.event(eventId)?.let { dao.updateEvent(it.copy(transcript = text)) } }
-                    }
-                }
                 synchronized(lock) { minuteEvents++ }
                 TrackingState.live.value = TrackingState.live.value?.let { s ->
                     s.copy(

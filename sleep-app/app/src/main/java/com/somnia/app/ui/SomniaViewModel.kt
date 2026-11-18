@@ -51,12 +51,6 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
         return msg
     }
 
-    fun transcribe(e: SoundEventEntity) = viewModelScope.launch {
-        val path = e.enhancedPath ?: e.audioPath ?: return@launch
-        val text = com.somnia.app.transcribe.Transcriber.transcribe(getApplication(), path) ?: "(rien de compréhensible)"
-        dao.event(e.id)?.let { dao.updateEvent(it.copy(transcript = text)) }
-    }
-
     fun toggleNightFavorite(s: SleepSession) = viewModelScope.launch { dao.updateSession(s.copy(favorite = !s.favorite)) }
 
     fun toggleFavorite(e: SoundEventEntity) = viewModelScope.launch { dao.updateEvent(e.copy(favorite = !e.favorite)) }
@@ -76,7 +70,7 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Partage un son (mail, WhatsApp, MMS…). Le fichier est copié avec un nom lisible,
-     * et le texte transcrit (s'il existe) est joint au message.
+     * avec un petit texte (type, heure, durée).
      */
     fun shareAudio(context: Context, e: SoundEventEntity, path: String, enhanced: Boolean) {
         val type = com.somnia.app.audio.SoundType.fromName(e.type)
@@ -87,7 +81,6 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", copy)
         val text = buildString {
             append("${type.label} à ${Fmt.time(e.timestamp)} (${Fmt.seconds(e.durationMs)}) – Police du Dodo")
-            e.transcript?.let { append("\n« $it »") }
         }
         val send = Intent(Intent.ACTION_SEND).setType("audio/wav")
             .putExtra(Intent.EXTRA_STREAM, uri).putExtra(Intent.EXTRA_TEXT, text).putExtra(Intent.EXTRA_SUBJECT, "Enregistrement de la nuit")
@@ -108,7 +101,6 @@ class SomniaViewModel(app: Application) : AndroidViewModel(app) {
             File(path).copyTo(copy, overwrite = true)
             uris += FileProvider.getUriForFile(context, "${context.packageName}.files", copy)
             text.append("\n${i + 1}. ${type.label} à ${Fmt.time(e.timestamp)} (${Fmt.seconds(e.durationMs)})")
-            e.transcript?.let { text.append(" « $it »") }
         }
         if (uris.isEmpty()) return
         val send = Intent(Intent.ACTION_SEND_MULTIPLE).setType("audio/wav")

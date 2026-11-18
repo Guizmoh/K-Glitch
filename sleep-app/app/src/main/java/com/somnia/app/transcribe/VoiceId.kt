@@ -108,6 +108,11 @@ object VoiceId {
 
     fun forget(ctx: Context) = prefs(ctx).edit().remove("empreinte").apply()
 
+    fun deleteModel(ctx: Context) {
+        synchronized(this) { spk?.close(); spk = null; model = null }
+        dir(ctx).deleteRecursively()
+    }
+
     fun voiceprint(ctx: Context): FloatArray? =
         prefs(ctx).getString("empreinte", null)?.split(",")?.mapNotNull { it.toFloatOrNull() }?.toFloatArray()?.takeIf { it.isNotEmpty() }
 

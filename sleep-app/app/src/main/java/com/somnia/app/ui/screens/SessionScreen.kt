@@ -390,25 +390,7 @@ private fun EventCard(e: SoundEventEntity, vm: SomniaViewModel, isSelected: Bool
         if (t == SoundType.APNEA) apneaGap(e)?.let { g ->
             Text("Silence de %.0f s puis reprise bruyante".format(g), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
         }
-        // Paroles transcrites
         val ctx = LocalContext.current
-        val modelReady = remember { com.somnia.app.transcribe.Transcriber.isReady(ctx) }
-        var transcribing by remember(e.id) { mutableStateOf(false) }
-        if (e.transcript != null) {
-            Text(
-                "« ${e.transcript} »",
-                Modifier.padding(top = 10.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(com.somnia.app.ui.theme.Themes.cur.text.copy(alpha = 0.1f)).padding(12.dp),
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif),
-            )
-        } else if ((t == SoundType.SPEECH || t == SoundType.NIGHT_TERROR) && e.audioPath != null) {
-            if (modelReady) {
-                ToggleChip(if (transcribing) "Transcription…" else "Écrire ce qui est dit", false) {
-                    if (!transcribing) { transcribing = true; vm.transcribe(e) }
-                }
-            } else {
-                Text("Activez « Transcription des paroles » dans Réglages pour lire ce qui est dit.", style = MaterialTheme.typography.labelSmall, color = TextSoft, modifier = Modifier.padding(top = 6.dp))
-            }
-        }
 
         // Choix de la version écoutée : original ou voix isolée
         var useEnhanced by remember(e.id) { mutableStateOf(false) }

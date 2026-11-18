@@ -123,6 +123,9 @@ fun TvAndVoiceCard(s: Settings, update: ((Settings) -> Settings) -> Unit, live: 
                     TextButton(onClick = { enrolling = true }, enabled = !live) { Text("Refaire") }
                     TextButton(onClick = { VoiceId.forget(ctx); refresh++ }) { Text("Supprimer l'empreinte") }
                 }
+                TextButton(onClick = { VoiceId.forget(ctx); VoiceId.deleteModel(ctx); Transcriber.delete(ctx); refresh++ }) {
+                    Text("Tout désinstaller (libère ~60 Mo)")
+                }
             }
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp)) }
