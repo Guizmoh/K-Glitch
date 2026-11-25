@@ -698,7 +698,8 @@ async function switchOn() {
     const ac = new AudioContext({ sampleRate: 44100, latencyHint: "interactive" });
     if (speakMode() === "voice") voiceOn();
     const [wasm] = await Promise.all([Promise.resolve(Uint8Array.from(atob(__WASM_B64), (c) => c.charCodeAt(0)).buffer),
-                                      ac.audioWorklet.addModule("data:text/javascript;base64," + btoa(unescape(encodeURIComponent(__WK))))]);
+                                      ac.audioWorklet.addModule(URL.createObjectURL(new Blob([__WK], { type: "text/javascript" })))
+                                        .catch(() => ac.audioWorklet.addModule("data:text/javascript;base64," + btoa(unescape(encodeURIComponent(__WK)))))]);
     node = new AudioWorkletNode(ac, "fm1", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
     gain = ac.createGain();
     gain.gain.value = $("mute").getAttribute("aria-pressed") === "true" ? 0 : 1;
