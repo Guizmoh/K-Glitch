@@ -172,13 +172,15 @@ static void scr_fill(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c)
 /* GLOUPI BREAKS: the screen's colours, picked on GLOBAL's MORE page (K1) and saved (set.skin). fm1-base's palette
  * (gfx.c pal[]: rules, dim, labels, secondary, values) and the app's own (a block's ground, the block sounding, the
  * white, TAP TEMPO's unlit segments and metronome) from one table */
-#define NSKINS 24u
+#define NSKINS 25u                       /* (K-GLITCH 0.2b: + RIBBON, the 25th, the default) */
 /* LOAF BREAKER (FLEXOR, 11 Nov 2026, 0.237: the 1.0's skins, picked, ordered and named by him on listening-page style
  * checklists from 48 rendered on the simulator; two rows of twelve swatches on SETUP). Saved as SKIN_NEW | its place:
  * an older save's place in the 18 before is mapped (SKIN_OLD) to the nearest kept */
 #define SKIN_NEW 0x80u
-#define SKIN_DEFAULT 10u                 /* (RED, LOAF BREAKER's own, 0.240; CHOPPAH 0.237-0.239) */
-static const char *const SKIN_NAME[NSKINS] = {"CHROME", "FIRE&ICE", "CHOPPAH", "GLOUPI", "TESS", "OUTRUN", "THUNDER", "CYBERPUNK", "MC SALO", "ACID", "RED", "GARRY", "PIP-BOY", "NEON", "BLACKLIGHT", "PATINA", "SYNTHWAVE", "MIAMI", "ELECTRIC", "ARCTIC", "BREADCRUMBZ", "IRIS", "GLUCKSMAN", "MAXENCE"};
+#define SKIN_RIBBON 24u                  /* K-GLITCH 0.2b: RIBBON, K-WASUB's / K-GLITCH's look: a slate ground, cards, pills */
+#define SKIN_DEFAULT SKIN_RIBBON
+#define SKIN_LOAF_DEFAULT 10u                 /* (RED, LOAF BREAKER's own, 0.240; CHOPPAH 0.237-0.239) */
+static const char *const SKIN_NAME[NSKINS] = {"CHROME", "FIRE&ICE", "CHOPPAH", "GLOUPI", "TESS", "OUTRUN", "THUNDER", "CYBERPUNK", "MC SALO", "ACID", "RED", "GARRY", "PIP-BOY", "NEON", "BLACKLIGHT", "PATINA", "SYNTHWAVE", "MIAMI", "ELECTRIC", "ARCTIC", "BREADCRUMBZ", "IRIS", "GLUCKSMAN", "MAXENCE", "RIBBON"};
 static const uint8_t SKIN_OLD[18] = {10u, 2u, 19u, 12u, 21u, 23u, 15u, 20u, 0u, 23u, 16u, 17u, 11u, 17u, 3u, 6u, 3u, 9u};   /* (RED AMBER ICE-BLUE PIP-BOY IRIS
                                           * PINK MINT WHITE BLOOD MAXENCE SYNTHWAVE VAPOR TOXIC MIAMI LAVA GOLD BLAZE ACID) */
 /* each: line, dim, gray, mid (secondary), hi (values), block, white */
@@ -206,10 +208,13 @@ static const uint8_t SKIN_RGB[NSKINS][7][3] = {
     {{34, 34, 40}, {74, 74, 82}, {150, 150, 158}, {196, 196, 202}, {236, 236, 240}, {24, 24, 30}, {255, 255, 255}}   /* BREADCRUMBZ: WHITE until 0.236: white and greys */,
     {{34, 32, 44}, {76, 72, 90}, {152, 148, 166}, {150, 100, 240}, {196, 166, 255}, {24, 22, 34}, {255, 255, 255}}   /* IRIS: iris violet */,
     {{21, 11, 48}, {56, 32, 116}, {170, 155, 208}, {255, 90, 200}, {140, 90, 255}, {11, 5, 24}, {244, 238, 255}}   /* GLUCKSMAN: deep violet and UV pink */,
-    {{60, 12, 48}, {130, 36, 110}, {240, 170, 225}, {255, 0, 170}, {255, 70, 215}, {44, 0, 34}, {255, 232, 250}}   /* MAXENCE: a very loud pink, neon on plum */};
+    {{60, 12, 48}, {130, 36, 110}, {240, 170, 225}, {255, 0, 170}, {255, 70, 215}, {44, 0, 34}, {255, 232, 250}}   /* MAXENCE: a very loud pink, neon on plum */,
+    {{66, 82, 100}, {96, 110, 128}, {138, 150, 164}, {255, 136, 56}, {84, 200, 240}, {34, 44, 56}, {236, 240, 244}}   /* RIBBON (K-GLITCH 0.2b): cyan values, an orange accent, slate cards on a slate night */};
 static uint32_t skin_idx(void) { return (set.skin & 0x7Fu) % NSKINS; }
-static uint32_t skin_old(uint32_t s) { return s < 18u ? SKIN_OLD[s] : SKIN_DEFAULT; }
+static uint32_t skin_old(uint32_t s) { return s < 18u ? SKIN_OLD[s] : SKIN_LOAF_DEFAULT; }
 static uint16_t skin_block = RGB(24, 24, 30), skin_hi = RGB(255, 132, 112), skin_white = 0xFFFFu;
+static uint16_t skin_bg;                 /* (K-GLITCH 0.2b: the ground, black but RIBBON's slate: C_BLACK) */
+#define RIB (skin_idx() == SKIN_RIBBON)   /* (RIBBON's shapes: pills, rounded cards) */
 /* LOAF BREAKER: SERATO's colours for a wave's column: its lows, mids and highs (0..255 each) as one hue, red (the lows)
  * through yellow, green (the mids), cyan to blue (the highs), at full saturation, br bright (0..255) */
 static uint16_t serato_col(uint32_t lo, uint32_t mi, uint32_t hi, uint32_t br)
@@ -305,7 +310,17 @@ static void skin_apply(uint32_t s)
     skin_block = skin_rgb(c[5], 100u);
     skin_hi = skin_rgb(c[4], 100u);
     skin_white = skin_rgb(c[6], 100u);
+    skin_bg = s % NSKINS == SKIN_RIBBON ? RGB(20, 27, 35) : 0u;
 }
+/* K-GLITCH 0.2b: a rounded box (RIBBON's cards and pills) */
+static void rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
+{
+    cv_rect(x + 2, y, w - 4, h, c);
+    cv_rect(x + 1, y + 1, w - 2, h - 2, c);
+    cv_rect(x, y + 2, w, h - 4, c);
+}
+#undef C_BLACK                           /* (the ground is the skin's: RIBBON's slate) */
+#define C_BLACK skin_bg
 #undef C_WHITE                           /* (the app's white is the skin's: put back after the UI, app.c's end) */
 #define C_WHITE skin_white
 

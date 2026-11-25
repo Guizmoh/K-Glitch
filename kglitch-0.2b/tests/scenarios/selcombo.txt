@@ -78,11 +78,11 @@ expect kslot 4
 turn SELECT 1 10
 wait 200
 expect gpage 2
-expect skin 10
+expect skin 24
 turn PRESET 1 10
 wait 200
-expect skin 11
+expect skin 0
 shot sc_setup_skin.png
 turn PRESET -1 10
 wait 200
-expect skin 10
+expect skin 24

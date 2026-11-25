@@ -476,14 +476,14 @@ static void draw_global(const brk_status_t *st)
         cv_text(6, 1, &FONT_T, "K1 SKIN", C_GRAY);
         cv_text(96, 1, &FONT_T, SKIN_NAME[skin_idx()], C_HI);
         for (s = 0; s < NSKINS; s++) {   /* a swatch each: its value colour on its ground, the one on outlined */
-            int32_t x = 6 + (int32_t)(s % 12u) * 19, y = 18 + (int32_t)(s / 12u) * 13;   /* (LOAF BREAKER, 0.237:
+            int32_t x = 6 + (int32_t)(s % 13u) * 18, y = 18 + (int32_t)(s / 13u) * 13;   /* (K-GLITCH 0.2b: 13 a row, RIBBON the 25th) */   /* (LOAF BREAKER, 0.237:
                                           * two rows of twelve, FLEXOR's) */
             const uint8_t (*c)[3] = SKIN_RGB[s];
             if (s == skin_idx())
-                cv_rect(x - 2, y - 2, 21, 15, C_WHITE);
-            cv_rect(x, y, 17, 11, skin_rgb(c[5], 100u));
-            cv_rect(x + 2, y + 2, 13, 4, skin_rgb(c[4], 100u));
-            cv_rect(x + 2, y + 7, 13, 2, skin_rgb(c[3], 100u));
+                cv_rect(x - 2, y - 2, 20, 15, C_WHITE);
+            cv_rect(x, y, 16, 11, skin_rgb(c[5], 100u));
+            cv_rect(x + 2, y + 2, 12, 4, skin_rgb(c[4], 100u));
+            cv_rect(x + 2, y + 7, 12, 2, skin_rgb(c[3], 100u));
         }
         cv_blit(0, 44);
         cv_begin(240, 52, C_BLACK);

@@ -1743,6 +1743,12 @@ static int32_t tab_pad(int32_t x, const char *s, int on, int32_t pad, int32_t ga
     lb_cap_tab(s, on);
 #endif
     int32_t w = text_w(&FONT_T, s) + 2 * pad;
+    if (RIB) {                           /* (K-GLITCH 0.2b, RIBBON: the page an orange pill, the others bare) */
+        if (on)
+            rbox(x, 0, w, 13, C_AMB);
+        cv_text(x + pad, 1, &FONT_T, s, on ? C_BLACK : C_GRAY);
+        return x + w + gap;
+    }
     cv_rect(x, 0, w, 13, on ? C_HI : C_BLOCK);
     cv_text(x + pad, 1, &FONT_T, s, on ? C_BLACK : C_GRAY);
     return x + w + gap;
@@ -2089,71 +2095,82 @@ static void draw_foot(const brk_status_t *st)
 {
     uint32_t i;
     char t[16];
+    int32_t fx0 = RIB ? 7 : 4;          /* (RIBBON: the texts clear of the card's colour) */
     draw_tabs();
     cv_begin(240, 48, C_BLACK);
     for (i = 0; i < 11u; i++) {          /* (LOAF BREAKER: each key's function, the layout's) */
         uint32_t f = bk_fn_shown(i);
         int on = f == BKF_ARP ? arpk_on(i) : bkf_lit(f, st);
         int32_t x = 2 + (int32_t)i * 21;
+        if (RIB)                         /* (RIBBON: rounded, the lit ones orange) */
+            rbox(x, 0, 20, 14, on ? C_AMB : C_BLOCK);
+        else
         cv_rect(x, 0, 20, 14, on ? C_HI : C_BLOCK);
         cv_text(x + (20 - text_w(&FONT_T, BKF_NAME[f])) / 2, 1, &FONT_T, BKF_NAME[f], on ? C_BLACK : C_GRAY);
+    }
+    if (RIB) {                           /* (K-GLITCH 0.2b, RIBBON: the four knobs on cards, each its colour on the left) */
+        static const uint16_t KC[4] = {RGB(84, 168, 255), RGB(72, 214, 140), RGB(255, 196, 48), RGB(255, 108, 64)};
+        for (i = 0; i < 4u; i++) {
+            rbox(1 + (int32_t)i * 60, 16, 57, 31, C_BLOCK);
+            cv_rect(2 + (int32_t)i * 60, 19, 2, 25, KC[i]);
+        }
     }
     for (i = 0; i < 4u; i++) {
         const char *name = knob_name((int)i);
         if (ui.sel_foot) {               /* LOAF BREAKER (0.258, FLEXOR): SEL held or locked (SEL x2): the knobs are
                                           * SEL + K1-K4's, their functions (EDIT KICK › KNOBS) and their values */
             selk_value(selk_fn(i), 0, t);
-            cv_text(4 + (int32_t)i * 60, 18, &FONT_T, SK_NAME[selk_fn(i)], C_AMB);
+            cv_text(fx0 + (int32_t)i * 60, 18, &FONT_T, SK_NAME[selk_fn(i)], C_AMB);
             if (text_w(&FONT_XS, t) > 54)
-                cv_text(2 + (int32_t)i * 60, 31, &FONT_T, t, C_WHITE);
+                cv_text((fx0 - 2) + (int32_t)i * 60, 31, &FONT_T, t, C_WHITE);
             else
-                cv_text(4 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
+                cv_text(fx0 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
             continue;
         }
         if (ui.shown >= 100 && set.novice)
             continue;                    /* (LOAF BREAKER: BEGINNER, a key held: no knob) */
         if (ui.shown >= 100) {           /* a white key held: its loop, or its slice's effect */
-            cv_text(4 + (int32_t)i * 60, 18, &FONT_T, ui.key_layer ? SLX_KNOB[i] : KEY_KNOB[i], C_HI);
+            cv_text(fx0 + (int32_t)i * 60, 18, &FONT_T, ui.key_layer ? SLX_KNOB[i] : KEY_KNOB[i], C_HI);
             if (ui.key_layer)
                 slx_knob_value(ui.shown - 100, (int)i, t);
             else
                 key_knob_value(ui.shown - 100, (int)i, t);
-            cv_text(4 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
+            cv_text(fx0 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
             continue;
         }
         if (ui.x2_focus && i == 0u && ui.shown < 100) {   /* (0.9.48: X2 held: K1 its LATCH) */
-            cv_text(4, 18, &FONT_T, "LATCH", C_HI);
-            cv_text(4, 30, &FONT_XS, set.half_mt_off & (8u << ((ui.x2_focus - 1u) % 3u)) ? "OFF" : "ON", C_WHITE);
+            cv_text(fx0, 18, &FONT_T, "LATCH", C_HI);
+            cv_text(fx0, 30, &FONT_XS, set.half_mt_off & (8u << ((ui.x2_focus - 1u) % 3u)) ? "OFF" : "ON", C_WHITE);
             continue;
         }
         if (ui.kil_focus && i == 0u && ui.shown < 100) {   /* LOAF BREAKER: KIL held: K1 its LATCH */
-            cv_text(4, 18, &FONT_T, "LATCH", C_HI);
-            cv_text(4, 30, &FONT_XS, set.half_mt_off & 4u ? "ON" : "OFF", C_WHITE);
+            cv_text(fx0, 18, &FONT_T, "LATCH", C_HI);
+            cv_text(fx0, 30, &FONT_XS, set.half_mt_off & 4u ? "ON" : "OFF", C_WHITE);
             continue;
         }
         if (ui.shown >= 0) {             /* a pad held: its own settings */
             name = pad_knob_name(ui.shown, (int)i);
             if (!name)
                 continue;
-            cv_text(4 + (int32_t)i * 60, 18, &FONT_T, name, C_HI);
+            cv_text(fx0 + (int32_t)i * 60, 18, &FONT_T, name, C_HI);
             pad_knob_value(ui.shown, (int)i, t);
-            cv_text(4 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
+            cv_text(fx0 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
             continue;
         }
         if (!trk_knob_ok((int)i) || !glo_knob_ok((int)i))   /* (LOAF BREAKER: BEGINNER, a knob it leaves out: blank) */
             continue;
-        cv_text(4 + (int32_t)i * 60, 18, &FONT_T, name, ui.page == PG_FX
+        cv_text(fx0 + (int32_t)i * 60, 18, &FONT_T, name, ui.page == PG_FX
                 ? (fx_sl(fx_foc())->on ? C_HI : C_DIM) : C_GRAY);
         knob_value((int)i, t);
         if (text_w(&FONT_XS, t) > 54)    /* (LOAF BREAKER, 0.238: a value wider than its column, GLUCKSMAN: the
                                           * smaller letters, from 2 px to the left, not into the next; 0.239: 54) */
-            cv_text(2 + (int32_t)i * 60, 31, &FONT_T, t, C_WHITE);
+            cv_text((fx0 - 2) + (int32_t)i * 60, 31, &FONT_T, t, C_WHITE);
         else
-            cv_text(4 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
+            cv_text(fx0 + (int32_t)i * 60, 30, &FONT_XS, t, C_WHITE);
         {                                /* (TEST: its arc, where there is room beside the value) */
             float nv = foot_norm((int)i);
             if (nv >= 0.0f && text_w(&FONT_XS, t) <= 38)
-                knob_arc(4 + (int32_t)i * 60 + 49, 37, nv);
+                knob_arc(fx0 + (int32_t)i * 60 + 49, 37, nv);
         }
     }
     cv_blit(0, 192);

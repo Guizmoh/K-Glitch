@@ -860,7 +860,7 @@ static void settings_defaults(void)
     set.wzoom = 3u;                      /* (the scrolling wave: a bar across, as it was) */
     led_defaults();                      /* (0.9.57: SYSTEM › LIGHTS) */
     bk_defaults();                       /* (LOAF BREAKER: the black keys: CHOPPAH) */
-    set.skin = 0x8Au;                    /* (LOAF BREAKER, 0.240: RED, common.c's SKIN_NEW | SKIN_DEFAULT) */
+    set.skin = 0x80u | 24u;              /* (K-GLITCH 0.2b: RIBBON, common.c SKIN_NEW | SKIN_RIBBON; LOAF BREAKER: RED) */
 #if defined(PLAT_HOST) && !defined(PLAT_WEB)
     set.novice = 0u;                     /* (TEST: the simulator's scenarios and the manual's screens see it all: EXPERT;
                                           * a scenario turns GLO MORE's K1 for BEGINNER) */
@@ -3300,3 +3300,5 @@ static void demo_leds(uint32_t now) { (void)now; }
 #include "ui/main.c"
 #undef C_WHITE                           /* (gfx.c's white again after the UI: skins, common.c) */
 #define C_WHITE 0xFFFFu
+#undef C_BLACK
+#define C_BLACK 0x0000u

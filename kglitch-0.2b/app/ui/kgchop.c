@@ -195,7 +195,7 @@ static void draw_kg(const brk_status_t *st)
     cv_begin(240, 52, C_BLACK);
     for (i = 0; i < 4u; i++) {
         int32_t x = 2 + (int32_t)i * 60;
-        cv_rect(x, 0, 56, 50, C_BLOCK);
+        if (RIB) rbox(x, 0, 56, 50, C_BLOCK); else cv_rect(x, 0, 56, 50, C_BLOCK);
         cv_text(x + 4, 3, &FONT_XS, N[i], C_GRAY);
         kg_value((int)i, t);
         if (i == 1u) {
@@ -210,7 +210,7 @@ static void draw_kg(const brk_status_t *st)
         uint32_t p = pg * 16u + i, c = kx2.kg_lane[p % 64u] & 63u;
         int32_t x = 2 + (int32_t)i * 15;
         int on = st->step >= 0 && kg_len() && (uint32_t)st->step % len == p;
-        cv_rect(x, 2, 13, 22, p == kg_cur ? C_WHITE : !c ? ((i & 3u) ? C_BLOCK : C_DIM) : c <= 16u ? C_AMB : c <= 32u ? C_HI : C_GRAY);
+        (RIB ? rbox : cv_rect)(x, 2, 13, 22, p == kg_cur ? C_WHITE : !c ? ((i & 3u) ? C_BLOCK : C_DIM) : c <= 16u ? C_AMB : c <= 32u ? C_HI : C_GRAY);
         if (c && x)
             cv_text(x + 1, 6, &FONT_XS, KGC_SHORT[c % KGC_N], p == kg_cur ? C_BLACK : C_BLACK);
         if (on)

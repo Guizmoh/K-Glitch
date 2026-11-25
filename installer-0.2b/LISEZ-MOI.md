@@ -25,9 +25,13 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
   - **OCT+ maintenu + touche blanche** : l'effet ARP de la touche (les 16 effets sur le mix) ;
   - OCT− / OCT+ tapé seul : le pitch du break, comme avant (à la relâche).
 
+## Apparence
+- **RIBBON** (le look de K-GLITCH) est l'apparence de base : fond ardoise, onglets en pastille orange, cartes arrondies, valeurs en cyan, une couleur par potard.
+- L'ancienne apparence de LOAF BREAKER reste au choix : **SYSTEM › SETUP, K1 SKIN** (ses 24 skins, RIBBON est le dernier). Un FM-1 qui avait déjà un skin enregistré le garde.
+
 ## Bon à savoir
 - Version de développement, testée dans le simulateur de fm1-base (scénarios et tests du moteur), **pas encore sur un FM-1 réel**.
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `83f491ff69820945fbbc2bc7ce385701ae1f66f92a8a7a9a3f83487f05682a18`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `616118ef12e54aba82ac1b6cb44d22d21bcb450afd3107739d9e5ab1ed7b306b`.
