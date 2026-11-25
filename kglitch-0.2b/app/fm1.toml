@@ -34,5 +34,6 @@ credits = "K-GLITCH 0.2b by Guizmoh, built on LOAF BREAKER by FLEXOR, on CHOPPAH
 # firmware.json (required by fm1-base for a --release build: the releases of loaf.yml)
 author = "Guizmoh (K-GLITCH), from LOAF BREAKER by FLEXOR and CHOPPAH by Laurens Profittlich"
 description = "K-GLITCH 0.2b: a break chopper and glitch destroyer for the M-VAVE FM-1, from FLEXOR's LOAF BREAKER (CHOPPAH): its breaks, kick and sequencer, with K-GLITCH's sixteen CHOP effects (stutter, repeats, reverse, skip, half time, scratch, backspin, tape stop...) live on the white keys and as a 64-step CHOP lane, the drums' settings replaced by the GLITCH page."
+screenshot = "docs/img/k_glitch_card.png"
 tags = ["drum-machine", "sampler"]
 install = "https://charlesvestal.github.io/fm1-base/install/"

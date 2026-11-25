@@ -6,7 +6,8 @@
  * (OFF 16 32 64). SEL + a white key: that effect out of the lane, at once. The lane and its settings live in kx2 (SAVE).
  * (Part of app.c's unity: included there in order.) */
 #define KG_TAG 0x6Bu                     /* (kx2.kg_*: valid) */
-static uint32_t kg_held;                 /* the white keys held on the page (bit: KGC_* - 1) */
+static uint32_t kg_held;
+static uint32_t WK_MASK;                 /* (the white keys' bits, kg_boot) */                 /* the white keys held on the page (bit: KGC_* - 1) */
 static uint8_t kg_cur;                   /* the step edited, 0..63 */
 static const uint8_t KG_LENS[4] = {0u, 16u, 32u, 64u};
 static uint32_t kg_len(void) { return KG_LENS[kx2.kg_len & 3u]; }
@@ -68,10 +69,44 @@ static void kg_turn(int i, int32_t d)
 }
 /* every input: on the page the white keys are the effects (SEL + a key: its effect out of the lane); off the page,
  * whatever was held lets go */
+/* K-GLITCH 0.2b: on HOME (PERFORM, GENERATOR, SPLIT, CHAOS) OCT- and OCT+ are SHIFTs for the white keys: OCT- held, a
+ * key holds its CHOP effect (as on the GLITCH page; REC playing writes it into the lane); OCT+ held, a key holds its ARP
+ * effect (the OVERLAY's sixteen). OCT tapped alone: the break's pitch, as before (at its release, main.c) */
+static uint8_t oct_used;                 /* an OCT held on HOME played a key: its release no pitch */
+static uint32_t oct_shift(uint32_t btn)  /* 1 OCT- alone held on HOME, 2 OCT+ alone, 0 none */
+{
+    uint32_t o = btn & (1u << B_OCTDN | 1u << B_OCTUP);
+    if (!HOME_PG(ui.page) || (ui.rec && !playing_now()))
+        return 0u;
+    return o == 1u << B_OCTDN ? 1u : o == 1u << B_OCTUP ? 2u : 0u;
+}
 static int kg_keys(uint32_t keys, uint32_t kdn, uint32_t btn)
 {
-    uint32_t i, was = kg_held;
-    if (ui.page != PG_KG) {
+    uint32_t i, was = kg_held, sh = oct_shift(btn), ov = 0u;
+    if (sh == 2u)                        /* OCT+: the ARP effects, while the keys are held */
+        for (i = 0; i < 16u; i++) {
+            if (keys >> WK[i] & 1u)
+                ov |= 1u << i;
+            if (kdn >> WK[i] & 1u) {
+                oct_used = 1u;
+                app_say(OVL_NAME[i], "OCT+ ARP");
+            }
+        }
+    if (ov != oct_ovl) {
+        oct_ovl = ov;
+        ovl_push();
+        ui.redraw |= RG_BLOCKS;
+    }
+    if (sh == 2u) {
+        if (kg_held) {
+            kg_held = 0u;
+            kg_push();
+        }
+        return 1;
+    }
+    if (sh == 1u && kdn & WK_MASK)
+        oct_used = 1u;
+    if (ui.page != PG_KG && sh != 1u) {
         if (kg_held) {
             kg_held = 0u;
             kg_push();
@@ -82,7 +117,7 @@ static int kg_keys(uint32_t keys, uint32_t kdn, uint32_t btn)
         kg_defaults();
     kg_held = 0u;
     for (i = 0; i < 16u; i++) {
-        if (kdn >> WK[i] & 1u && btn & 1u << B_SEL) {   /* SEL + a key: that effect out of the lane */
+        if (kdn >> WK[i] & 1u && btn & 1u << B_SEL && ui.page == PG_KG) {   /* SEL + a key: that effect out of the lane */
             uint32_t k, n = 0u;
             for (k = 0; k < 64u; k++)
                 if ((kx2.kg_lane[k] & 31u) == i + 1u)
@@ -96,7 +131,7 @@ static int kg_keys(uint32_t keys, uint32_t kdn, uint32_t btn)
         if (keys >> WK[i] & 1u && !(btn & 1u << B_SEL))
             kg_held |= 1u << i;
         if (kdn >> WK[i] & 1u && !(btn & 1u << B_SEL))
-            app_say(KGC_NAME[i + 1u], ui.rec && playing_now() ? "REC" : "");
+            app_say(KGC_NAME[i + 1u], ui.rec && playing_now() ? "REC" : sh == 1u ? "OCT- CHOP" : "");
     }
     if (kg_held != was) {
         kg_push();
@@ -166,6 +201,9 @@ static void draw_kg(const brk_status_t *st)
 }
 static void kg_boot(void)                /* (app.c, at power-on: a save without the lane: its defaults) */
 {
+    uint32_t i;
+    for (i = 0, WK_MASK = 0u; i < 16u; i++)
+        WK_MASK |= 1u << WK[i];
     if (kx2.kg_tag != KG_TAG)
         kg_defaults();
     kg_push();

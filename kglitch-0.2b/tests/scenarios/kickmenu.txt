@@ -72,44 +72,11 @@ wait 300
 expect kpage 1
 expect kview 0
 shot km_big.png
-press SEL
-tap EDIT
-release SEL
-wait 300
-expect page 14
-expect pbig 1
-press EDIT
-wait 700
-release EDIT
-wait 300
-expect page 14
-expect pbig 1
-expect kview 1
-press EDIT
-wait 700
-release EDIT
-wait 300
-expect page 14
-expect pbig 0
-shot km_snare.png
-press EDIT
-wait 700
-release EDIT
-wait 300
-expect page 14
-expect pbig 1
-tap EDIT
-wait 100
-turn SELECT 1 10
-wait 100
-turn SELECT 1 10
-wait 200
-expect page 14
-shot km_snare_again.png
+# (K-GLITCH 0.2b: the drums' big and classic views gone with their page: the GLITCH page instead)
 press SEL
 tap EDIT
 wait 100
 tap EDIT
 release SEL
 wait 300
-expect page 4
+expect page 3

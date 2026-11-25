@@ -364,6 +364,7 @@ static void input(void)
     uint32_t keys = plat_keys(), btn = plat_buttons(), now = plat_ms(), i, sel_now = btn >> B_SEL & 1u;
     uint32_t raw;                        /* (0.9.50: the keys as pressed; keys without SEL WHITE's held) */
     uint32_t kdn, kup, bdn;
+    int kgk;                             /* (K-GLITCH 0.2b: the white keys taken as effects this pass) */
     if (ui.sel_lock) {                   /* LOAF BREAKER: SEL locked (SEL x2): it counts as held, lit, until
                                           * pressed again (that press no click) */
         if (sel_now && !ui.sel_raw) {
@@ -444,10 +445,10 @@ static void input(void)
         if (kdn & 1u << WK[i] && btn & 1u << B_SEL && !drum_hear_key(i))
             ui.tap_combo = 1u;
     ovl_keys(keys, kdn);                 /* the OVERLAY page's white keys (and the latched ones, any page) */
-    if (kg_keys(keys, kdn, btn))         /* (K-GLITCH 0.2b: the GLITCH page: the white keys are the CHOP effects) */
-        kdn &= ~0u;
+    kgk = kg_keys(keys, kdn, btn);       /* (K-GLITCH 0.2b: the GLITCH page, or HOME with OCT- / OCT+ held: the white keys
+                                          * are effects, not slices) */
     for (i = 0; i < 16u; i++) {          /* white keys: slices, or a page's own */
-        if (ui.page == PG_OVL || ui.page == PG_KG)
+        if (ui.page == PG_OVL || kgk)
             continue;
         if (drum_hear_key(i)) {          /* LOAF BREAKER: the KICK menu (big or classic, its EQ and FX parts too) and the
                                           * drums' pages (big or classic), stopped: keys 1-5 play the KICK, SNARE, HAT,
@@ -1134,6 +1135,18 @@ static void input(void)
             changed();
             app_say("PITCH", "0");
         }
+    } else if (HOME_PG(ui.page)) {   /* (K-GLITCH 0.2b: HOME, OCT- / OCT+ are SHIFTs too: the pitch on a
+                                          * tap alone, at its release; a key played while it was held: none) */
+        uint32_t up = ui.btn & ~btn & (1u << B_OCTDN | 1u << B_OCTUP);
+        if (up && !oct_used && !(btn & (1u << B_OCTDN | 1u << B_OCTUP))) {
+            set.pitch = (int8_t)clamp(set.pitch + (up & 1u << B_OCTUP ? 1 : -1), -24, 24);
+            changed();
+            say_int("PITCH", set.pitch, " ST");
+        }
+        if (bdn & (1u << B_OCTDN | 1u << B_OCTUP))
+            app_say(bdn & 1u << B_OCTDN ? "OCT- SHIFT" : "OCT+ SHIFT", bdn & 1u << B_OCTDN ? "KEYS: CHOP FX" : "KEYS: ARP FX");
+        if (!(btn & (1u << B_OCTDN | 1u << B_OCTUP)))
+            oct_used = 0u;
     } else if (btn & (1u << B_OCTDN | 1u << B_OCTUP)) {
         int32_t dir = btn & 1u << B_OCTUP ? 1 : -1;
         if (bdn & (1u << B_OCTDN | 1u << B_OCTUP)) {
@@ -3875,7 +3888,7 @@ int app_expect(const char *what, int *got)
     v[11] = ui.help;
     v[12] = set.drums_chain;
     v[13] = ui.lobo_t != 0u;
-    v[14] = (int)(ovl_held | ovl_latched);
+    v[14] = (int)(ovl_held | ovl_latched | oct_ovl);
     v[15] = ovl_last;
     v[16] = set.ovl_latch;
     v[17] = (int)(set.pads.roll_pitch * 10.0f + (set.pads.roll_pitch < 0.0f ? -0.5f : 0.5f));

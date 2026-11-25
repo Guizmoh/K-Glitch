@@ -6,7 +6,8 @@
  * black key shares the effect touched last (0.9.27, ovl_last), and the white keys of the effects on are lit (seq.c
  * keys_lit). (Part of app.c's unity: included there in order.) */
 
-static uint32_t ovl_held, ovl_latched;   /* bit OV_*: held down on this page; switched on (LATCH) */
+static uint32_t ovl_held, ovl_latched;
+static uint32_t oct_ovl;                 /* (K-GLITCH 0.2b: HOME, OCT+ held: the ARP effects of the white keys held, ui/kgchop.c) */   /* bit OV_*: held down on this page; switched on (LATCH) */
 #define ovl_last (set.ovl_pad & 15u)     /* the effect touched last: K1 its amount (0.9.27, FLEXOR: the ARP key's own, one
                                           * effect for both: touched on the page, the key plays it; turned on the key's K1,
                                           * the page tunes it) */
@@ -21,7 +22,7 @@ static uint32_t ovl_pad_bits(void)       /* the ARP keys' effects on (0.9.45: ea
 }
 static void ovl_push(void)
 {
-    uint32_t on = ovl_held | ovl_latched | ovl_pad_bits();
+    uint32_t on = ovl_held | ovl_latched | ovl_pad_bits() | oct_ovl;
     ovl_set(on, set.ovl_amt, set.ovl_rate, set.ovl_sweep);
     kick_ovl = (uint8_t)(on >> OV_KX2 & 7u);   /* (0.9.55, FLEXOR: KICK X2, X4, TRI: the render's, as the black keys) */
 }

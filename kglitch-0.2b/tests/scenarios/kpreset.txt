@@ -34,8 +34,5 @@ tap EDIT
 release SEL
 wait 300
 expect page 14
-key w2 down
-wait 30
-expect aud_d 2
-key w2 up
+# (K-GLITCH 0.2b: on the GLITCH page the keys are the CHOP effects, not the drums heard)
 wait 300

@@ -1,3 +1,15 @@
+# K-GLITCH 0.2b
+
+**K-GLITCH 0.2b** (Guizmoh) is a fork of [LOAF BREAKER](https://github.com/FLEXOR-R/loaf-breaker) by FLEXOR, itself built
+on [CHOPPAH](https://github.com/profikid/fm1-break-choppah) by Laurens Profittlich and
+[fm1-base](https://github.com/charlesvestal/fm1-base) (MPL-2.0, credited below). It adds K-GLITCH's sixteen CHOP effects
+(app/dsp/brk.c `kg_apply`), the GLITCH page (app/ui/kgchop.c: the chop editor and its 64-step lane, where the snare,
+hat and clap settings were) and HOME's OCT- / OCT+ SHIFTs (OCT- + a white key: a CHOP effect, OCT+ + a white key: an ARP
+effect). The installer: `../installer-0.2b/`. Build: fm1-base at 317cb86 in `base/` (see scripts/bootstrap.sh), then
+`./build.sh --release 0.2`; `python3 tools/make_installer.py app/build/k-glitch-0.2.fwsc 0.2b OUT.html`.
+
+---
+
 <p align="center">
 <picture>
 <source media="(prefers-color-scheme: light)" srcset="docs/img/banner-light.png">
