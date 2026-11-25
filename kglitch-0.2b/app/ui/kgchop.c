@@ -5,18 +5,20 @@
  * K2 its effect, K3 the effect's AMOUNT (the held ones', and the lane's steps written from now), K4 the lane's length
  * (OFF 16 32 64). SEL + a white key: that effect out of the lane, at once. The lane and its settings live in kx2 (SAVE).
  * (Part of app.c's unity: included there in order.) */
-#define KG_TAG 0x6Bu                     /* (kx2.kg_*: valid) */
+#define KG_TAG 0x6Cu                     /* (0.2b: the lane's bytes bits 0-5 the effect (48), 6-7 its amount) */                     /* (kx2.kg_*: valid) */
 static uint32_t kg_held;
 static uint32_t WK_MASK;                 /* (the white keys' bits, kg_boot) */                 /* the white keys held on the page (bit: KGC_* - 1) */
 static uint8_t kg_cur;                   /* the step edited, 0..63 */
 static const uint8_t KG_LENS[4] = {0u, 16u, 32u, 64u};
 static uint32_t kg_len(void) { return KG_LENS[kx2.kg_len & 3u]; }
+#define kg_bank (kx2.kg_rsv % KGC_BANKS)   /* CHOP, DESTROY, BEAT: the white keys' sixteen (OCT- / OCT+ on the page) */
+static uint8_t kg_lb(uint32_t e) { return (uint8_t)(e ? e | (kx2.kg_amt * 3u / 100u) << 6 : 0u); }   /* a lane byte */
 static void kg_push(void)                /* the engine: the effect held (the last pressed), the lane */
 {
     uint32_t e = 0u, i;
     for (i = 0; i < 16u; i++)
         if (kg_held >> i & 1u)
-            e = i + 1u;
+            e = kg_bank * 16u + i + 1u;
     if (kx2.kg_tag != KG_TAG)
         brk_kg(0u, 0, 0u);
     else
@@ -27,6 +29,7 @@ static void kg_defaults(void)
     kx2.kg_tag = KG_TAG;
     kx2.kg_len = 1u;
     kx2.kg_amt = 60u;
+    kx2.kg_rsv = 0u;
     memset(kx2.kg_lane, 0, sizeof kx2.kg_lane);
 }
 static void kg_value(int i, char *t)
@@ -36,7 +39,7 @@ static void kg_value(int i, char *t)
     if (i == 0)
         int_text(kg_cur + 1, t);
     else if (i == 1)
-        text_cat(t, KGC_NAME[(c & 31u) % KGC_N]);
+        text_cat(t, KGC_NAME[(c & 63u) % KGC_N]);
     else if (i == 2) {
         int_text(kx2.kg_amt, t);
         text_cat(t, "%");
@@ -55,8 +58,8 @@ static void kg_turn(int i, int32_t d)
     if (i == 0)
         kg_cur = (uint8_t)clamp((int32_t)kg_cur + d, 0, (int32_t)(kg_len() ? kg_len() : 16u) - 1);
     else if (i == 1) {
-        int32_t e = clamp((int32_t)(*c & 31u) + (d > 0 ? 1 : -1), 0, KGC_N - 1);
-        *c = (uint8_t)(e ? (uint32_t)e | (uint32_t)(kx2.kg_amt * 7u / 100u) << 5 : 0u);
+        int32_t e = clamp((int32_t)(*c & 63u) + (d > 0 ? 1 : -1), 0, KGC_N - 1);
+        *c = kg_lb((uint32_t)e);
     } else if (i == 2)
         kx2.kg_amt = (uint8_t)clamp((int32_t)kx2.kg_amt + d * 2, 0, 100);
     else
@@ -120,9 +123,9 @@ static int kg_keys(uint32_t keys, uint32_t kdn, uint32_t btn)
         if (kdn >> WK[i] & 1u && btn & 1u << B_SEL && ui.page == PG_KG) {   /* SEL + a key: that effect out of the lane */
             uint32_t k, n = 0u;
             for (k = 0; k < 64u; k++)
-                if ((kx2.kg_lane[k] & 31u) == i + 1u)
+                if ((kx2.kg_lane[k] & 63u) == kg_bank * 16u + i + 1u)
                     kx2.kg_lane[k] = 0u, n++;
-            app_say(KGC_NAME[i + 1u], n ? "OUT OF THE LANE" : "NOT IN THE LANE");
+            app_say(KGC_NAME[kg_bank * 16u + i + 1u], n ? "OUT OF THE LANE" : "NOT IN THE LANE");
             ui.tap_combo = 1u;
             set_dirty = 1u;
             ui.redraw |= RG_BLOCKS;
@@ -131,7 +134,7 @@ static int kg_keys(uint32_t keys, uint32_t kdn, uint32_t btn)
         if (keys >> WK[i] & 1u && !(btn & 1u << B_SEL))
             kg_held |= 1u << i;
         if (kdn >> WK[i] & 1u && !(btn & 1u << B_SEL))
-            app_say(KGC_NAME[i + 1u], ui.rec && playing_now() ? "REC" : sh == 1u ? "OCT- CHOP" : "");
+            app_say(KGC_NAME[kg_bank * 16u + i + 1u], ui.rec && playing_now() ? "REC" : sh == 1u ? "OCT- SHIFT" : "");
     }
     if (kg_held != was) {
         kg_push();
@@ -140,10 +143,30 @@ static int kg_keys(uint32_t keys, uint32_t kdn, uint32_t btn)
     return 1;
 }
 /* every pass: REC while playing, the effect held goes into the lane on the step playing (the lane on: else 16) */
+static void kg_bank_turn(int32_t d)      /* OCT- / OCT+ on the GLITCH page: the white keys' bank */
+{
+    if (kx2.kg_tag != KG_TAG)
+        kg_defaults();
+    kx2.kg_rsv = (uint8_t)((kg_bank + KGC_BANKS + (d > 0 ? 1u : KGC_BANKS - 1u)) % KGC_BANKS);
+    set_dirty = 1u;
+    app_say("BANK", KGC_BANK_NAME[kg_bank]);
+    kg_push();
+    ui.redraw |= RG_BLOCKS | RG_FOOT;
+}
 static void kg_rec(const brk_status_t *st)
 {
     static int32_t last = -1;
     uint32_t e = 0u, i, len;
+    {                                    /* (the DESTROY bank's sounds: the ARP's RING, DIST, RADIO while they play) */
+        int32_t now = brk_kg_now();
+        uint32_t m = now == KGD_RING ? 1u << OV_RING : now == KGD_FUZZ ? 1u << OV_DIST : now == KGD_FILTER ? 1u << OV_RADIO : 0u;
+        if (!st->playing)
+            m = 0u;
+        if (m != kg_ovl) {
+            kg_ovl = m;
+            ovl_push();
+        }
+    }
     if (!kg_held || !ui.rec || !playing_now() || st->step < 0) {
         last = -1;
         return;
@@ -153,11 +176,11 @@ static void kg_rec(const brk_status_t *st)
     len = kg_len();
     for (i = 0; i < 16u; i++)
         if (kg_held >> i & 1u)
-            e = i + 1u;
+            e = kg_bank * 16u + i + 1u;
     if (st->step == last)
         return;
     last = st->step;
-    kx2.kg_lane[(uint32_t)st->step % len] = (uint8_t)(e | (uint32_t)(kx2.kg_amt * 7u / 100u) << 5);
+    kx2.kg_lane[(uint32_t)st->step % len] = kg_lb(e);
     kg_cur = (uint8_t)((uint32_t)st->step % len);
     set_dirty = 1u;
     kg_push();
@@ -177,24 +200,30 @@ static void draw_kg(const brk_status_t *st)
         kg_value((int)i, t);
         if (i == 1u) {
             t[0] = 0;
-            text_cat(t, KGC_SHORT[(kx2.kg_lane[kg_cur % 64u] & 31u) % KGC_N]);
+            text_cat(t, KGC_SHORT[(kx2.kg_lane[kg_cur % 64u] & 63u) % KGC_N]);
         }
         cv_text(x + 4, 30, &FONT_T, t, i == 3u && !kg_len() ? C_DIM : C_HI);
     }
     cv_blit(0, 88);
     cv_begin(240, 52, C_BLACK);
     for (i = 0; i < 16u; i++) {
-        uint32_t p = pg * 16u + i, c = kx2.kg_lane[p % 64u] & 31u;
+        uint32_t p = pg * 16u + i, c = kx2.kg_lane[p % 64u] & 63u;
         int32_t x = 2 + (int32_t)i * 15;
         int on = st->step >= 0 && kg_len() && (uint32_t)st->step % len == p;
-        cv_rect(x, 2, 13, 22, p == kg_cur ? C_WHITE : c ? C_AMB : (i & 3u) ? C_BLOCK : C_DIM);
+        cv_rect(x, 2, 13, 22, p == kg_cur ? C_WHITE : !c ? ((i & 3u) ? C_BLOCK : C_DIM) : c <= 16u ? C_AMB : c <= 32u ? C_HI : C_GRAY);
         if (c && x)
             cv_text(x + 1, 6, &FONT_XS, KGC_SHORT[c % KGC_N], p == kg_cur ? C_BLACK : C_BLACK);
         if (on)
             cv_rect(x, 25, 13, 3, C_WHITE);
     }
     t[0] = 0;
-    text_cat(t, now ? KGC_NAME[now % KGC_N] : kg_len() ? "LANE ON" : "KEYS: THE 16 CHOP FX");
+    if (now)
+        text_cat(t, KGC_NAME[now % KGC_N]);
+    else {
+        text_cat(t, "KEYS: ");
+        text_cat(t, KGC_BANK_NAME[kg_bank]);
+        text_cat(t, " (OCT-/+)");
+    }
     cv_text(6, 32, &FONT_XS, t, now ? C_WHITE : C_DIM);
     cv_text(130, 32, &FONT_XS, ui.rec ? "REC: HELD FX WRITTEN" : "SEL+KEY: FX OUT", ui.rec ? C_AMB : C_DIM);
     cv_blit(0, 140);

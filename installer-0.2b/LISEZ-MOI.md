@@ -10,14 +10,18 @@ K-GLITCH 0.2b est un nouveau firmware, construit sur **LOAF BREAKER** (FLEXOR), 
 Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_install.py k-glitch-0.2b.fwsc` (l'outil de fm1-base).
 
 ## Ce que K-GLITCH ajoute
-- **16 effets CHOP** (les destructeurs rythmiques de K-GLITCH, appliqués aux pas du break) : STUTTER, REPEAT 1/8, REPEAT 1/4, REVERSE X, SKIP, HALF TIME, DOUBLE, PITCH MAD, SCRATCH, BACKSPIN, SHUFFLE, GATE X, MICRO, TRIPLET, TAPE STOP, CHAOS.
-- **Page GLITCH** (EDIT, après le KICK : à la place des réglages snare / hat / clap) : l'éditeur de chop.
-  - Touches blanches : les 16 effets, tant qu'elles sont tenues.
-  - REC en lecture : l'effet tenu s'écrit dans le **couloir CHOP** (automation, 16 / 32 / 64 pas).
-  - K1 le pas, K2 son effet, K3 l'intensité, K4 la longueur du couloir (OFF / 16 / 32 / 64).
+- **48 effets rythmiques en 3 banques de 16** (ils réécrivent les pas du break : slice, sens, pitch, répétitions, trous) :
+  - **CHOP** : STUTTER, REPEAT 1/8, REPEAT 1/4, REVERSE X, SKIP, HALF TIME, DOUBLE, PITCH MAD, SCRATCH, BACKSPIN, SHUFFLE, GATE X, MICRO, TRIPLET, TAPE STOP, CHAOS ;
+  - **DESTROY** (le DRUM DESTROYER de K-GLITCH) : LOOP DESTROY, STUTTER X, GLITCH, SCRATCH X, REVERSE XX, PITCH MAD X, GATE XX, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUT, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS (RING MOD, FUZZ et FILTER CHAOS passent par les effets ARP RING, DIST et RADIO) ;
+  - **BEAT** (des programmes sur la mesure) : RND STUTTER, RND BAR, RND FILL, ROLL UP, SKIP 8TH, STAMMER, GATE 8, GATE 16, GATE 3-3-2, GATE RAMP, REV BEAT, REV OFFBEAT, SCRATCH BAR, SCRATCH CUT, TAPE STOP, HALF TIME.
+- **Page GLITCH** (EDIT, puis EDIT encore : à la place des réglages snare / hat / clap) : l'éditeur de chop.
+  - **OCT− / OCT+** : la banque des touches blanches (CHOP, DESTROY, BEAT), écrite en haut à droite.
+  - Touches blanches : les 16 effets de la banque, tant qu'elles sont tenues.
+  - REC en lecture : l'effet tenu s'écrit dans le **couloir** (automation de 16 / 32 / 64 pas ; les 3 banques s'y mélangent).
+  - K1 le pas, K2 son effet (les 48), K3 l'intensité, K4 la longueur du couloir (OFF / 16 / 32 / 64).
   - **SEL + touche blanche** : cet effet retiré du couloir, à la volée.
 - **Sur HOME, OCT− et OCT+ sont des SHIFT** :
-  - **OCT− maintenu + touche blanche** : l'effet CHOP de la touche ;
+  - **OCT− maintenu + touche blanche** : l'effet de la banque choisie sur la page GLITCH ;
   - **OCT+ maintenu + touche blanche** : l'effet ARP de la touche (les 16 effets sur le mix) ;
   - OCT− / OCT+ tapé seul : le pitch du break, comme avant (à la relâche).
 
@@ -26,4 +30,4 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `2e782202133e443dd3189ed97dcc6c01fe8babf4d82ec7263b5d5072eb20a49c`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `83f491ff69820945fbbc2bc7ce385701ae1f66f92a8a7a9a3f83487f05682a18`.

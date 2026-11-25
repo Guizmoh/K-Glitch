@@ -210,10 +210,20 @@ void brk_chaos(uint32_t packed);
  * none), bits 8-15 its amount 0..100; lane: the CHOP lane, a byte a step (bits 0-4 the effect, bits 5-7 its amount in
  * eighths, 0 = the live amount), len its steps (0: off). A held effect wins over the lane's */
 enum { KGC_NONE, KGC_STUTTER, KGC_REPEAT8, KGC_REPEAT4, KGC_REVERSE, KGC_SKIP, KGC_HALF, KGC_DOUBLE, KGC_PITCH,
-       KGC_SCRATCH, KGC_BACKSPIN, KGC_SHUFFLE, KGC_GATE, KGC_MICRO, KGC_TRIPLET, KGC_TAPESTOP, KGC_CHAOS, KGC_N };
+       KGC_SCRATCH, KGC_BACKSPIN, KGC_SHUFFLE, KGC_GATE, KGC_MICRO, KGC_TRIPLET, KGC_TAPESTOP, KGC_CHAOS,
+       /* the DESTROY bank (17..32), K-GLITCH's DRUM DESTROYER on the steps (RING MOD, FUZZ and FILTER CHAOS through the
+        * ARP effects: the app, brk_kg_ovl) */
+       KGD_LOOP, KGD_STUTX, KGD_GLITCH, KGD_SCRATCH, KGD_REVX, KGD_PITCH, KGD_GATEX, KGD_FILTER, KGD_BREP, KGD_BSKIP,
+       KGD_MICRO, KGD_STRETCH, KGD_RING, KGD_FUZZ, KGD_RAND, KGD_TOTAL,
+       /* the BEAT bank (33..48): programs over the bar, each 16th its own operation */
+       KGB_RSTUT, KGB_RBAR, KGB_RFILL, KGB_ROLL, KGB_SKIP8, KGB_STAMR, KGB_GATE8, KGB_GATE16, KGB_GATE332, KGB_GRAMP,
+       KGB_REVB, KGB_REVOFF, KGB_SCRBAR, KGB_SCRCUT, KGB_TSTOP, KGB_HALFT, KGC_N };
+#define KGC_BANKS 3u                     /* CHOP, DESTROY, BEAT: 16 effects each, the white keys */
+extern const char *const KGC_BANK_NAME[KGC_BANKS];
 extern const char *const KGC_NAME[KGC_N];
 extern const char *const KGC_SHORT[KGC_N];
-void brk_kg(uint32_t live, const uint8_t *lane, uint32_t len);
+void brk_kg(uint32_t live, const uint8_t *lane, uint32_t len);   /* (0.2b: lane bytes bits 0-5 the effect, 6-7 its
+                                          * amount in thirds, 0 = the live amount; live bits 0-5) */
 int32_t brk_kg_now(void);                /* the effect playing on this step (live or the lane's), 0 none */
 void brk_padset_defaults(brk_padset_t *p);
 void brk_padset(const brk_padset_t *p);  /* main loop; the render follows it at once, also while a pad is held */

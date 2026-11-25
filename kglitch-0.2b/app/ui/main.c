@@ -1124,7 +1124,11 @@ static void input(void)
     }
     /* OCT- / OCT+: pitch in semitones, repeating faster while held; both: back to 0. LOAF BREAKER: REC stopped (step by
      * step), OCT+ a REST (the step kept, the next one), OCT- a step back */
-    if (ui.rec && !playing_now()) {
+    if (ui.page == PG_KG) {              /* (K-GLITCH 0.2b: the GLITCH page, OCT- / OCT+ the bank, no pitch) */
+        if (bdn & (1u << B_OCTDN | 1u << B_OCTUP) &&
+            (btn & (1u << B_OCTDN | 1u << B_OCTUP)) != (1u << B_OCTDN | 1u << B_OCTUP))
+            kg_bank_turn(bdn & 1u << B_OCTUP ? 1 : -1);
+    } else if (ui.rec && !playing_now()) {
         if (bdn & 1u << B_OCTUP)
             rec_move(1);
         if (bdn & 1u << B_OCTDN)
@@ -1860,7 +1864,7 @@ static void draw_tabs(void)
     } else if (ui.page == PG_KG) {       /* (K-GLITCH 0.2b: SOUNDS' two: the KICK, the GLITCH page) */
         x = tab(x, "KICK", 0);
         x = tab(x, "GLITCH", 1);
-        text_cat(part, "CHOP FX");
+        text_cat(part, KGC_BANK_NAME[kg_bank]);   /* (the white keys' bank) */
     } else {                             /* SOUNDS: the drum, and its part */
         for (i = set.novice ? 0u : 1u; i < NDRUMS; i++)
             x = tab(x, DRUM_TAG[i], i == ui.einst);   /* (SN HH CP; BEGINNER: KICK first, SELECT round them) */
@@ -3888,7 +3892,7 @@ int app_expect(const char *what, int *got)
     v[11] = ui.help;
     v[12] = set.drums_chain;
     v[13] = ui.lobo_t != 0u;
-    v[14] = (int)(ovl_held | ovl_latched | oct_ovl);
+    v[14] = (int)(ovl_held | ovl_latched | oct_ovl | kg_ovl);
     v[15] = ovl_last;
     v[16] = set.ovl_latch;
     v[17] = (int)(set.pads.roll_pitch * 10.0f + (set.pads.roll_pitch < 0.0f ? -0.5f : 0.5f));
@@ -4115,7 +4119,7 @@ int app_expect(const char *what, int *got)
         uint32_t q;
         v[212] = brk_kg_now();
         for (q = 0, v[213] = 0; q < 64u; q++)
-            v[213] += (kx2.kg_lane[q] & 31u) != 0u;
+            v[213] += (kx2.kg_lane[q] & 63u) != 0u;
         v[214] = (int)kg_held;
     }
     v[161] = set.vinyl & 3u;             /* (0.9.54: VINYL BREAK's THRU, 0 BOTH 1 BREAK 2 KICK) */

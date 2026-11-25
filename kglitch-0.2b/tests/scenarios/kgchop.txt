@@ -42,3 +42,39 @@ wait 300
 expect kg_steps 0
 tap PLAY
 wait 300
+# 0.2b: the banks, OCT- / OCT+ on the page: DESTROY (17..32), BEAT (33..48)
+tap EDIT
+wait 300
+tap EDIT
+wait 300
+expect page 14
+tap PLAY
+wait 400
+tap OCT+
+wait 200
+key w0 down
+wait 500
+expect kg_now 17
+shot kg_destroy.png
+key w0 up
+key w12 down
+wait 500
+expect kg_now 29
+expect ovl_on 64
+key w12 up
+tap OCT+
+wait 200
+key w4 down
+wait 500
+expect kg_now 37
+expect bpitch 0
+shot kg_beat.png
+key w4 up
+tap OCT+
+wait 200
+key w0 down
+wait 300
+expect kg_now 1
+key w0 up
+tap PLAY
+wait 300

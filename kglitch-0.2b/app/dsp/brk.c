@@ -418,9 +418,20 @@ static int32_t follow_slice(const brk_break_t *b, uint32_t i)
 /* K-GLITCH 0.2b: the CHOP effects (brk.h KGC_*), applied in on_step to the step about to play */
 const char *const KGC_NAME[KGC_N] = {"OFF", "STUTTER", "REPEAT 1/8", "REPEAT 1/4", "REVERSE X", "SKIP", "HALF TIME",
                                      "DOUBLE", "PITCH MAD", "SCRATCH", "BACKSPIN", "SHUFFLE", "GATE X", "MICRO",
-                                     "TRIPLET", "TAPE STOP", "CHAOS"};
+                                     "TRIPLET", "TAPE STOP", "CHAOS",
+                                     "LOOP DESTROY", "STUTTER X", "GLITCH", "SCRATCH X", "REVERSE XX", "PITCH MAD X",
+                                     "GATE XX", "FILTER CHAOS", "BEAT REPEAT", "BEAT SKIP", "MICRO STUT", "TIME STRETCH",
+                                     "RING MOD", "FUZZ", "RANDOMIZER", "TOTAL CHAOS",
+                                     "RND STUTTER", "RND BAR", "RND FILL", "ROLL UP", "SKIP 8TH", "STAMMER", "GATE 8",
+                                     "GATE 16", "GATE 3-3-2", "GATE RAMP", "REV BEAT", "REV OFFBEAT", "SCRATCH BAR",
+                                     "SCRATCH CUT", "TAPE STOP B", "HALF TIME B"};
+const char *const KGC_BANK_NAME[KGC_BANKS] = {"CHOP", "DESTROY", "BEAT"};
 const char *const KGC_SHORT[KGC_N] = {"--", "STU", "R8", "R4", "REV", "SKP", "HLF", "DBL", "PIT", "SCR", "BSP", "SHF",
-                                      "GAT", "MIC", "TRI", "TAP", "CHS"};
+                                      "GAT", "MIC", "TRI", "TAP", "CHS",
+                                      "LPD", "STX", "GLT", "SCX", "RVX", "PMX", "GTX", "FLC", "BRP", "BSK", "MST", "STR",
+                                      "RNG", "FUZ", "RND", "TOT",
+                                      "RST", "RBR", "RFL", "RUP", "SK8", "STM", "G8", "G16", "332", "GRP", "RVB", "RVO",
+                                      "SCB", "SCC", "TSB", "HTB"};
 static volatile uint32_t p_kg;
 static const uint8_t *volatile p_kglane;
 static volatile uint32_t p_kglen;
@@ -433,16 +444,177 @@ BRK_COLD void brk_kg(uint32_t live, const uint8_t *lane, uint32_t len)
     p_kg = live;
 }
 BRK_COLD int32_t brk_kg_now(void) { return kg_fx; }
+/* the DESTROY and BEAT banks on step i (q its place in the bar, amt the AMOUNT, r a random word): 1 no hit */
+static uint32_t ch_hash(uint32_t a);
+static int kg_dest(const brk_break_t *b, uint32_t e, uint32_t i, uint32_t q, uint32_t amt, uint32_t r, int32_t *s,
+                   int *rev, float *pitch, uint32_t *ratch)
+{
+    int32_t h0 = kg_hist[(uint32_t)kg_start % BRK_MAX_STEPS], run = kg_run;
+    switch (e) {
+    case KGD_LOOP: {                     /* a loop of the steps it began on, shorter and shorter: 4, 2, 1, then rolled */
+        uint32_t len = run < 8 ? 4u : run < 12 ? 2u : 1u;
+        *s = kg_hist[((uint32_t)kg_start + (uint32_t)run % len) % BRK_MAX_STEPS];
+        if (run >= 12)
+            *ratch = run >= 16 ? 4u : 2u;
+        break;
+    }
+    case KGD_STUTX:                      /* the first slice in 4, rising a semitone a step */
+        *s = h0;
+        *ratch = 4u;
+        *pitch += (float)(run % (int32_t)(4u + amt / 10u));
+        break;
+    case KGD_GLITCH:                     /* each hit a different accident: a gap, backwards, in 4, a jump */
+        switch (r % 5u) {
+        case 0: if ((r >> 8) % 100u < amt) return 1; break;
+        case 1: *rev ^= 1; break;
+        case 2: *ratch = 4u; break;
+        case 3: *pitch += (float)((int32_t)((r >> 12) % 25u) - 12); break;
+        default: *s = fold(b, (int32_t)((r >> 16) % b->nslices)); break;
+        }
+        break;
+    case KGD_SCRATCH:                    /* the first slice, back and forth in 3, the pitch thrown +-7 */
+        *s = h0;
+        *rev = (int)(run & 1);
+        *ratch = 3u;
+        *pitch += (run & 1) ? -7.0f : 7.0f * (float)amt / 100.0f;
+        break;
+    case KGD_REVX:                       /* every hit backwards, each pair the same slice */
+        *rev = 1;
+        *s = kg_hist[((uint32_t)kg_start + (uint32_t)(run & ~1)) % BRK_MAX_STEPS];
+        break;
+    case KGD_PITCH:                      /* a jump of up to an octave each hit, rolled now and then */
+        *pitch += (float)((int32_t)(r % 25u) - 12) * (float)amt / 100.0f;
+        if ((r >> 10) % 4u == 0u)
+            *ratch = 2u;
+        break;
+    case KGD_GATEX:                      /* off, then in 2 */
+        if (i & 1u)
+            return 1;
+        *ratch = 2u;
+        break;
+    case KGD_FILTER:                     /* (the filter: the ARP's RADIO, the app); the hits shuffled a little */
+        if ((r >> 8) % 100u < amt / 3u)
+            *s = fold(b, (int32_t)((r >> 16) % b->nslices));
+        break;
+    case KGD_BREP:                       /* the beat it began on, again, in halves from AMOUNT 60 */
+        *s = kg_hist[((uint32_t)kg_start + (uint32_t)run % (amt > 60u && (run / 4) & 1 ? 2u : 4u)) % BRK_MAX_STEPS];
+        break;
+    case KGD_BSKIP: {                    /* whole beats left out, AMOUNT % of them */
+        uint32_t h = ch_hash((i / 4u) * 0x9E3779B9u + (uint32_t)kg_start);
+        if ((h & 0xFFu) * 100u < amt * 256u)
+            return 1;
+        break;
+    }
+    case KGD_MICRO:                      /* each hit in 4, every other one higher */
+        *ratch = 4u;
+        if (run & 1)
+            *pitch += 12.0f * (float)amt / 100.0f;
+        break;
+    case KGD_STRETCH:                    /* each slice twice: the break stretched, its pitch kept */
+        *s = kg_hist[((uint32_t)kg_start + (uint32_t)run / 2u) % BRK_MAX_STEPS] >= 0 && run < 8
+           ? kg_hist[((uint32_t)kg_start + (uint32_t)run / 2u) % BRK_MAX_STEPS]
+           : fold(b, follow_slice(b, (uint32_t)kg_start + (uint32_t)run / 2u) >= 0 ? follow_slice(b, (uint32_t)kg_start + (uint32_t)run / 2u) : *s);
+        break;
+    case KGD_RING:
+    case KGD_FUZZ:                       /* (the sound: the ARP's RING, DIST; the steps as they are) */
+        break;
+    case KGB_RSTUT: {                    /* in each beat, a 16th of the four stuttered (the same every bar) */
+        uint32_t h = ch_hash((i / 4u) * 0x2545F491u + (uint32_t)kg_start);
+        if (q % 4u == h % 4u) {
+            if (kg_hist[(i + BRK_MAX_STEPS - 1u) % BRK_MAX_STEPS] >= 0)
+                *s = kg_hist[(i + BRK_MAX_STEPS - 1u) % BRK_MAX_STEPS];
+            *ratch = amt > 50u ? 4u : 3u;
+        }
+        break;
+    }
+    case KGB_RFILL:                      /* the last beat of the bar: rolls and repeats */
+        if (q >= 12u) {
+            *s = kg_hist[(i - q + 8u + (q & 1u)) % BRK_MAX_STEPS];
+            *ratch = 2u + (r % 3u);
+        }
+        break;
+    case KGB_ROLL:                       /* the bar's second half rolls up: in 2, 3, 4, higher and higher */
+        if (q >= 8u) {
+            *ratch = q >= 14u ? 4u : q >= 11u ? 3u : 2u;
+            *pitch += (float)(q - 8u) * (float)amt / 60.0f;
+            *s = kg_hist[(i - q + 8u) % BRK_MAX_STEPS] >= 0 ? kg_hist[(i - q + 8u) % BRK_MAX_STEPS] : *s;
+        }
+        break;
+    case KGB_SKIP8:                      /* every other 8th out */
+        if (q % 4u >= 2u)
+            return 1;
+        break;
+    case KGB_STAMR:                      /* now and then the 16th before, again */
+        if ((r >> 8) % 100u < 25u + amt / 2u && kg_hist[(i + BRK_MAX_STEPS - 1u) % BRK_MAX_STEPS] >= 0)
+            *s = kg_hist[(i + BRK_MAX_STEPS - 1u) % BRK_MAX_STEPS];
+        break;
+    case KGB_GATE8:                      /* an 8th on, an 8th off */
+        if ((q / 2u) & 1u)
+            return 1;
+        break;
+    case KGB_GATE16:                     /* a 16th on, a 16th off */
+        if (q & 1u)
+            return 1;
+        break;
+    case KGB_GATE332:                    /* 3 + 3 + 2: the tresillo */
+        if (q % 8u != 0u && q % 8u != 3u && q % 8u != 6u)
+            return 1;
+        break;
+    case KGB_GRAMP:                      /* more and more left out through the bar */
+        if ((r >> 8) % 16u < q * amt / 100u)
+            return 1;
+        break;
+    case KGB_REVB:                       /* every other beat backwards */
+        if ((q / 4u) & 1u)
+            *rev ^= 1;
+        break;
+    case KGB_REVOFF:                     /* the offbeat 8ths backwards */
+        if (q % 4u >= 2u)
+            *rev ^= 1;
+        break;
+    case KGB_SCRBAR:                     /* beats 2 and 4 scratched */
+        if ((q / 4u) & 1u) {
+            *s = kg_hist[(i - q % 4u) % BRK_MAX_STEPS] >= 0 ? kg_hist[(i - q % 4u) % BRK_MAX_STEPS] : *s;
+            *rev = (int)(q & 1u);
+            *ratch = 2u;
+            *pitch += (q & 1u) ? -5.0f : 5.0f;
+        }
+        break;
+    case KGB_SCRCUT:                     /* scratches cut by the fader: a 16th on, a 16th off */
+        if (q & 1u)
+            return 1;
+        *rev = (int)((q / 2u) & 1u);
+        *ratch = 2u;
+        *pitch += (q / 2u) & 1u ? -4.0f : 4.0f;
+        break;
+    case KGB_TSTOP:                      /* the bar slows down, the last beat stopped */
+        if (q >= 12u)
+            return 1;
+        *pitch -= (float)q * (float)(1u + amt / 30u);
+        break;
+    case KGB_HALFT: {                    /* the bar at half speed */
+        int32_t f = follow_slice(b, i - q + q / 2u);
+        if (q & 1u)
+            return 1;
+        if (f >= 0)
+            *s = fold(b, f);
+        break;
+    }
+    default:
+        break;
+    }
+    return 0;
+}
 /* step i is about to play slice *s: the effect in force rewrites it. 0: play it, 1: no hit (a gap) */
 static int kg_apply(const brk_break_t *b, uint32_t i, int32_t *s, int *rev, float *pitch, uint32_t *ratch)
 {
-    uint32_t live = p_kg, e = live & 31u, amt = live >> 8 & 0xFFu, n = loop_steps(b), r;
+    uint32_t live = p_kg, e = live & 63u, amt = live >> 8 & 0xFFu, n = loop_steps(b), r, q = i % BRK_STEPS_PER_BAR;
     const uint8_t *lane = p_kglane;
     if (!e && lane && p_kglen) {
         uint32_t c = lane[i % p_kglen];
-        e = c & 31u;
-        if (c >> 5)
-            amt = (c >> 5) * 100u / 7u;
+        e = c & 63u;
+        if (c >> 6)
+            amt = (c >> 6) * 100u / 3u;
     }
     if (amt > 100u)
         amt = 100u;
@@ -462,7 +634,18 @@ static int kg_apply(const brk_break_t *b, uint32_t i, int32_t *s, int *rev, floa
     if (e == KGC_CHAOS) {                /* each step another of the fifteen */
         e = 1u + (r >> 8) % (KGC_CHAOS - 1u);
         r = brk_rand(&rng);
+    } else if (e == KGD_RAND) {          /* DESTROY's RANDOMIZER: one of the bank's first twelve each step */
+        e = KGD_LOOP + (r >> 8) % 12u;
+        r = brk_rand(&rng);
+    } else if (e == KGD_TOTAL) {         /* TOTAL CHAOS: any of the 48 but the random ones, each step */
+        do e = 1u + (r >> 8) % (KGC_N - 1u), r = brk_rand(&rng); while (e == KGC_CHAOS || e == KGD_RAND || e == KGD_TOTAL);
+    } else if (e == KGB_RBAR) {          /* RND BAR: each 16th of the bar its own of the BEAT bank, the same every bar */
+        uint32_t h = ch_hash(q * 0x9E3779B9u + (uint32_t)kg_start * 0x85EBCA6Bu);
+        e = KGB_RSTUT + 2u + h % 14u;
+        if (e == KGB_RBAR) e = KGB_STAMR;
     }
+    if (e >= KGD_LOOP && kg_dest(b, e, i, q, amt, r, s, rev, pitch, ratch))
+        return 1;
     switch (e) {
     case KGC_STUTTER:                    /* the slice it began on, again and again, in 2 (or 4) */
         *s = kg_hist[(uint32_t)kg_start % BRK_MAX_STEPS] >= 0 ? kg_hist[(uint32_t)kg_start % BRK_MAX_STEPS] : *s;
