@@ -64,6 +64,9 @@ expect rsnare >0
 expect page 13
 tap HOME
 wait 150
+expect page 14
+tap HOME
+wait 150
 expect page 0
 tap HOME
 wait 150
@@ -72,6 +75,9 @@ wait 150
 tap HOME
 wait 150
 expect page 13
+tap HOME
+wait 150
+expect page 14
 tap HOME
 wait 150
 expect page 0

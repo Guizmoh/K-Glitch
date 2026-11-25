@@ -79,7 +79,7 @@ static uint8_t oct_used;                 /* an OCT held on HOME played a key: it
 static uint32_t oct_shift(uint32_t btn)  /* 1 OCT- alone held on HOME, 2 OCT+ alone, 0 none */
 {
     uint32_t o = btn & (1u << B_OCTDN | 1u << B_OCTUP);
-    if (!HOME_PG(ui.page) || (ui.rec && !playing_now()))
+    if (!HOME_PG(ui.page) || ui.page == PG_KG || (ui.rec && !playing_now()))
         return 0u;
     return o == 1u << B_OCTDN ? 1u : o == 1u << B_OCTUP ? 2u : 0u;
 }

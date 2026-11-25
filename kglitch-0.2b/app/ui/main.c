@@ -792,7 +792,9 @@ static void input(void)
         ui.home_hold = 0u;
         if (!ui.home_combo && HOME_PG(ui.page)) {
             ui.page = ui.page == PG_HOME ? PG_GEN : ui.page == PG_GEN && !set.novice ? PG_SPLIT :
-                      (ui.page == PG_GEN || ui.page == PG_SPLIT) && !tut_on() ? PG_CHAOS : PG_HOME;   /* (0.9.75:
+                      (ui.page == PG_GEN || ui.page == PG_SPLIT) && !tut_on() ? PG_CHAOS :
+                      ui.page == PG_CHAOS && !tut_on() ? PG_KG : PG_HOME;   /* (K-GLITCH 0.2b: then GLITCH, the
+                                          * rhythmic effects, last; HOME there: PERFORM) */   /* (0.9.75:
                                           * CHAOS last; not while the TUTORIAL runs, its steps say PERFORM again) */   /* (0.9.56,
                                           * FLEXOR: two tabs, SETTINGS in SYSTEM; 0.9.71, EXPERT: SPLIT third) */
             ui.redraw |= RG_FOOT | RG_BLOCKS;
@@ -1802,7 +1804,8 @@ static void draw_tabs(void)
         x = tab(x, "GENERATOR", ui.page == PG_GEN);
         if (!set.novice)
             x = tab(x, "SPLIT", ui.page == PG_SPLIT);
-        tab(x, "CHAOS", ui.page == PG_CHAOS);   /* (0.9.75) */
+        x = tab(x, "CHAOS", ui.page == PG_CHAOS);   /* (0.9.75) */
+        tab(x, "GLITCH", 0);             /* (K-GLITCH 0.2b: HOME again after CHAOS) */
     }
     else if (ui.page == PG_HSET)         /* (0.9.56: SYSTEM's tabs, SETTINGS lit) */
         for (i = 0; i < NGLO; i++)

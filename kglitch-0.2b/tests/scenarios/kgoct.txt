@@ -37,3 +37,23 @@ wait 200
 expect bpitch 0
 tap PLAY
 wait 300
+# HOME's tabs: PERFORM, GENERATOR, SPLIT, CHAOS, then GLITCH (the rhythmic effects); HOME there: PERFORM
+tap EDIT
+wait 300
+tap HOME
+wait 300
+expect page 0
+tap HOME
+wait 200
+tap HOME
+wait 200
+tap HOME
+wait 200
+expect page 13
+tap HOME
+wait 300
+expect page 14
+shot kg_home_glitch.png
+tap HOME
+wait 300
+expect page 0

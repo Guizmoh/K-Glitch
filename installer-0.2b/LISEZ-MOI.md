@@ -14,7 +14,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
   - **CHOP** : STUTTER, REPEAT 1/8, REPEAT 1/4, REVERSE X, SKIP, HALF TIME, DOUBLE, PITCH MAD, SCRATCH, BACKSPIN, SHUFFLE, GATE X, MICRO, TRIPLET, TAPE STOP, CHAOS ;
   - **DESTROY** (le DRUM DESTROYER de K-GLITCH) : LOOP DESTROY, STUTTER X, GLITCH, SCRATCH X, REVERSE XX, PITCH MAD X, GATE XX, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUT, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS (RING MOD, FUZZ et FILTER CHAOS passent par les effets ARP RING, DIST et RADIO) ;
   - **BEAT** (des programmes sur la mesure) : RND STUTTER, RND BAR, RND FILL, ROLL UP, SKIP 8TH, STAMMER, GATE 8, GATE 16, GATE 3-3-2, GATE RAMP, REV BEAT, REV OFFBEAT, SCRATCH BAR, SCRATCH CUT, TAPE STOP, HALF TIME.
-- **Page GLITCH** (EDIT, puis EDIT encore : à la place des réglages snare / hat / clap) : l'éditeur de chop.
+- **Page GLITCH** : le dernier onglet de HOME (HOME, HOME… jusqu'à GLITCH) ; en EXPERT aussi EDIT, puis EDIT encore (à la place des réglages snare / hat / clap). C'est l'éditeur de chop.
   - **OCT− / OCT+** : la banque des touches blanches (CHOP, DESTROY, BEAT), écrite en haut à droite.
   - Touches blanches : les 16 effets de la banque, tant qu'elles sont tenues.
   - REC en lecture : l'effet tenu s'écrit dans le **couloir** (automation de 16 / 32 / 64 pas ; les 3 banques s'y mélangent).
@@ -34,4 +34,4 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `616118ef12e54aba82ac1b6cb44d22d21bcb450afd3107739d9e5ab1ed7b306b`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `e966254474d75d17149d11883f00b521f3f0bc4ec3447188e1aaf5ea7c5d81c4`.
