@@ -1,0 +1,62 @@
+# LOAF BREAKER: the roll pads' THRU (MIX › SENDS K4 since 0.9.40, FLEXOR; K2 while held before): KICK, the kick rolled
+# at the pad's rate (R16: 16ths), the break left alone; BOTH, the two; BREAK, as ever. K2 while a roll is held: the
+# break's filter, HOME's (roll and filter at once). SEL + the pad: the kick alone for that press until 0.9.55; 0.9.56, FLEXOR: with no SEL BLACK function, the roll as
+# without SEL (THRU BREAK here: the kick not rolled).
+# The sound: k_roll.wav
+#   app/build/host/loaf-breaker_host tests/scenarios/kroll.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 200
+turn K3 1 10
+tap HOME
+wait 200
+tap PLAY
+wait 1500
+wav k_roll.wav
+expect khits >0
+wait 1412
+expect khits <5
+tap LFO
+wait 200
+turn SELECT 1 10
+wait 200
+expect mpage 1
+turn K4 1 10
+wait 100
+expect rthru 1
+shot k_roll_sends.png
+key b1 down
+wait 100
+expect khits <9
+turn K2 -3 10
+wait 100
+expect brk_dj <0
+expect rthru 1
+wait 1312
+expect khits >13
+shot k_roll_kick.png
+key b1 up
+wait 300
+turn K4 1 10
+wait 100
+expect rthru 2
+key b1 down
+wait 1200
+key b1 up
+wait 300
+turn K4 -2 10
+wait 100
+expect rthru 0
+expect khits >0
+press SEL
+key b1 down
+wait 1412
+expect khits <3
+key b1 up
+release SEL
+wait 600
+expect help 0
+shot k_roll_sel.png
+wait 700
+wavstop
+tap PLAY

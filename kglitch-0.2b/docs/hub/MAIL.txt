@@ -1,0 +1,28 @@
+Subject: The Firmware Hub: my firmware
+
+Hi Sven,
+
+Here is CHOPPAH, a firmware for the M-VAVE FM-1.
+
+Firmware name: CHOPPAH
+Maker: Laurens Profittlich
+
+Repository: https://github.com/profikid/fm1-break-choppah
+Release: v0.89
+Package: choppah-0.89.fwsc
+Identity: FM-1_86
+Licence: MPL-2.0, the complete source is in the repository
+
+What it does: it is in the fmhub.json in the repository root, as the hub prefers.
+
+Tested on a real FM-1: yes. Installed from the official V15 and from another
+firmware, and another firmware installs again afterwards. It keeps its own store
+(the settings, the panel, the Bluetooth keys and its 16 patterns) and does not
+read other firmwares' projects or samples. The USB port shows up as
+"CHOPPAH FM-1".
+
+The browser version, the manual and the picture are in the fmhub.json too, and
+the card's text can be changed there at any time.
+
+Thanks,
+Laurens Profittlich

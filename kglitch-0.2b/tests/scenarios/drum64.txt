@@ -1,0 +1,53 @@
+# LOAF BREAKER (0.9.30, FLEXOR): the snare, the hat and the clap up to 64 steps too. SEQ: ALGORITHM to the snare's lane,
+# (past the kick's two bars: every drum 32 to start, 0.9.32) K4 LENGTH right twice: 64 steps (16, 32, 64); ALGORITHM twice: its bar 3 (S3); key 1 there: its step 33; SAVE; after a
+# reboot, still 64 steps and step 33 on; played (its four bars).
+#   app/build/host/loaf-breaker_host tests/scenarios/drum64.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 200
+expect page 6
+expect seq_lane 2
+turn ALGO 2 80
+wait 150
+expect seq_lane 6
+turn K4 -3 10
+wait 150
+expect lane_steps 16
+turn K4 1 10
+wait 150
+expect lane_steps 32
+turn K4 1 10
+wait 150
+expect lane_steps 64
+turn ALGO 2 80
+wait 150
+expect seq_lane 8
+key w0 down
+wait 60
+key w0 up
+wait 150
+expect lane_mask 1
+key w8 down
+wait 60
+key w8 up
+wait 150
+expect lane_mask 257
+shot d64_snare.png
+turn K4 1 10
+wait 100
+expect lane_steps 64
+tap SAVE
+wait 600
+reboot
+wait 4200
+tap SEQ
+wait 200
+# (the simulator keeps SEQ's lane over a reboot: S3)
+expect seq_lane 8
+expect lane_steps 64
+expect lane_mask 257
+tap PLAY
+wait 3000
+shot d64_play.png
+tap PLAY
+wait 200

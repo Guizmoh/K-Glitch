@@ -1,0 +1,44 @@
+# LOAF BREAKER: HALF SPEED's LATCH (K3 while its key is held). Held: on, let go: off; LATCH on while held: it stays
+# on when let go; a press: off; a press: on; LATCH off (held): off at its release.
+#   app/build/host/loaf-breaker_host tests/scenarios/halflatch.txt app/build/scenarios
+wait 4200
+# (0.9.53: HALF SPEED in no FLEXOR LAYOUT any more: CHOPPAH's, its 6th key)
+tap ARP
+wait 200
+turn SELECT 1 10
+wait 200
+turn K1 -1 10
+wait 200
+expect bk_pre 0
+tap HOME
+wait 200
+tap PLAY
+wait 500
+key b5 down
+wait 200
+expect half_on 1
+key b5 up
+wait 200
+expect half_on 0
+key b5 down
+wait 100
+turn K3 1 10
+wait 100
+shot h_latch.png
+key b5 up
+wait 300
+expect half_on 1
+key b5 down
+key b5 up
+wait 300
+expect half_on 0
+key b5 down
+key b5 up
+wait 300
+expect half_on 1
+key b5 down
+turn K3 -1 10
+key b5 up
+wait 300
+expect half_on 0
+tap PLAY

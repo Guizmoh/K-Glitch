@@ -1,0 +1,53 @@
+# LOAF BREAKER (0.9.71, FLEXOR: "rajoute les deux"): KICK › TAIL K1 MODE CLASSIC, CLEAN, SPLIT (the body dirty, the tail
+# a clean sine on the SUB's note), DIRTY (the drive low on the hit, rising along the tail); TAIL + K4 their own setting,
+# SPLIT AT 30 .. 600 ms, DIRT RISE 50 .. 2000 ms, half way when the mode is picked; nothing for CLASSIC and CLEAN.
+#   app/build/host/loaf-breaker_host tests/scenarios/tailmode.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 15
+expect kl_mode 0
+turn K1 1 60
+wait 200
+expect kl_mode 1
+turn K1 1 60
+wait 200
+expect kl_mode 2
+expect kl_amt 50
+shot tailsplit.png
+turn K1 1 60
+wait 200
+expect kl_mode 3
+expect kl_amt 50
+turn K1 3 60
+wait 200
+expect kl_mode 3
+turn ALGO 1 10
+wait 300
+expect kpage 16
+turn K4 10 60
+wait 200
+expect kl_amt 70
+shot taildirty.png
+turn K4 -40 60
+wait 200
+expect kl_amt 0
+turn ALGO -1 10
+wait 300
+expect kpage 15
+turn K1 -1 60
+wait 200
+expect kl_mode 2
+expect kl_amt 50
+turn K1 -2 60
+wait 200
+expect kl_mode 0
+turn ALGO 1 10
+wait 300
+turn K4 5 60
+wait 200
+expect kl_amt 50

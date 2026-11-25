@@ -1,0 +1,59 @@
+# LOAF BREAKER: an effect's settings kept. FX slot 1 (CRUNCH): K1 down, PRESETS to the next effect and back: K1 as it
+# was left; SEL + REC: CRUNCH's starting settings; SEL + REC again: back (undone). the KICK menu's DIRT, SUB FX: DRIVE, its
+# GAIN up, to CRUNCH and back: kept; SEL + REC: reset.
+#   app/build/host/loaf-breaker_host tests/scenarios/fxmem.txt app/build/scenarios
+wait 4200
+tap FX
+wait 300
+expect page 2
+expect fx_focus 0
+expect fx_p1 57
+turn K1 -10 10
+wait 100
+expect fx_p1 37
+turn PRESET 1 10
+wait 100
+turn PRESET -1 10
+wait 100
+expect fx_p1 37
+press SEL
+tap REC
+release SEL
+wait 600
+expect fx_p1 57
+shot m_reset.png
+press SEL
+tap REC
+release SEL
+wait 600
+expect fx_p1 37
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 200
+turn ALGO 3 10
+wait 200
+expect kpage 2
+turn K1 1 10
+turn K2 10 10
+wait 100
+expect kfx 1
+expect kfx_fa 70
+turn K1 1 10
+wait 100
+expect kfx 2
+expect kfx_fa 50
+turn K1 -1 10
+wait 100
+expect kfx_fa 70
+press SEL
+tap REC
+release SEL
+wait 600
+expect kfx_fa 50
+shot m_kreset.png

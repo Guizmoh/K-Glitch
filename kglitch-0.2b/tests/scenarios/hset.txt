@@ -1,0 +1,26 @@
+# LOAF BREAKER (0.9.2, FLEXOR): HOME's third tab SETTINGS: K1 VIEW (WAVEFORM / SLICES), K2 WAVE TYPE, K3 WAVE ZOOM,
+# K4 BREAK TIME; HOME again: PERFORM, in the view picked.
+#   app/build/host/loaf-breaker_host tests/scenarios/hset.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+expect page 1
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 300
+expect page 11
+shot hset.png
+turn K1 1 10
+wait 200
+turn K2 1 10
+turn K3 1 10
+turn K4 1 10
+wait 300
+expect bhalf 1
+expect wstyle 1
+shot hset2.png
+tap HOME
+wait 300
+expect page 0
+shot home_slices.png

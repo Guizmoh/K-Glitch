@@ -1,0 +1,38 @@
+# LOAF BREAKER (0.9.26, FLEXOR): each kick its own FX section; in the KICK menu PRESETS the kick (0.9.29, FLEXOR: in the FX
+# section PRESETS the effect, SEL + PRESETS the kick). KICK 4: FX1 a DRIVE; PRESETS: KICK 5, its FX1 empty; back: KICK 4's DRIVE.
+#   app/build/host/loaf-breaker_host tests/scenarios/kfxkick.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+turn SELECT 4 10
+wait 300
+expect page 2
+expect fx_focus 4
+expect kslot 3
+turn PRESET 3 10
+wait 300
+expect fx_on 1
+expect fx_type 3
+shot kk_drive.png
+press SEL
+turn PRESET 1 10
+release SEL
+wait 300
+expect kslot 4
+expect page 2
+expect fx_type 0
+shot kk_k5.png
+press SEL
+turn PRESET -1 10
+release SEL
+wait 300
+expect kslot 3
+expect fx_type 3
+turn SELECT 2 10
+wait 300
+turn ALGO -1 10
+wait 300
+expect page 10
+turn PRESET 2 10
+wait 200
+expect kslot 3

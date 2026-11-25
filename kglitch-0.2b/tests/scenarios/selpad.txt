@@ -1,0 +1,30 @@
+# LOAF BREAKER (0.9.57, FLEXOR): SEL held or locked and a black key held: the key's own knobs win, on the foot and on
+# K1-K4 (here R8's RATE), not SEL + K1-K4's functions (K1 DRIVE); the key let go, SEL + K1 is DRIVE again.
+#   app/build/host/loaf-breaker_host tests/scenarios/selpad.txt app/build/scenarios
+wait 4200
+tap PLAY
+wait 500
+tap SEL
+wait 100
+tap SEL
+wait 300
+expect sel_lock 1
+expect intensity 85
+expect rdiv0 1
+key b0 down
+wait 400
+turn K1 2 10
+wait 300
+expect rdiv0 2
+expect intensity 85
+shot sel_pad.png
+key b0 up
+wait 400
+turn K1 2 10
+wait 300
+expect rdiv0 2
+expect intensity >85
+shot sel_pad_up.png
+tap SEL
+wait 300
+expect sel_lock 0

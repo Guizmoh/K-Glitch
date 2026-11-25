@@ -1,0 +1,66 @@
+# LOAF BREAKER 0.9.26 (FLEXOR): the black keys with a knob free get a K4 LATCH (REVERSE, FREEZE, GATE, RANDOM; as
+# HALF SPEED's K3): ON, a press switches it on, the next off (turned on while held: it stays on); off again while
+# latched: let go, off. FILTER: no LATCH, its K4 THRU: BREAK (as ever), DRUMS (the kick and the drums), BOTH.
+# On the CHOPPAH layout (ARP › BLACK KEYS, K1): GATE is key b7, FILTER b9.
+#   app/build/host/loaf-breaker_host tests/scenarios/padlatch.txt app/build/scenarios
+wait 4200
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+turn K1 -1 10
+wait 200
+expect bk_pre 0
+tap HOME
+wait 300
+tap PLAY
+wait 500
+key b7 down
+wait 100
+expect pads 128
+turn K4 1 10
+wait 100
+shot k_gate_latch.png
+key b7 up
+wait 300
+expect pads 128
+expect padlat 128
+key b7 down
+wait 50
+key b7 up
+wait 300
+expect pads 0
+expect padlat 0
+key b7 down
+wait 50
+key b7 up
+wait 300
+expect pads 128
+key b7 down
+wait 50
+turn K4 -1 10
+wait 100
+key b7 up
+wait 300
+expect pads 0
+expect padlat 0
+key b7 down
+wait 100
+expect pads 128
+key b7 up
+wait 200
+expect pads 0
+expect fthru 0
+key b9 down
+wait 100
+turn K4 1 10
+wait 100
+expect fthru 1
+turn K4 1 10
+wait 200
+expect fthru 2
+shot k_filter_thru.png
+key b9 up
+wait 200
+expect pads 0
+tap PLAY

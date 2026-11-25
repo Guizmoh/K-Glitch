@@ -1,0 +1,25 @@
+# LOAF BREAKER (0.9.57, FLEXOR): SYSTEM › SETUP K2 KICK EQ (EXPERT): left, every kick's EQ left out (flat), the EQs
+# themselves untouched; right, ON again. Never saved: ON at every start, whatever was left.
+#   app/build/host/loaf-breaker_host tests/scenarios/keqflat.txt app/build/scenarios
+wait 4200
+expect keqflat 0
+tap GLO
+wait 200
+turn SELECT 1 10
+wait 300
+expect gpage 2
+turn K2 -1 10
+wait 300
+expect keqflat 1
+shot keq_flat.png
+turn K2 1 10
+wait 300
+expect keqflat 0
+turn K2 -1 10
+wait 300
+expect keqflat 1
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect keqflat 0

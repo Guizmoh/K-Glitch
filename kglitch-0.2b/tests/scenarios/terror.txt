@@ -1,0 +1,45 @@
+# LOAF BREAKER: four on the floor on the kick (SEQ, K3 right; pattern 2 eighths), TERROR at 60 % (SEL + K4),
+# playing; then SEL three times: the BUILD (four bars: the roll speeding up, the high-pass, the riser), then the DROP
+# into pattern 2 (the flash). The sound of it all: t_build_drop.wav
+#   app/build/host/loaf-breaker_host tests/scenarios/terror.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 300
+turn K3 1 10
+turn PRESET 1 10
+wait 200
+turn K3 2 10
+turn PRESET -1 10
+wait 200
+tap HOME
+wait 300
+press SEL
+turn K4 30 10
+release SEL
+wait 200
+shot t_terror.png
+tap PLAY
+wait 1500
+wav t_build_drop.wav
+wait 1400
+press SEL
+tap ENV
+release SEL
+wait 2800
+shot t_build1.png
+wait 2700
+shot t_build2.png
+wait 300
+shot t_drop1.png
+wait 400
+shot t_drop2.png
+wait 400
+shot t_drop3.png
+wait 400
+shot t_drop4.png
+wait 400
+shot t_drop5.png
+wait 3000
+wavstop
+shot t_after.png
+tap PLAY

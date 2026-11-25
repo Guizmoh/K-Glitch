@@ -1,0 +1,44 @@
+# K-GLITCH 0.2b: the GLITCH page (EDIT after the KICK): the white keys are the CHOP effects, held; REC playing writes
+# them into the CHOP lane; SEL + a key takes that effect out of the lane.
+#   app/build/host/k-glitch_host tests/scenarios/kgchop.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+tap EDIT
+wait 300
+expect page 14
+shot kg_page.png
+tap PLAY
+wait 600
+key w0 down
+wait 400
+expect kg_held 1
+expect kg_now 1
+shot kg_stutter.png
+key w0 up
+key w8 down
+wait 500
+expect kg_now 9
+key w8 up
+wait 300
+tap REC
+wait 200
+key w3 down
+wait 900
+key w3 up
+tap REC
+wait 300
+shot kg_lane.png
+key w4 down
+wait 300
+key w4 up
+turn K4 1 10
+wait 200
+shot kg_lane2.png
+press SEL
+tapkey w3
+release SEL
+wait 300
+expect kg_steps 0
+tap PLAY
+wait 300

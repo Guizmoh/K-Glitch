@@ -1,0 +1,13 @@
+{
+  "what": "A hardcore kick synthesizer powerhouse (gabber, terror, speedcore) and a breakbeat chopper (Based on CHOPPAH) : twenty kicks with distortion, sliced breaks, effects, drums, songs with drops, a BEGINNER mode, a DAW-like Studio on PC. The editor adds 5 to 7 breaks: yours or from a library of 90+.",
+  "author": "FLEXOR",
+  "sounds": "licensed: Cyberworm's Amen loops (Rhythm Lab), royalty free; breaks from records, rights with their owners: funk classics, tracks by Akira, Detest, Tripped, Matt Green, Lil Texas, The Satan, Dolphin, Artheist, Deathmachine, The Outside Agency, DJ Hidden, DNGN DRGNS, Poley Tight, KRTM",
+  "kinds": [
+    "drums"
+  ],
+  "play": "https://flexor-r.github.io/loaf-breaker/emu/",
+  "editor": "https://flexor-r.github.io/loaf-breaker/breaks/",
+  "cheat": "https://flexor-r.github.io/loaf-breaker/manual/#start-in-five-minutes",
+  "image": "docs/img/loaf_breaker_card.png",
+  "color": "#FF8470"
+}

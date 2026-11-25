@@ -1,0 +1,77 @@
+# LOAF BREAKER (0.9.75, FLEXOR: "une fonction un peu mathcore lite ... scramble ... pour rajouter du chaos", the break):
+# HOME › CHAOS, HOME's last tab (EXPERT: PERFORM, GENERATOR, SPLIT, CHAOS). The Slice Map heard on the break playing
+# (kicks, snares, hats), then K1 CHAOS, K2 MATH (OFF 3 5 7 11 13), K3 ROLLS, K4 SEED; SAVE keeps them through a
+# restart; BEGINNER: PERFORM, GENERATOR, CHAOS.
+#   app/build/host/loaf-breaker_host tests/scenarios/chaos.txt app/build/scenarios
+wait 4200
+expect rkick >0
+expect rsnare >0
+expect rhat >0
+expect chaos 0
+tap HOME
+wait 150
+tap HOME
+wait 150
+tap HOME
+wait 300
+expect page 13
+shot chaos_off.png
+turn K1 20 10
+wait 200
+expect chaos 40
+turn K2 2 10
+wait 200
+expect cmath 5
+turn K3 15 10
+wait 200
+expect crolls 30
+turn K4 7 10
+wait 200
+expect cseed 7
+tap PLAY
+wait 2500
+expect playing 1
+peakreset
+wait 2000
+expect peak_db_min -40
+shot chaos_page.png
+# MATH all the way, then off again
+turn K2 9 10
+wait 200
+expect cmath 13
+turn K2 -9 10
+wait 200
+expect cmath 0
+turn K2 2 10
+wait 200
+# SAVE, a restart: as it was
+tap PLAY
+wait 300
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect chaos 40
+expect cmath 5
+expect crolls 30
+expect cseed 7
+# another break: its own Slice Map
+turn ALGO 1 10
+wait 600
+expect rkick >0
+expect rsnare >0
+# back on CHAOS after the restart; HOME: PERFORM, then GENERATOR, SPLIT, CHAOS
+expect page 13
+tap HOME
+wait 150
+expect page 0
+tap HOME
+wait 150
+tap HOME
+wait 150
+tap HOME
+wait 150
+expect page 13
+tap HOME
+wait 150
+expect page 0

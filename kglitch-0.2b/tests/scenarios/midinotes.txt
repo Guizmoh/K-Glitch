@@ -1,0 +1,40 @@
+# LOAF BREAKER (0.9.64, FLEXOR, a TR-8S cutting the break): SYSTEM › MIDI's PRESETS, NOTES IN: ALL (as before: notes
+# 48-63 hold the slices, 36-46 the drums), DRUMS (the drums alone: a TR-8S's crash 49, high tom 50, ride 51 no longer
+# hold slices), OFF (no notes). A slice a note holds is let go by its note-off whatever NOTES IN says since.
+#   app/build/host/loaf-breaker_host tests/scenarios/midinotes.txt app/build/scenarios
+wait 4200
+tap GLO
+wait 300
+expect notesin 0
+midi USB 99 32 7F
+wait 100
+expect key 2
+midi USB 89 32 00
+wait 100
+expect key -1
+turn PRESET 1 10
+wait 200
+expect notesin 1
+shot m_notes.png
+midi USB 99 31 7F
+midi USB 99 33 7F
+wait 100
+expect key -1
+midi USB 89 31 00
+midi USB 89 33 00
+turn PRESET -1 10
+wait 200
+expect notesin 0
+midi USB 99 32 7F
+wait 100
+expect key 2
+turn PRESET 2 10
+wait 200
+expect notesin 2
+midi USB 89 32 00
+wait 100
+expect key -1
+midi USB 99 32 7F
+wait 100
+expect key -1
+midi USB 89 32 00

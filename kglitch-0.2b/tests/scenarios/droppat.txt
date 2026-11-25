@@ -1,0 +1,115 @@
+# LOAF BREAKER (0.9.58, FLEXOR): DROP 1-8, each a whole drop (DROP's, BUILD's and BREAK's settings, what its GAP keeps).
+# SONG › DROPS: keys 1-8 (or K1) pick the one SEL + ENV plays and SONG's pages edit; K2-K4 its BUILD, STYLE, AFTER.
+# TRACKS: a DROP item's K2 DROP (the one selected) or DROP 1-8, its own: picked as its build begins.
+#   app/build/host/loaf-breaker_host tests/scenarios/droppat.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 200
+turn SELECT -1 10
+wait 300
+expect tpage 7
+expect dsel 0
+expect dbars 3
+key w1 down
+wait 30
+key w1 up
+wait 200
+expect dsel 1
+turn K2 -4 10
+wait 200
+expect dbars 0
+turn K3 2 10
+wait 200
+shot t_drops.png
+key w0 down
+wait 30
+key w0 up
+wait 200
+expect dsel 0
+expect dbars 3
+key w1 down
+wait 30
+key w1 up
+wait 200
+expect dbars 0
+# the DROP page says whose
+turn SELECT -3 10
+wait 300
+expect tpage 2
+shot t_drop2.png
+# copy DROP 2 onto DROP 5
+turn SELECT 3 10
+wait 200
+press SEL
+tap ARP
+release SEL
+wait 200
+key w4 down
+wait 30
+key w4 up
+wait 200
+expect dsel 4
+press SEL
+tap ARP
+release SEL
+wait 200
+expect dbars 0
+key w0 down
+wait 30
+key w0 up
+wait 200
+expect dsel 0
+# TRACKS: track 1's third item, its DROP: DROP 2
+turn SELECT 1 10
+wait 300
+expect tpage 0
+turn ALGO 2 10
+wait 200
+expect trk_it 254
+turn K2 -7 10
+wait 200
+expect trk_it 254
+shot t_dropitem.png
+# saved, kept at a restart
+tap HOME
+wait 200
+tap SAVE
+wait 600
+expect dirty 0
+reboot
+wait 4200
+expect dsel 0
+expect dbars 3
+tap ENV
+wait 200
+turn SELECT -1 10
+wait 300
+key w1 down
+wait 30
+key w1 up
+wait 200
+expect dbars 0
+# a track: P1 once, then DROP 2: DROP 1 selected, PLAY: DROP 2 selected as its build begins (NO BUILD: at P1's end)
+key w0 down
+wait 30
+key w0 up
+wait 200
+expect dsel 0
+turn SELECT 1 10
+wait 300
+expect tpage 0
+turn ALGO -9 10
+wait 200
+turn K3 -3 10
+wait 100
+turn ALGO 1 10
+wait 100
+turn K2 -9 10
+wait 300
+expect trk_it 254
+shot t_dropitem2.png
+tap PLAY
+wait 2500
+expect dsel 1
+expect dbars 0
+tap PLAY

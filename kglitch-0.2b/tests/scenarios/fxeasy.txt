@@ -1,0 +1,62 @@
+# LOAF BREAKER (FLEXOR, 11 Nov 2026, 0.229): BEGINNER's FX page: two slots (the third and fourth muted and hidden),
+# PRESETS the short list (EMPTY, FILTER, CRUNCH, DRIVE, FLANGER, REVERB, DELAY, TAPE, CLIP), then MAGIC EQ, MAGIC MBC.
+# In EXPERT the third slot gets a FILTER, focused; BEGINNER on: the focus back on the first, ALGORITHM goes round the
+# two. BEGINNER keeps the black keys' layout (0.9.23: FLEXOR LAYOUT here): DST leaves a DISTO at 0 as it is, SUB turns
+# the SUB FX switched off in EXPERT on again (0.9.43: a switch, the effect itself untouched).
+#   app/build/host/loaf-breaker_host tests/scenarios/fxeasy.txt app/build/scenarios
+wait 4200
+tap PLAY
+wait 300
+tap FX
+wait 300
+turn SELECT 2 80
+wait 200
+expect fx_focus 2
+turn PRESET 1 80
+wait 300
+expect fx_type 6
+key b8 down
+wait 100
+key b8 up
+wait 300
+expect sub_off 1
+expect subdrv -1
+tap GLO
+wait 150
+turn SELECT 1 10
+wait 300
+turn K3 -1 80
+wait 300
+tap FX
+wait 300
+expect fx_focus 0
+turn SELECT 1 80
+wait 200
+expect fx_focus 1
+turn SELECT 1 80
+wait 200
+expect fx_focus 0
+turn PRESET 4 80
+wait 300
+expect fx_type 9
+turn PRESET 20 80
+wait 300
+expect mb_pre 3
+turn PRESET -1 80
+wait 300
+expect fx_type 10
+wait 1200
+shot fe_chain.png
+expect terror 0
+key b9 down
+wait 100
+key b9 up
+wait 300
+expect terror 0
+shot fe_dst.png
+key b8 down
+wait 100
+key b8 up
+wait 300
+expect sub_off 0
+shot fe_sub.png

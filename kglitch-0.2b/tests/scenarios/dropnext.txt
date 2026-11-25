@@ -1,0 +1,45 @@
+# LOAF BREAKER (0.9.71, FLEXOR: "dans les réglages drops, pouvoir mettre NEXT pour le drop break, comme dans AFTER
+# DROP"): SONG › DROP K3 DROP BREAK: SAME, NEXT (the break after the one playing, round), then each break. Here BUILD
+# NONE (the bar playing ends in the drop): each drop brings in the next break.
+#   app/build/host/loaf-breaker_host tests/scenarios/dropnext.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 200
+turn SELECT 2 10
+wait 300
+turn K1 -4 10
+expect dbrk 0
+turn K3 1 10
+wait 200
+expect dbrk 255
+shot t_dropnext.png
+turn K3 1 10
+wait 200
+expect dbrk 1
+turn K3 -1 10
+wait 200
+expect dbrk 255
+tap HOME
+wait 200
+expect brk 0
+tap PLAY
+wait 600
+press SEL
+tap ENV
+release SEL
+wait 3000
+expect brk 1
+press SEL
+tap ENV
+release SEL
+wait 3000
+expect brk 2
+tap PLAY
+wait 200
+tap ENV
+wait 200
+turn SELECT 2 10
+wait 300
+turn K3 -1 10
+wait 200
+expect dbrk 0

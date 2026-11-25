@@ -1,0 +1,55 @@
+# LOAF BREAKER (0.9.76, FLEXOR: "une nouvelle assignation de touche noire avec un on / off pour le chaos"): CHS, a black
+# key's function (ARP › BLACK K3, the last one): a press, HOME › CHAOS heard or not, its settings kept; on with nothing
+# set, CHAOS 40; a CHAOS knob turned on its page turns it on again. Its light: the keys lit, 4 on, 3 off (CHS's
+# one, the layout's others as they are).
+#   app/build/host/loaf-breaker_host tests/scenarios/chskey.txt app/build/scenarios
+wait 4200
+expect chaos 0
+expect chsw 1
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+turn K3 -1 60
+wait 300
+expect bk_pre 2
+tap HOME
+wait 300
+tap PLAY
+wait 1500
+key b0 down
+wait 100
+key b0 up
+wait 300
+expect chsw 1
+expect chaos 40
+expect llitk 4
+key b0 down
+wait 100
+key b0 up
+wait 300
+expect chsw 0
+expect chaos 40
+expect llitk 3
+shot chskey_off.png
+key b0 down
+wait 100
+key b0 up
+wait 300
+expect chsw 1
+key b0 down
+wait 100
+key b0 up
+wait 300
+expect chsw 0
+tap HOME
+wait 150
+tap HOME
+wait 150
+tap HOME
+wait 300
+expect page 13
+turn K3 5 10
+wait 200
+expect chsw 1
+expect crolls 10

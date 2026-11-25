@@ -1,0 +1,144 @@
+# GLOUPI BREAKS: GLOBAL's MORE page (third GLO press) and its skins, K1 through them, K4 AUTO SAVE: each skin's slicer
+#   app/build/host/loaf-breaker_host tests/scenarios/skins.txt app/build/scenarios
+wait 4200
+tapkey w0
+wait 300
+tap GLO
+tap GLO
+wait 300
+shot s_more.png
+turn K1 1 10
+tap HOME
+wait 300
+shot s_1.png
+tap GLO
+tap GLO
+turn K1 1 10
+tap HOME
+wait 300
+shot s_2.png
+tap GLO
+tap GLO
+turn K1 1 10
+wait 300
+shot s_3more.png
+tap HOME
+wait 300
+shot s_3.png
+tap GLO
+tap GLO
+turn K1 1 10
+tap HOME
+wait 300
+shot s_4.png
+tap GLO
+tap GLO
+turn K1 1 10
+tap HOME
+wait 300
+shot s_5.png
+tap GLO
+tap GLO
+turn K1 1 10
+tap HOME
+wait 300
+shot s_6.png
+tap GLO
+tap GLO
+turn K1 1 10
+tap HOME
+wait 300
+shot s_7.png
+tap GLO
+tap GLO
+turn K1 1 10
+turn K4 1 10
+wait 300
+shot s_8more.png
+tap HOME
+wait 300
+shot s_8.png
+tap GLO
+tap GLO
+turn K1 1 10
+wait 300
+shot s_9more.png
+tap HOME
+wait 300
+shot s_9.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_10more.png
+tap HOME
+wait 300
+shot s_10.png
+tap EDIT
+wait 300
+shot s_10kick.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_11more.png
+tap EDIT
+wait 300
+shot s_11kick.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_12more.png
+tap EDIT
+wait 300
+shot s_12kick.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_13more.png
+tap EDIT
+wait 300
+shot s_13kick.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_14more.png
+tap EDIT
+wait 300
+shot s_14kick.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_15more.png
+tap EDIT
+wait 300
+shot s_15kick.png
+tap GLO
+wait 100
+tap GLO
+wait 200
+turn K1 1 10
+wait 300
+shot s_16more.png
+tap HOME
+wait 300
+shot s_16.png
+tap EDIT
+wait 300
+shot s_16kick.png

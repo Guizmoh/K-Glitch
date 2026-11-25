@@ -1,0 +1,68 @@
+# LOAF BREAKER: GLO RESET (LOAF BREAKER TEST: ENV's no more), KICK: the kick selected (its memory) back to its start (ROTTERDAM, SYNTH and BASS at 0, its
+# volume kept). The kick's BASS part (EDIT, EDIT: SYNTH; ALGORITHM twice): REV BASS to 50 %, then RESET KICK: off.
+#   app/build/host/loaf-breaker_host tests/scenarios/kreset.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 200
+turn ALGO 2 10
+wait 300
+expect kpage 10
+turn K2 25 10
+wait 200
+expect kbass1 50
+tap GLO
+wait 150
+turn SELECT -1 10   # (0.9.57: RESET, left of MIDI: LIGHTS before it)
+wait 150
+wait 100
+wait 150
+wait 150
+wait 300
+turn K4 3 10
+wait 200
+shot a_reset_kick.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 3100
+expect kbass1 0
+# MIX: COMP on (LFO MASTER K1), then RESET MIX: off again
+tap LFO
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 200
+turn K1 10 10
+wait 200
+expect comp 20
+tap GLO
+wait 150
+turn SELECT -1 10   # (0.9.57: RESET, left of MIDI: LIGHTS before it)
+wait 150
+wait 100
+wait 150
+wait 150
+wait 300
+turn K4 4 10
+wait 200
+shot a_reset_mix.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 300
+expect comp 0
+# TRACK: its first item back to 1
+wait 2800
+turn K4 5 10
+wait 200
+turn K2 5 10
+wait 200
+tap GLO
+wait 300
+expect trk_from 0

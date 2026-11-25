@@ -1,0 +1,27 @@
+# LOAF BREAKER (0.9.70, FLEXOR: "couper une tail plus loin que 1000ms, cela ne suffit pas"): KICK › TAIL K4 END, 40 ..
+# 1000 ms by 20 ms as before (49 detents), then on to 3 s by 50 ms (40 more): 89 its last.
+#   app/build/host/loaf-breaker_host tests/scenarios/kickend.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 15
+turn K4 49 60
+wait 200
+expect kl_end 49
+turn K4 1 60
+wait 200
+expect kl_end 50
+turn K4 39 60
+wait 200
+expect kl_end 89
+turn K4 5 60
+wait 1500
+expect kl_end 89
+shot kickend.png
+turn K4 -40 60
+wait 200
+expect kl_end 49

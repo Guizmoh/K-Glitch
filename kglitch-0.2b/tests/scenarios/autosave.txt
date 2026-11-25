@@ -1,0 +1,50 @@
+# LOAF BREAKER: AUTO SAVE, a minute after a change, never while PLAY runs, once PLAY has been stopped 20 s (0.9.26,
+# FLEXOR: 10 s after the sound's end came too soon; touching the FM-1 stopped is no problem). GLO twice: SETUP, K4
+# AUTO SAVE on (a change); PLAY a minute and more: not saved while playing; stopped: not yet at 19 s, saved by 20.5 s.
+# Then a change, stopped long since, a knob turned and the kick played by hand every few seconds: saved at its minute
+# all the same.
+#   app/build/host/loaf-breaker_host tests/scenarios/autosave.txt app/build/scenarios
+wait 4200
+tap GLO
+wait 100
+turn SELECT 1 10
+wait 200
+turn K4 1 10
+wait 100
+expect dirty 1
+tap PLAY
+wait 61000
+expect dirty 1
+tap PLAY
+wait 19000
+expect dirty 1
+wait 1500
+expect dirty 0
+turn K1 1 10
+wait 100
+turn K1 -1 10
+wait 100
+expect dirty 1
+tap EDIT
+wait 300
+key w0 down
+wait 30
+key w0 up
+wait 9970
+turn K2 1 10
+wait 10000
+key w0 down
+wait 30
+key w0 up
+wait 9970
+turn K2 -1 10
+wait 10000
+key w0 down
+wait 30
+key w0 up
+wait 9970
+turn K2 1 10
+wait 7000
+expect dirty 1
+wait 3500
+expect dirty 0

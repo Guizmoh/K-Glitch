@@ -1,0 +1,87 @@
+# LOAF BREAKER (0.9.70, FLEXOR: the strip over the master's wave "stylisée ... RGB, 3 band, Blue, Serato, actuel", RGB at
+# the start; "rajoute aussi 3 band et blue aux waveform classiques"): SYSTEM › DISPLAY's PRESETS the strip's style, round
+# (RGB, 3 BAND, BLUE, SERATO, GREY), in colour by the level as heard, the beats behind; K2 WAVE TYPE RGB, SERATO, 3 BAND,
+# BLUE for the CDJ view, the kick's and the drums' pictures.
+#   app/build/host/loaf-breaker_host tests/scenarios/strip.txt app/build/scenarios
+wait 4200
+expect strip 0
+expect wstyle 0
+tap HOME
+wait 200
+tap PLAY
+wait 1500
+shot strip_rgb.png
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 300
+expect page 11
+turn PRESET 1 10
+wait 200
+expect strip 1
+shot strip_display.png
+tap HOME
+wait 1500
+shot strip_3band.png
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+turn PRESET 1 10
+wait 200
+expect strip 2
+tap HOME
+wait 1500
+shot strip_blue.png
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+turn PRESET 1 10
+wait 200
+expect strip 3
+tap HOME
+wait 1500
+shot strip_serato.png
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+turn PRESET 1 10
+wait 200
+expect strip 4
+tap HOME
+wait 1500
+shot strip_grey.png
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+turn PRESET 1 10
+wait 200
+expect strip 0
+turn K2 2 10
+wait 200
+expect wstyle 2
+tap HOME
+wait 1500
+shot cdj_3band.png
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+turn K2 1 10
+wait 200
+expect wstyle 3
+tap HOME
+wait 1500
+shot cdj_blue.png
+tap PLAY
+wait 300
+tap EDIT
+wait 300
+key w0 down
+wait 50
+key w0 up
+wait 1500
+shot kick_blue.png

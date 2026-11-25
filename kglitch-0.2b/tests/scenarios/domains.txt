@@ -1,0 +1,81 @@
+# LOAF BREAKER 0.201: the pages by domain. SEL + EDIT walks SOUNDS' sources (from the kick: DRUMS, BREAK, the KICK
+# again; the MELODY out in 0.209); EDIT on the DRUMS: SNARE, HAT, CLAP round. The BREAK: K1-K3 PITCH, GRAIN, SNAP, K4
+# its LEVEL, ALGORITHM the break. SEQ's SELECT (ALGORITHM until 0.9.26) before its first lane: BREAK (0.234), then PATTERN's GROOVE (K1 SWING); SEL + ARP too.
+# MIX: LEVELS, SENDS (K1 FX). SYSTEM (GLO): MIDI, SETUP, EFFECTS, FX SET, RESET (EVERYTHING: RESET ALL, 15 turns).
+#   app/build/host/loaf-breaker_host tests/scenarios/domains.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+expect page 4
+press SEL
+tap EDIT
+release SEL
+wait 200
+expect page 14
+expect einst 1
+tap EDIT
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 200
+expect einst 1
+press SEL
+tap EDIT
+release SEL
+wait 300
+expect page 3
+expect gpage 1
+turn K4 -5 10
+wait 100
+expect brk_lvl 90
+turn ALGO 1 10
+wait 200
+expect brk 1
+shot dm_break.png
+press SEL
+tap EDIT
+release SEL
+wait 200
+expect page 4
+tap SEQ
+wait 300
+expect seq_lane 2
+turn SELECT -4 10
+wait 200
+expect page 3
+expect gpage 6
+turn K1 5 10
+shot dm_groove.png
+turn ALGO 1 10
+wait 200
+expect page 6
+expect seq_lane 0
+expect seq_brk 0
+tap LFO
+wait 200
+turn SELECT 1 10
+wait 200
+expect mpage 1
+turn K1 -10 10
+shot dm_sends.png
+tap GLO
+wait 200
+expect gpage 0
+turn SELECT 1 10
+wait 200
+expect gpage 2
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 3 10
+wait 200
+expect gpage 5
+turn K1 20 10
+shot dm_reset_all.png
+tap HOME
+wait 200
+tap SEL
+wait 400
+shot dm_help.png

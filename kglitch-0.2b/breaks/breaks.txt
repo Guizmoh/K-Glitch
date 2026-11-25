@@ -1,0 +1,138 @@
+# LOAF BREAKER's breaks (from CHOPPAH's): every WAV in this folder, and which of them go into the firmware.
+# ./build.sh turns the lines marked * into the bank built into the firmware (app/bank_data.h, generated), in this
+# order: the first is the break at power-on. ALGORITHM steps through them. Swap breaks in or out by moving the *; the
+# firmware has 400 KB for breaks: 8 classics at 2 bars fill ~360 KB (./build.sh says if they don't fit;
+# tools/prep_breaks.py --list ... --dry-run). A break is at most 106,496 samples (2 bars at 99.4 BPM and up).
+#
+#   in:    * in the firmware, - not; *= or -= its slices on an even grid (the BREAKS page's EVEN GRID), else on the hits
+#   name @X: (optional, after the name) its own loudness instead of -12 LUFS (-16 until 0.9.69) (as heard, 0.9.42; RMS before); @0 its file's own (the peaks to full scale).
+#   name NNNNNHz: (optional) its own sample rate instead of 22050 (THINK 114 at 16000 for room, 0.9.37)
+#   flexor/'s breaks are all at -12 LUFS (FLEXOR: his DJ library, mastered alike) unless their line says @X
+#   file:  relative to this folder   bpm:   the loop's tempo   bars: how many bars go into the firmware
+#   (the WAV holds 'of' bars)        name:  on the screen, up to 11 characters
+#
+# in  file                                        bpm     bars  of  name
+#
+# LOAF BREAKER's base (0.9.70, FLEXOR's Break Lab 3, https://claude.ai/artifact/XTFcM7rNcos7EK8c2hDHQw, store `lab3/choix`):
+# 8 breaks, sorted by BPM: AMEN10 135 (at power-on), AMEN05 158, AMEN20 164, UPDOWN 165, AMEN06 169, AMEN19 172, AMEN13
+# 173, FOCUZ 175; LOUDER, SATAN, PANTHER, BANGPHS and NIGHT to the library. Every break on an even grid (*= / -=, FLEXOR:
+# "absolument tous les breaks ... sur grille") and at -12 LUFS (prep_breaks.py's default since 0.9.70, FLEXOR: every
+# break at the same level); no 16 kHz (FLEXOR: "la qualité est terriblement naze").
+# Before: the 9 breaks (0.9.50, FLEXOR: DETEST 175 out, TIMES 175 out for BANGPHS 155: the library's). FLEXOR's Break
+# Lab (14 Nov 2026, 0.9.34, https://claude.ai/artifact/RqYzxYRDr9nMWw98PXnesW): his five of flexor/ in, on an even grid
+# (*=), named and ordered by him; NUSKOOL, JUNGLE, APACHE and THEWORM out. Break Sort (10 Nov 2026, FLEXOR's listening
+# page, 0.193-0.196): AMEN20 164 and JUNGLE 175 in; AMEN04, AMEN13, IDM, AMEN10, BREAKIN and (0.200, for room) LO-FI
+# out. Before: Break Swap (9 Nov), the Break Picks tests.
+*=  cw/cw_amen20_164.wav                        164     2     2   AMEN20 164
+*=  cw/cw_amen19_172.wav                        172     2     4   AMEN19 172
+*=  huge/cw_amen_updown.wav                     165     2     2   UPDOWN 165
+-=  flexor/lil_texas_louder.wav                 175     2     2   LOUDER 175
+-=  flexor/the_satan_gangzta_cash.wav           200     2     2   SATAN 200
+-=  flexor/tripped_matt_green_underground_panther_jacket.wav 170 2 2 PANTHER 170
+-=  flexor/dolphin_rotterdam_shuffle.wav        190     2     2   SHUFFLE 190
+-=  flexor/dngn_drgns_focuz_dngn_drgns_remix.wav    175     2     2   FOCUZ 175
+-=  flexor/dolphin_bangphase.wav                    155     2     2   BANGPHS 155
+#
+# out of the base on 14 Nov 2026 (FLEXOR, 0.9.34: THEWORM, then NUSKOOL, JUNGLE and APACHE for his five; 0.9.40 AKIRA 190,
+# to the library below; THINK 114 on an even grid, 0.9.40; 0.9.43, FLEXOR's Break Lab 2: THINK 114 out, FOCUZ 175 and TIMES 175 in)
+-=  huge/cw_amen_nuskool.wav                    139.99  2     4   NUSKOOL 140
+-=  classics/lyn_collins_think_about_it.wav     113.78  2     4   THINK 114
+-=  huge/cw_amen_jungle.wav                     175     2     2   JUNGLE 175
+-=  classics/incredible_bongo_band_apache.wav   114.78  2     4   APACHE 115
+-=  classics/jimmy_mcgriff_the_worm.wav         109.79  2     4   THEWORM 110
+-=  cw/cw_amen15_174.wav                        174     2     4   AMEN15 174
+#
+# out of the base on 10 Nov 2026 (Break Sort; IDM was in 0.193-0.194, AMEN10 0.193-0.195, LO-FI 0.196-0.199):
+-=  huge/cw_amen_lo-fi.wav                      165.06  1     1   LO-FI 165
+*=  cw/cw_amen10_135.wav                        135     2     2   AMEN10 135
+-=  cw/cw_amen04_170.wav                        170     2     2   AMEN04 170
+*=  cw/cw_amen13_173.wav                        173     2     4   AMEN13 173
+-=  huge/cw_amen_idm.wav                        169     2     4   IDM 169
+-=  huge/cw_amen_breaking.wav                   175     2     2   BREAKIN 175
+#
+# out of the base on 9 Nov 2026 (Break Swap): CHOPPER, DRUMMER; kept aside (Break Swap KEEP): AMEN02, AMEN08, AMEN10,
+# AMEN11, AMEN12, EARLY, AMEN01, EQUIL, AMEN18
+-=  huge/cw_amen_chopper.wav                    171.78  2     2   CHOPPER 172
+-=  classics/james_brown_funky_drummer.wav      99.81   2     4   DRUMMER 100
+-=  cw/cw_amen02_165.wav                        165     2     2   AMEN02 165
+-=  classics/bobby_byrd_hot_pants.wav           114.78  2     4   HOTPANT 115
+#
+# flexor/: FLEXOR's breaks (14 Nov 2026), sampled from artists' records (not royalty free: flexor/README.md), all at
+# -12 LUFS on an even grid; those not in the firmware (in the site's library):
+-=  flexor/artheist_the_obedience_algorithm.wav 165   2     2   OBEDIENC165
+-=  flexor/akira_custom_grind.wav               190     2     2   AKIRA 190
+-=  flexor/deathmachine_bad_man_crew.wav        200     2     2   BADMAN 200
+-=  flexor/detest_tripped_hardcore_to_the_penis.wav 175 2  2   DETEST 175
+-=  flexor/detest_tripped_hardcore_to_the_penis_vocal.wav 175 2 2 DETESTV 175
+-=  flexor/dolphin_buckshot.wav                 200     2     2   BUCKSHT 200
+-=  flexor/dolphin_hong_kong_ping_pong.wav      220     2     2   HONGKONG220
+-=  flexor/lil_texas_louder_2.wav               175     2     2   LOUDER2 175
+-=  flexor/the_outside_agency_hells_basement.wav 175   2     2   TOAHELL 175
+-=  flexor/the_outside_agency_like_a_fire.wav   160     2     2   TOAFIRE 160
+-=  flexor/dj_hidden_the_nightmare_connector_vip.wav 175     2     2   NIGHT 175
+-=  flexor/dj_hidden_the_nightmare_connector_vip_outro_break.wav 175     2     2   NIGHT2 175
+-=  flexor/dj_hidden_times_like_these_vip_break_2.wav 175     2     2   TIMES2 175
+-=  flexor/dngn_drgns_focuz_dngn_drgns_remix_break_2.wav 175     2     2   FOCUZ2 175
+-=  flexor/dj_hidden_times_like_these_vip.wav       175     2     2   TIMES 175
+-=  flexor/poley_tight_facecracker_break_2.wav      170     2     2   FACECR2 170
+-=  flexor/poley_tight_facecracker.wav              170     2     2   FACECR 170
+-=  flexor/tripped_krtm_fcking_zutsu.wav            160     2     2   ZUTSU 160
+-=  flexor/the_outside_agency_deep_sleep.wav        175     2     2   TOASLEEP175
+-=  flexor/the_outside_agency_enlightened_species.wav 175     2     2   TOASPC 175
+-=  flexor/the_outside_agency_enlightened_species_break_2.wav 175     2     2   TOASPC2 175
+-=  flexor/the_satan_strangers.wav                  175     2     2   STRANGR 175
+#
+# classics/: ten breaks from the records (32-bit float WAV, 4 bars each, tempos from their lengths)
+-=  classics/the_winstons_amen_brother.wav      141.82  3+4   4   AMEN 145
+-=  classics/james_brown_cold_sweat.wav         114     2     4   COLDSWE 114
+-=  classics/lightnin_rod_sport.wav             120.69  2     4   SPORT 121
+-=  classics/rotary_connection_life_could.wav   99.81   2     4   LIFECOU 100
+-=  classics/skull_snaps_its_a_new_day.wav      94.81   2     4   NEWDAY 95
+#
+# cw/, huge/: Cyberworm's 60 royalty-free Amen loops (the firmware's breaks until 1 Nov 2026)
+-=  huge/cw_amen_beasty.wav                     127.27  2     4   BEASTY 127
+-=  cw/cw_amen12_137.wav                        137     2     2   AMEN12 137
+-=  huge/cw_amen_comp.wav                       140     2     4   COMP 140
+-=  huge/cw_amen_negative.wav                   140     2     4   NEGATIV 140
+-=  huge/cw_amen_reride.wav                     140     2     4   RERIDE 140
+-=  huge/cw_amen_tape.wav                       140     2     4   TAPE 140
+-=  cw/cw_amen11_145.wav                        145     2     2   AMEN11 145
+-=  huge/cw_amen_overlimit.wav                  147.37  2     4   OVERLIM 147
+-=  huge/cw_amen_freak.wav                      150.3   2     2   FREAK 150
+-=  huge/cw_amen_apache.wav                     157.19  2     4   APACHE 157
+*=  cw/cw_amen05_158.wav                        158     2     4   AMEN05 158
+-=  huge/cw_amen_oldskool.wav                   159.56  2     2   OLDSKOO 160
+-=  huge/cw_amen_classic.wav                    160     2     3   CLASSIC 160
+-=  huge/cw_amen_hype.wav                       160     2     2   HYPE 160
+-=  huge/cw_amen_tube.wav                       163.81  2     3   TUBE 164
+-=  huge/cw_amen_replay.wav                     164.92  2     6   REPLAY 165
+-=  huge/cw_amen_deeptouch.wav                  164.94  2     6   DEEPTOU 165
+-=  cw/cw_amen08_165.wav                        165     2     2   AMEN08 165
+-=  huge/cw_amen_tick.wav                       165.55  2     4   TICK 166
+-=  huge/cw_amen_italian.wav                    166.49  2     4   ITALIAN 166
+-=  cw/cw_amen03_167.wav                        167     2     2   AMEN03 167
+-=  cw/cw_amen16_167.wav                        167     2     4   AMEN16 167
+*=  cw/cw_amen06_169.wav                        169     2     2   AMEN06 169
+-=  huge/cw_amen_early.wav                      170     2     2   EARLY 170
+-=  huge/cw_amen_finger.wav                     170     2     2   FINGER 170
+-=  cw/cw_amen07_172.wav                        172     2     2   AMEN07 172
+-=  huge/cw_amen_onbreak.wav                    172     1     1   ONBREAK 172
+-=  huge/cw_amen_highpass.wav                   172.01  2     2   HIGHPAS 172
+-=  huge/cw_amen_distorted.wav                  172.94  1     1   DISTORT 173
+-=  huge/cw_amen_stretch.wav                    174.01  2     2   STRETCH 174
+-=  huge/cw_amen_decay.wav                      174.78  2     4   DECAY 175
+-=  huge/cw_amen_funk1.wav                      174.93  2     2   FUNK1 175
+-=  huge/cw_amen_equil.wav                      174.98  2     2   EQUIL 175
+-=  cw/cw_amen01_175.wav                        175     2     2   AMEN01 175
+-=  cw/cw_amen09_175.wav                        175     2     2   AMEN09 175
+-=  cw/cw_amen14_175.wav                        175     2     2   AMEN14 175
+-=  cw/cw_amen17_175.wav                        175     2     4   AMEN17 175
+-=  huge/cw_amen_funk2.wav                      175.01  2     2   FUNK2 175
+-=  huge/cw_amen_rough.wav                      175     2     3   ROUGH 175
+-=  huge/cw_amen_zinc.wav                       175     2     2   ZINC 175
+-=  cw/cw_amen18_178.wav                        178     2     4   AMEN18 178
+-=  huge/cw_amen_downstratch.wav                179.22  2     3   DOWNSTR 179
+-=  huge/cw_amen_vinyl.wav                      179.81  2     6   VINYL 180
+-=  huge/cw_amen_downtempo.wav                  180     2     3   DOWNTEM 180
+-=  huge/cw_amen_drumroll.wav                   181.32  2     2   DRUMROL 181
+-=  huge/cw_amen_downshift.wav                  183.96  2     3   DOWNSHI 184

@@ -1,0 +1,41 @@
+# LOAF BREAKER (0.9.45, FLEXOR's Kick Lab 2, chosen by ear): ATTACK's TOK (a short pitched attack: LEVEL, TYPE, PITCH,
+# LENGTH) and TAIL's GATE (the kick chopped in time: DIVISION, LENGTH, FADE IN), each kick its own, kept by SAVE.
+#   app/build/host/loaf-breaker_host tests/scenarios/kicklab2.txt app/build/scenarios
+wait 4200
+expect tok 0
+expect gate 0
+tap EDIT
+wait 300
+turn ALGO 4 80
+wait 300
+turn K1 20 10
+wait 200
+turn K2 1 10
+wait 200
+expect tok 40
+shot kl2_tok.png
+turn SELECT 2 10
+wait 300
+turn ALGO 4 80
+wait 300
+turn K1 3 10
+wait 300
+expect gate 3
+shot kl2_gate.png
+turn PRESET 1 10
+wait 300
+expect kslot 4
+expect tok 0
+expect gate 0
+turn PRESET -1 10
+wait 300
+expect kslot 3
+expect tok 40
+expect gate 3
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect kslot 3
+expect tok 40
+expect gate 3

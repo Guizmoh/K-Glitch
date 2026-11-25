@@ -1,0 +1,476 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- LOAF BREAKER's IMPORT page (0.9.45, FLEXOR: "importer des samples type snare, hi-hat, clap"): your own snare, hat
+     and clap on the FM-1. Each sample is trimmed (the silence before it, its tail once quiet, a second at most), its
+     peak at -0.3 dBFS, faded out, then all three at the highest rate that fits the FM-1's 8 KB for them (22.05, 16 or
+     11.025 kHz; shortened if they still don't), IMA ADPCM as the breaks (tools/kit_frames.py makes the same kit), and
+     written over Web MIDI SysEx (ui/main.c kit_sysex, zone 2: F0 7D 43 48 0x2N 7-bit-packed DATA F7). The preview plays
+     the ADPCM decoded again: what the FM-1 will play. On the FM-1 each drum's PRESET has one more, the last: the
+     sample. tools/site_style.py puts it at import/ on the site, with the site's style and header. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOAF BREAKER · Import</title>
+<style>/*SITE_CSS*/
+.imp h1 { margin-top: 8px; }
+.imp .lede { color: var(--dim); max-width: 720px; margin: 0 0 28px; }
+.imp section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; margin: 0 0 22px; }
+.imp section.card h2 { margin: 0 0 6px; padding: 0; border: 0; font-size: 22px; }
+.imp .sub { color: var(--dim); margin: 0 0 14px; font-size: 15px; }
+.imp button {
+  font: 600 13px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hot);
+  background: #2a261d; border: 0; padding: 11px 14px; border-radius: 6px; box-shadow: inset 0 -2px 0 #11100c; cursor: pointer;
+}
+.imp button:hover:not(:disabled) { background: #3a3426; }
+.imp button.go { background: var(--amber); color: #1a1406; }
+.imp button.go:hover:not(:disabled) { background: #ffc44d; }
+.imp button.warn { color: #ffb4a0; }
+.imp button:disabled { opacity: .4; cursor: default; }
+.imp button:focus-visible, .imp .drop:focus-visible, .imp input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.imp .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+.imp .state { font: 500 14px/1.5 var(--f-mono); color: var(--dim); }
+.imp .state b { color: var(--fg); font-weight: 600; }
+.imp .state .bad { color: #ff9b85; }
+.imp .state:empty { display: none; }
+.imp .hint { font-size: 14px; color: var(--faint); }
+.imp .hidden { display: none !important; }
+.imp .meter { height: 8px; background: var(--raise); border-radius: 4px; overflow: hidden; flex: 1 1 200px; }
+.imp .meter i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .1s; }
+.imp .meter i.over { background: #ff9b85; }
+.imp .facts { font: 500 13px/1.5 var(--f-mono); color: var(--dim); }
+.imp .facts b { color: var(--fg); font-weight: 600; }
+.imp .slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.imp .slot { background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.imp .slot.has { border-color: color-mix(in srgb, var(--amber) 55%, var(--line)); }
+.imp .slot h3 { margin: 0; font: 700 18px/1.1 var(--f-mono); letter-spacing: .08em; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.imp .slot h3 small { font: 500 11px/1 var(--f-mono); color: var(--faint); letter-spacing: .06em; }
+.imp .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 16px 10px; text-align: center; color: var(--dim); cursor: pointer; font-size: 14px; }
+.imp .drop.over, .imp .drop:hover { border-color: var(--amber); color: var(--fg); }
+.imp canvas { display: block; width: 100%; height: 90px; background: #0b0a08; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+.imp label.f { display: flex; flex-direction: column; gap: 4px; font: 500 12px/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); min-width: 0; }
+.imp input[type=text] { font: 500 15px/1.2 var(--f-mono); color: var(--fg); background: #15130f; border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; width: 13ch; max-width: 100%; text-transform: uppercase; }
+.imp input[type=range] { width: 100%; accent-color: var(--amber); }
+.imp .tag { font: 600 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 7px; border-radius: 4px; background: #2a261d; color: var(--dim); white-space: nowrap; }
+.imp .tag.hot { background: var(--amber); color: #1a1406; }
+.imp ol.how { color: var(--dim); margin: 6px 0 0; padding-left: 20px; }
+.imp ol.how b { color: var(--fg); }
+</style>
+</head>
+<body class="imp">
+<!--HEADER-->
+<div class="page">
+<main id="main">
+<h1>Import</h1>
+<p class="lede">Your own snare, hi-hat and clap on the FM-1, in place of its synthesised ones whenever you want them.
+Drop a sample on each drum, hear it as the FM-1 will play it, and send them over USB. Chrome or Edge, on a computer.</p>
+
+<section class="card" aria-labelledby="h-dev">
+  <h2 id="h-dev">1. The FM-1</h2>
+  <p class="sub">Plug the FM-1 in by USB with LOAF BREAKER 0.9.45 or later running, then connect: the page reads the
+  samples already on it, so you can change one and keep the others.</p>
+  <div class="row">
+    <button id="connect" class="go">Connect</button>
+    <span class="state" id="devStatus" role="status">Not connected.</span>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="h-kit">
+  <h2 id="h-kit">2. Your drums</h2>
+  <p class="sub">One short sample each: WAV, AIFF, MP3, FLAC or anything your browser plays. The silence before the
+  hit and the quiet end are cut, a second at most is kept, and each is brought to the same peak level.</p>
+  <div class="slots" id="slots"></div>
+  <div class="row">
+    <div class="meter" aria-label="The room the three samples take on the FM-1 (8 KB)"><i id="room"></i></div>
+    <span class="facts" id="roomV"></span>
+  </div>
+  <p class="hint">The FM-1 keeps 8 KB for the three samples, compressed 4 to 1 as the breaks. The page plays them at the
+  highest rate that fits: 22.05 kHz (up to about 0.7 s for the three together), else 16 kHz (about 1 s), else
+  11.025 kHz (about 1.4 s), shortening them only past that. A hi-hat loses the least at a lower rate when it is short:
+  shorten a long one with its Length to keep the rate up.</p>
+</section>
+
+<section class="card" aria-labelledby="h-send">
+  <h2 id="h-send">3. Send</h2>
+  <div class="row">
+    <button id="send" class="go" disabled>Send to the FM-1</button>
+    <button id="wipe" class="warn" disabled>Delete them from the FM-1</button>
+    <div class="meter" aria-hidden="true"><i id="bar"></i></div>
+  </div>
+  <p class="state" id="sendStatus" role="status"></p>
+  <p class="hint">LOAF BREAKER must be stopped while it is written (writing the flash pauses the sound). Sending
+  replaces the three on the FM-1 with these; an empty drum has none.</p>
+  <h3 style="margin:18px 0 4px">Then, on the FM-1</h3>
+  <ol class="how">
+    <li><b>SEL + EDIT</b>: the drums; <b>SELECT</b> the snare, the hat or the clap.</li>
+    <li>Its <b>PRESET</b> (BEGINNER: K1; EXPERT: SHAPE, K3): the last one is your sample, under its name.</li>
+    <li>On it, <b>TUNE</b> repitches it (±12 semitones), <b>DECAY</b> fades it (FULL: as recorded), <b>TONE</b> darkens
+    it (left) or thins it (right); DRIVE, DIRT, LIFT, ROOM and BEGINNER's FX work as on the others. SAVE keeps it in
+    the drum's memory. Another PRESET gives the synthesised drum back.</li>
+  </ol>
+</section>
+</main>
+</div>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------- the kit, as tools/kit_frames.py makes it */
+const KIT_CAP = 8192, KIT_MAGIC = 0x314B5244, HEAD = 16 + 3 * 24, RATES = [22050, 16000, 11025], MAX_S = 1.0;
+const VOICES = [["SNARE", "SN"], ["HAT", "HH"], ["CLAP", "CP"]];
+const STEP = [7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97,
+  107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796,
+  876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428,
+  4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350,
+  22385, 24623, 27086, 29794, 32767];
+const ADJ = [-1, -1, -1, -1, 2, 4, 6, 8];
+const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+function adpcmEncode(x) {
+  let pred = 0, idx = 0;
+  const out = new Uint8Array((x.length + 1) >> 1);
+  for (let i = 0; i < x.length; i++) {
+    const s = clamp(Math.round(x[i] * 32767), -32768, 32767);
+    let d = s - pred, step = STEP[idx], code = 0, diff = step >> 3;
+    if (d < 0) { code = 8; d = -d; }
+    if (d >= step) { code |= 4; d -= step; diff += step; }
+    if (d >= step >> 1) { code |= 2; d -= step >> 1; diff += step >> 1; }
+    if (d >= step >> 2) { code |= 1; diff += step >> 2; }
+    pred = clamp(code & 8 ? pred - diff : pred + diff, -32768, 32767);
+    idx = clamp(idx + ADJ[code & 7], 0, 88);
+    out[i >> 1] |= code << (4 * (i & 1));
+  }
+  return out;
+}
+function adpcmDecode(data, n) {
+  let pred = 0, idx = 0;
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const code = (data[i >> 1] >> (4 * (i & 1))) & 15, step = STEP[idx];
+    let diff = step >> 3;
+    if (code & 4) diff += step;
+    if (code & 2) diff += step >> 1;
+    if (code & 1) diff += step >> 2;
+    pred = clamp(code & 8 ? pred - diff : pred + diff, -32768, 32767);
+    idx = clamp(idx + ADJ[code & 7], 0, 88);
+    out[i] = pred / 32768;
+  }
+  return out;
+}
+const CRC = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+function crc32(b) { let c = ~0; for (const v of b) c = CRC[(c ^ v) & 255] ^ (c >>> 8); return (~c) >>> 0; }
+
+/* the silence before it (-50 dBFS, 1 ms kept), its tail once under -60 dBFS for good, a second at most */
+function trim(x, rate) {
+  let pk = 0;
+  for (const v of x) pk = Math.max(pk, Math.abs(v));
+  if (pk <= 0) return new Float32Array(0);
+  let a = 0;
+  while (a < x.length && Math.abs(x[a]) < pk * 0.00316) a++;
+  a = Math.max(0, a - Math.floor(rate / 1000));
+  let b = x.length;
+  while (b > a && Math.abs(x[b - 1]) < pk * 0.001) b--;
+  return x.slice(a, Math.min(b, a + Math.floor(MAX_S * rate)));
+}
+/* its peak at -0.3 dBFS, the last 4 ms faded out */
+function shape(x, rate) {
+  let pk = 0;
+  for (const v of x) pk = Math.max(pk, Math.abs(v));
+  const g = pk > 0 ? 0.966 / pk : 0, y = Float32Array.from(x, (v) => v * g), f = Math.min(y.length, Math.max(1, Math.floor(rate * 4 / 1000)));
+  for (let i = 0; i < f; i++) y[y.length - f + i] *= 1 - (i + 1) / f;
+  return y;
+}
+/* the rate the three fit at (samples each at their own rate: lens [{n, rate}]), or the lowest and how much to keep */
+function fitRate(lens) {
+  for (const r of RATES) if (HEAD + lens.reduce((t, l) => t + ((Math.floor(l.n * r / l.rate) + 1) >> 1), 0) <= KIT_CAP) return { rate: r, keep: 1 };
+  const r = RATES[RATES.length - 1], tot = lens.reduce((t, l) => t + Math.floor(l.n * r / l.rate), 0);
+  return { rate: r, keep: ((KIT_CAP - HEAD) * 2 - 2 * lens.length) / tot };
+}
+/* the kit: three entries [{name, adpcm, n, rate} or null] at one rate -> the image app.c kit_scan checks */
+function buildKit(ents) {
+  const data = [], head = new Uint8Array(HEAD), dv = new DataView(head.buffer);
+  let off = HEAD;
+  ents.forEach((e, v) => {
+    if (!e) return;
+    dv.setUint32(16 + v * 24, off, true);
+    dv.setUint32(20 + v * 24, e.n, true);
+    dv.setUint32(24 + v * 24, e.rate, true);
+    const nm = (e.name || "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").slice(0, 12);
+    for (let k = 0; k < nm.length; k++) head[28 + v * 24 + k] = nm.charCodeAt(k);
+    data.push(e.adpcm);
+    off += e.adpcm.length;
+  });
+  const img = new Uint8Array(off);
+  img.set(head);
+  let at = HEAD;
+  for (const d of data) { img.set(d, at); at += d.length; }
+  const idv = new DataView(img.buffer);
+  idv.setUint32(0, KIT_MAGIC, true);
+  idv.setUint32(8, off - 16, true);
+  idv.setUint32(4, crc32(img.subarray(16)), true);
+  return img;
+}
+/* the kit on the FM-1 read back -> its three [{name, adpcm, n, rate} or null], or null */
+function readKit(img) {
+  if (img.length < HEAD) return null;
+  const dv = new DataView(img.buffer, img.byteOffset);
+  if (dv.getUint32(0, true) !== KIT_MAGIC) return null;
+  const size = dv.getUint32(8, true);
+  if (16 + size > img.length || crc32(img.subarray(16, 16 + size)) !== dv.getUint32(4, true)) return null;
+  return [0, 1, 2].map((v) => {
+    const off = dv.getUint32(16 + v * 24, true), n = dv.getUint32(20 + v * 24, true), rate = dv.getUint32(24 + v * 24, true);
+    if (!n) return null;
+    const name = String.fromCharCode(...img.subarray(28 + v * 24, 40 + v * 24)).replace(/\0.*$/, "").trim();
+    return { name, n, rate, adpcm: img.slice(off, off + ((n + 1) >> 1)) };
+  });
+}
+
+/* ---------------------------------------------------------------- the page */
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let ctx = null;
+const audio = () => (ctx = ctx || new AudioContext());
+/* each drum: {name, x (trimmed, at rate0), rate0, cut (ms kept), dev (as read from the FM-1: its adpcm kept while
+   unchanged)}; made: {rate, ents, img} */
+const slot = [null, null, null];
+let made = null, onDev = "", building = 0;
+
+function draw(v) {
+  const cv = $("cv" + v), g = cv.getContext("2d"), w = cv.width, h = cv.height, e = made && made.ents[v];
+  g.fillStyle = "#0b0a08"; g.fillRect(0, 0, w, h);
+  g.fillStyle = "#3a3426"; g.fillRect(0, h / 2, w, 1);
+  if (!e) return;
+  const pcm = adpcmDecode(e.adpcm, e.n), per = Math.max(1, pcm.length / w);
+  g.fillStyle = "#ffb000";
+  for (let i = 0; i < w; i++) {
+    let pk = 0;
+    for (let j = Math.floor(i * per); j < Math.min(pcm.length, Math.floor((i + 1) * per)); j++) pk = Math.max(pk, Math.abs(pcm[j]));
+    if (i * per >= pcm.length) break;
+    const y = pk * (h / 2 - 2);
+    g.fillRect(i, h / 2 - y, 1, 2 * y + 1);
+  }
+}
+function play(v) {
+  const e = made && made.ents[v];
+  if (!e) return;
+  const a = audio(), pcm = adpcmDecode(e.adpcm, e.n), b = a.createBuffer(1, pcm.length, e.rate);
+  b.copyToChannel(pcm, 0);
+  const s = a.createBufferSource();
+  s.buffer = b; s.connect(a.destination); s.start();
+}
+async function resample(x, from, to) {
+  if (from === to) return x;
+  const oc = new OfflineAudioContext(1, Math.max(1, Math.round(x.length * to / from)), to);
+  const ab = oc.createBuffer(1, x.length, from);
+  ab.copyToChannel(x, 0);
+  const node = oc.createBufferSource(); node.buffer = ab; node.connect(oc.destination); node.start();
+  return (await oc.startRendering()).getChannelData(0);
+}
+/* the three as the FM-1 will hold them: the rate they fit at, each resampled, shaped, ADPCM; a drum read from the
+   FM-1 and untouched keeps its bytes when the rate is its own */
+async function build() {
+  const my = ++building;
+  const lens = slot.map((s) => s && (s.x ? { n: Math.min(s.x.length, Math.floor(s.cut / 1000 * s.rate0)), rate: s.rate0 } : { n: s.dev.n, rate: s.dev.rate })).filter(Boolean);
+  if (!lens.length) { made = null; render(); return; }
+  const fit = fitRate(lens), ents = [];
+  for (let v = 0; v < 3; v++) {
+    const s = slot[v];
+    if (!s) { ents.push(null); continue; }
+    if (!s.x && s.dev.rate === fit.rate && fit.keep >= 1) { ents.push({ ...s.dev, name: s.name }); continue; }
+    let x = s.x || adpcmDecode(s.dev.adpcm, s.dev.n), r = s.x ? s.rate0 : s.dev.rate;
+    if (s.x) x = x.subarray(0, Math.min(x.length, Math.floor(s.cut / 1000 * r)));
+    if (fit.keep < 1) x = x.subarray(0, Math.floor(x.length * fit.keep));
+    let y = await resample(x, r, fit.rate);
+    if (my !== building) return;
+    y = s.x ? shape(y, fit.rate) : y;
+    ents.push({ name: s.name, n: y.length, rate: fit.rate, adpcm: adpcmEncode(y) });
+  }
+  made = { rate: fit.rate, keep: fit.keep, ents, img: buildKit(ents) };
+  render();
+}
+function render() {
+  slot.forEach((s, v) => {
+    const el = $("slot" + v), e = made && made.ents[v];
+    el.classList.toggle("has", !!s);
+    $("ed" + v).classList.toggle("hidden", !s);
+    $("drop" + v).textContent = s ? "Drop another, or click" : "Drop a " + VOICES[v][0].toLowerCase() + " here, or click to choose one";
+    $("tag" + v).textContent = s ? (s.x ? "new" : "on the FM-1") : "none";
+    $("tag" + v).className = "tag" + (s && s.x ? " hot" : "");
+    if (s) {
+      $("nm" + v).value = s.name;
+      const max = s.x ? Math.min(1000, Math.round(s.x.length / s.rate0 * 1000)) : 0;
+      $("cutw" + v).classList.toggle("hidden", !s.x);
+      if (s.x) { $("cut" + v).max = String(max); $("cut" + v).value = String(Math.min(s.cut, max)); $("cutV" + v).textContent = Math.min(s.cut, max) + " ms"; }
+      $("f" + v).innerHTML = e ? `<b>${(e.n / e.rate * 1000).toFixed(0)} ms</b> · ${(e.rate / 1000).toFixed(2)} kHz · ${(e.adpcm.length / 1024).toFixed(1)} KB` : "";
+    }
+    draw(v);
+  });
+  const used = made ? made.img.length : 0;
+  $("room").style.width = Math.min(100, 100 * used / KIT_CAP).toFixed(1) + "%";
+  $("roomV").innerHTML = made ? `<b>${(used / 1024).toFixed(1)} KB</b> of 8 KB · ${(made.rate / 1000).toFixed(2)} kHz` +
+    (made.keep < 1 ? ` · <span style="color:#ff9b85">shortened to ${Math.round(made.keep * 100)}% to fit</span>` : "") : "Nothing yet.";
+  $("send").disabled = !out || (!made && !onDev) || (made ? sigOf(made.img) === onDev : !onDev);
+  $("wipe").disabled = !out || !onDev;
+}
+const sigOf = (img) => img.length + ":" + crc32(img);
+async function loadFile(v, f) {
+  try {
+    const buf = await audio().decodeAudioData(await f.arrayBuffer());
+    const n = buf.length, mono = new Float32Array(n);
+    for (let c = 0; c < buf.numberOfChannels; c++) { const d = buf.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[i] / buf.numberOfChannels; }
+    const x = trim(mono, buf.sampleRate);
+    if (!x.length) throw new Error("it is silent");
+    const name = f.name.replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9 ]+/g, " ").trim().toUpperCase().slice(0, 12) || VOICES[v][0];
+    slot[v] = { name, x, rate0: buf.sampleRate, cut: Math.min(1000, Math.round(x.length / buf.sampleRate * 1000)) };
+    $("st" + v).textContent = "";
+    await build();
+    play(v);
+  } catch (e) {
+    $("st" + v).innerHTML = `<span class="bad">That file can't be used (${esc(e.message)}).</span>`;
+  }
+}
+function slotsHtml() {
+  $("slots").innerHTML = VOICES.map(([nm, ab], v) => `
+    <div class="slot" id="slot${v}">
+      <h3>${nm} <small id="tag${v}" class="tag">none</small></h3>
+      <div class="drop" id="drop${v}" tabindex="0" role="button" aria-label="Choose a ${nm.toLowerCase()} sample, or drop one here"></div>
+      <input type="file" id="file${v}" accept="audio/*,.wav,.aif,.aiff,.mp3,.flac,.ogg,.m4a" class="hidden">
+      <div id="ed${v}" class="hidden" style="display:flex;flex-direction:column;gap:10px">
+        <canvas id="cv${v}" width="560" height="90" aria-label="The ${nm.toLowerCase()} as the FM-1 will play it"></canvas>
+        <div class="facts" id="f${v}"></div>
+        <div class="row" style="margin:0">
+          <label class="f">Name<input type="text" id="nm${v}" maxlength="12" spellcheck="false"></label>
+          <button id="pl${v}">Play</button>
+          <button id="rm${v}" class="warn">Remove</button>
+        </div>
+        <label class="f" id="cutw${v}">Length <span id="cutV${v}"></span><input type="range" id="cut${v}" min="20" max="1000" step="5"></label>
+      </div>
+      <p class="state" id="st${v}" role="status"></p>
+    </div>`).join("");
+  VOICES.forEach((_, v) => {
+    const d = $("drop" + v), f = $("file" + v);
+    d.onclick = () => f.click();
+    d.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); f.click(); } };
+    f.onchange = (e) => e.target.files[0] && loadFile(v, e.target.files[0]);
+    d.ondragover = (e) => { e.preventDefault(); d.classList.add("over"); };
+    d.ondragleave = () => d.classList.remove("over");
+    d.ondrop = (e) => { e.preventDefault(); d.classList.remove("over"); e.dataTransfer.files[0] && loadFile(v, e.dataTransfer.files[0]); };
+    $("pl" + v).onclick = () => { audio().resume(); play(v); };
+    $("cv" + v).onclick = () => { audio().resume(); play(v); };
+    $("rm" + v).onclick = () => { slot[v] = null; build(); };
+    $("nm" + v).onchange = (e) => { if (slot[v]) { slot[v].name = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, " ").slice(0, 12); build(); } };
+    $("cut" + v).oninput = (e) => { $("cutV" + v).textContent = e.target.value + " ms"; };
+    $("cut" + v).onchange = (e) => { if (slot[v]) { slot[v].cut = +e.target.value; build().then(() => play(v)); } };
+  });
+}
+
+/* ---------------------------------------------------------------- the FM-1 over Web MIDI */
+let midi = null, out = null, waiting = null;
+function pack7(b) {
+  const o = [];
+  for (let i = 0; i < b.length; i += 7) {
+    const g = b.subarray(i, i + 7); let hi = 0;
+    g.forEach((v, j) => { hi |= (v >> 7) << j; });
+    o.push(hi, ...Array.from(g, (v) => v & 0x7F));
+  }
+  return o;
+}
+function unpack7(p) {
+  const o = [];
+  for (let i = 0; i < p.length; i += 8) for (let j = 1; j < 8 && i + j < p.length; j++) o.push(p[i + j] | ((p[i] >> (j - 1)) & 1) << 7);
+  return new Uint8Array(o);
+}
+const u32 = (v) => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+function onMsg(e) {
+  const d = e.data;
+  if (d[0] !== 0xF0 || d[1] !== 0x7D || d[2] !== 0x43 || d[3] !== 0x48) return;
+  if (waiting && (d[4] & 0x3F) === waiting.cmd) { const w = waiting; waiting = null; w.res({ code: d[5], data: unpack7(d.subarray(6, d.length - 1)) }); }
+}
+function ask(cmd, data = [], ms = 3000, port = out) {
+  return new Promise((res, rej) => {
+    waiting = { cmd, res };
+    port.send([0xF0, 0x7D, 0x43, 0x48, cmd, ...pack7(Uint8Array.from(data)), 0xF7]);
+    setTimeout(() => { if (waiting && waiting.res === res) { waiting = null; rej(new Error("no answer")); } }, ms);
+  });
+}
+const ERR = { 1: "LOAF BREAKER is playing: stop it (PLAY) and try again.", 2: "They don't fit.", 3: "The flash could not be written.", 4: "The samples as written don't check." };
+function say(el, t, bad) { el.innerHTML = bad ? `<span class="bad">${t}</span>` : t; }
+async function info() {
+  const r = await ask(0x21), dv = new DataView(r.data.buffer);
+  const size = dv.getUint32(4, true);
+  onDev = "";
+  if (size) {
+    const img = new Uint8Array(size);
+    for (let off = 0; off < size; off += 256) {
+      const n = Math.min(256, size - off), q = await ask(0x25, [...u32(off), ...u32(n)]);
+      if (q.code) throw new Error("read " + q.code);
+      img.set(q.data.subarray(4, 4 + n), off);
+    }
+    const kit = readKit(img);
+    if (kit) {
+      onDev = sigOf(img);
+      kit.forEach((e, v) => { if (e && (!slot[v] || !slot[v].x)) slot[v] = { name: e.name, dev: e }; });
+    }
+  }
+  const names = slot.map((s, v) => s && !s.x ? `${VOICES[v][1]} <b>${esc(s.name)}</b>` : "").filter(Boolean);
+  say($("devStatus"), `<b>${esc(out.name)}</b> connected · ` + (names.length ? "on it: " + names.join(", ") : "no samples of yours on it yet"));
+  $("connect").textContent = "Refresh";
+  await build();
+}
+async function send(wipe) {
+  const st = $("sendStatus"), bar = $("bar");
+  $("send").disabled = $("wipe").disabled = true;
+  try {
+    let r;
+    if (wipe || !made) {
+      r = await ask(0x26, [], 15000);
+      if (r.code) throw new Error(ERR[r.code] || "code " + r.code);
+      if (wipe) slot.forEach((s, v) => { if (s && !s.x) slot[v] = null; });
+    } else {
+      const img = made.img;
+      r = await ask(0x22, u32(img.length), 20000);   /* the flash erased first: a moment */
+      if (r.code) throw new Error(ERR[r.code] || "code " + r.code);
+      for (let off = 16; off < img.length; off += 512) {
+        r = await ask(0x23, [...u32(off), ...img.subarray(off, off + 512)]);
+        if (r.code) throw new Error(ERR[r.code] || "code " + r.code);
+        const pc = 100 * off / img.length;
+        bar.style.width = pc.toFixed(1) + "%";
+        say(st, `Sending… ${Math.round(pc)}%`);
+      }
+      r = await ask(0x24, img.subarray(0, 16), 5000);   /* the header last: they count once they check */
+      if (r.code) throw new Error(ERR[r.code] || "code " + r.code);
+    }
+    bar.style.width = "100%";
+    const sent = made && !wipe ? made.ents.map((e, v) => e ? `${VOICES[v][0]} <b>${esc(e.name)}</b>` : "").filter(Boolean) : [];
+    say(st, sent.length ? `On the FM-1: ${sent.join(", ")}. Each drum's PRESET: the last is your sample.` : "Your samples are deleted from the FM-1: the drums are the synthesised ones again.");
+    slot.forEach((s, v) => { if (s && s.x && made && made.ents[v]) slot[v] = { name: s.name, dev: made.ents[v] }; });
+    await info();
+  } catch (e) {
+    say(st, "Not sent: " + e.message, true);
+    render();
+  }
+}
+$("send").onclick = () => send(false);
+$("wipe").onclick = () => send(true);
+$("connect").onclick = async () => {
+  try {
+    midi = midi || await navigator.requestMIDIAccess({ sysex: true });
+  } catch (e) {
+    say($("devStatus"), "No MIDI with SysEx here: use Chrome or Edge, and allow it.", true); return;
+  }
+  say($("devStatus"), "Looking for LOAF BREAKER…");
+  midi.inputs.forEach((i) => { i.onmidimessage = onMsg; });
+  out = null;
+  const outs = [...midi.outputs.values()].filter((o) => o.state !== "disconnected");
+  const likely = outs.filter((o) => /loaf|choppah|fm-?1/i.test(o.name));
+  for (const o of likely.concat(outs.filter((o) => !likely.includes(o)))) {
+    try { const r = await ask(0x21, [], 700, o); if (r.data.length >= 8) { out = o; break; } } catch (e) { /* not this one */ }
+  }
+  if (!out) { say($("devStatus"), "No LOAF BREAKER 0.9.45 or later found. Is it plugged in by USB, running it?", true); render(); return; }
+  try { await info(); } catch (e) { say($("devStatus"), "Connected, but its samples could not be read (" + esc(e.message) + ").", true); }
+};
+slotsHtml();
+render();
+if (!navigator.requestMIDIAccess) say($("devStatus"), "This browser has no Web MIDI: use Chrome or Edge to send samples. You can still hear yours here.", true);
+</script>
+</body>
+</html>

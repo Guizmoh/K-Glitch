@@ -1,0 +1,50 @@
+# LOAF BREAKER (0.9.71, FLEXOR: "quand SUB FX et disto ON OFF sont sur les SEL + black, le côté on / off de la diode ne
+# fonctionne pas"): DST and SUB as SEL functions only (ARP › SEL BLACK), none in the layout: SEL + the key switches the
+# kick's DISTO / SUB FX off and on again (on the CHOPPAH layout, no DST or SUB key of its own), and the key's light (SEL held) follows (app.c bk_has: the SEL functions too).
+#   app/build/host/loaf-breaker_host tests/scenarios/seldst.txt app/build/scenarios
+wait 4200
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+turn K1 -2 60
+wait 300
+expect bk_pre 0
+turn SELECT 1 10
+wait 300
+expect opage 2
+turn K3 14 60
+wait 200
+turn K2 1 60
+wait 200
+turn K3 15 60
+wait 200
+tap HOME
+wait 300
+expect ter_off 0
+expect sub_off 0
+press SEL
+wait 200
+expect llitk 2
+key b0 down
+wait 100
+key b0 up
+wait 200
+expect ter_off 1
+expect llitk 1
+key b1 down
+wait 100
+key b1 up
+wait 200
+expect sub_off 1
+expect llitk 0
+key b0 down
+wait 100
+key b0 up
+wait 200
+expect ter_off 0
+expect llitk 1
+release SEL
+wait 300
+expect ter_off 0
+expect sub_off 1

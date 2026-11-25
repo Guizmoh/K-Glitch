@@ -1,0 +1,38 @@
+# GLOUPI BREAKS: the kick over four bars. On SEQ, ALGORITHM to KICK 1-16 (K1), then K2, K3 and K4, a different bar on
+# each; then playing, each bar's kick lit in turn (the lower strip: rows 1-4 the kick's bars, S the snare, H the hat)
+#   app/build/host/loaf-breaker_host tests/scenarios/kick64.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 300
+tapkey w0
+tapkey w4
+tapkey w8
+tapkey w12
+turn ALGO 1 10
+tapkey w0
+tapkey w3
+tapkey w6
+tapkey w10
+turn ALGO 1 10
+tapkey w0
+tapkey w8
+turn ALGO 1 10
+tapkey w0
+tapkey w2
+tapkey w4
+tapkey w6
+tapkey w8
+tapkey w10
+tapkey w12
+tapkey w14
+wait 200
+shot k_bar4.png
+tap PLAY
+wait 700
+shot k_play_1.png
+wait 1410
+shot k_play_2.png
+wait 1410
+shot k_play_3.png
+wait 1410
+shot k_play_4.png

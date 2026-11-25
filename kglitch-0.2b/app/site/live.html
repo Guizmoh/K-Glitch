@@ -1,0 +1,394 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- LOAF BREAKER's LIVE page (0.9.71, FLEXOR: "une application pour Android connectée à LOAF BREAKER"): the FM-1 in the
+     hand, from a phone (Chrome on Android, a USB-C cable: LOAF BREAKER has no Bluetooth) or a computer. Its screen live
+     and its whole panel to play with the fingers: the buttons, the seven knobs (drag up or down, or tap - and +), the
+     16 white and 11 black keys, MASTER, and DROP (SEL + ENV) as one button. It speaks fm1-base's mirror (device/
+     mirror.c, the same as the site's mirror/ page: the screen in, the panel's input out, cmd 0x54), so the FM-1 does
+     what its own panel would. tools/site_style.py puts it at live/ on the site, with the site's style and header. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LOAF BREAKER · Live</title>
+<style>/*SITE_CSS*/
+body.live { overscroll-behavior: none; }
+@media (display-mode: standalone) { body.live .page { display: none; } }   /* (the app: no site header) */
+.lv { max-width: 1100px; margin: 0 auto; padding: 0 max(10px, env(safe-area-inset-right)) 24px max(10px, env(safe-area-inset-left)); }
+.lv .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 10px; }
+.lv .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--faint); flex: none; }
+.lv .dot.on { background: #7fd6a4; } .lv .dot.wait { background: #f2c46d; } .lv .dot.bad { background: #e0677a; }
+.lv #status { color: var(--dim); font: 13px/1.3 var(--f-mono); flex: 1 1 160px; min-width: 0; }
+.lv button { font: 600 13px/1 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--hot);
+  background: var(--raise); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; touch-action: none;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.lv button.go { background: var(--amber); color: #1a0907; border-color: var(--amber); padding: 10px 16px; }
+.lv .stage { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (orientation: landscape) and (min-width: 700px) { .lv .stage { grid-template-columns: minmax(240px, 46%) 1fr; align-items: start; } }
+.lv .scr { position: sticky; top: env(safe-area-inset-top); z-index: 2; background: var(--bg); padding-bottom: 6px; }
+.lv canvas { width: 100%; max-width: 520px; aspect-ratio: 1; display: block; margin: 0 auto; image-rendering: pixelated;
+  border-radius: 6px; border: 1px solid var(--line); background: #000; }
+.lv .ctl { display: grid; gap: 10px; }
+.lv .row { display: grid; gap: 6px; }
+.lv .lab { font: 600 11px/1 var(--f-mono); letter-spacing: .1em; color: var(--faint); text-transform: uppercase; margin: 2px 0 -2px; }
+.lv .btns { grid-template-columns: repeat(5, 1fr); }
+.lv .btns button, .lv .tr button { min-height: 46px; padding: 0 4px; }
+.lv .tr { grid-template-columns: repeat(5, 1fr); }
+.lv button.lit { background: var(--amber); color: #1a0907; border-color: var(--amber); }
+.lv button.mid { background: var(--amber-soft); border-color: var(--amber); }
+.lv button.held { outline: 2px solid var(--hot); outline-offset: -2px; }
+.lv button.drop { background: #3a1813; border-color: #a5402f; color: #ffd3c9; }
+.lv .knobs { grid-template-columns: repeat(7, 1fr); }
+.lv .knob { display: grid; grid-template-rows: auto 64px auto; gap: 4px; text-align: center; }
+.lv .knob .nm { font: 600 10px/1.1 var(--f-mono); color: var(--dim); letter-spacing: .04em; }
+.lv .knob .pad { position: relative; border-radius: 10px; background: var(--raise); border: 1px solid var(--line); touch-action: none; cursor: ns-resize; }
+.lv .knob .pad::after { content: ""; position: absolute; left: 50%; top: 8px; bottom: 8px; width: 2px; margin-left: -1px; background: var(--line); }
+.lv .knob .pad.on { border-color: var(--amber); }
+.lv .knob .pm { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.lv .knob .pm button { min-height: 34px; padding: 0; font-size: 15px; }
+.lv .keys { position: relative; }
+.lv .wk { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+.lv .wk button { min-height: 58px; background: #efe8d6; color: #2a241a; border-color: #cfc6b0; font-size: 12px; }
+.lv .wk button.lit { background: var(--amber); color: #1a0907; }
+.lv .wk button.mid { background: #ffd0c6; }
+.lv .bk { display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; }
+.lv .bk button { min-height: 50px; background: #121110; color: var(--dim); font-size: 11px; padding: 0; }
+.lv .bk button.lit { background: var(--amber); color: #1a0907; }
+.lv .master { display: flex; align-items: center; gap: 10px; }
+.lv .master input { flex: 1; accent-color: var(--amber); height: 32px; }
+.lv .help { color: var(--dim); font-size: 14px; max-width: 70ch; margin-top: 18px; }
+.lv .help b { color: var(--fg); }
+.lv button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+@media (max-width: 420px) { .lv .knob .nm { font-size: 9px; } .lv .wk button { min-height: 52px; } }
+</style>
+</head>
+<body class="live">
+<!--HEADER-->
+<main class="lv">
+  <div class="bar">
+    <span class="dot" id="dot" aria-hidden="true"></span>
+    <span id="status" role="status">Plug the FM-1 in with a USB cable, then Connect.</span>
+    <button id="connect" class="go" type="button">Connect</button>
+  </div>
+  <div class="stage">
+    <div class="scr"><canvas id="screen" width="240" height="240" role="img" aria-label="The FM-1's screen, live"></canvas></div>
+    <div class="ctl" id="ctl">
+      <div class="row tr" role="group" aria-label="Transport">
+        <button data-b="10" type="button">Play</button>
+        <button data-b="11" type="button">Rec</button>
+        <button data-b="1" type="button">Sel</button>
+        <button id="drop" class="drop" type="button" title="SEL + ENV: the build, then the drop at the next bar">Drop</button>
+        <button data-b="7" type="button">Save</button>
+      </div>
+      <div class="lab">Knobs: drag up or down, or tap - and +</div>
+      <div class="row knobs" id="knobs"></div>
+      <div class="lab">Buttons</div>
+      <div class="row btns" role="group" aria-label="Buttons">
+        <button data-b="6" type="button">Home</button>
+        <button data-b="4" type="button">Edit</button>
+        <button data-b="9" type="button">Seq</button>
+        <button data-b="2" type="button">Env</button>
+        <button data-b="3" type="button">Lfo</button>
+        <button data-b="0" type="button">Fx</button>
+        <button data-b="8" type="button">Arp</button>
+        <button data-b="5" type="button">Glo</button>
+        <button data-b="12" type="button">Oct -</button>
+        <button data-b="13" type="button">Oct +</button>
+      </div>
+      <div class="lab">Black keys</div>
+      <div class="row bk" id="bk" role="group" aria-label="Black keys"></div>
+      <div class="lab">White keys: the slices</div>
+      <div class="row wk keys" id="wk" role="group" aria-label="White keys"></div>
+      <div class="lab">Master</div>
+      <div class="master"><input id="master" type="range" min="0" max="4095" value="4095" aria-label="MASTER">
+        <button id="masterOff" type="button" title="Back to the FM-1's own MASTER knob">Knob</button></div>
+    </div>
+  </div>
+  <section class="help">
+    <p><b>On a phone:</b> Chrome on Android, the FM-1 plugged into the phone with a USB-C cable (LOAF BREAKER has no
+    Bluetooth). Press Connect and allow MIDI. Add this page to the home screen (Chrome's menu, then Install app) and it
+    opens full screen like an app.</p>
+    <p>Everything here does what the FM-1's own panel does: hold a key or a button as long as you hold your finger,
+    several at once. <b>Drop</b> is SEL + ENV. The screen keeps the phone awake while it is connected.</p>
+  </section>
+</main>
+<script>
+"use strict";
+// ------------------------------------------------ fm1-base's mirror (device/mirror.c; the same as web/mirror/index.html)
+const MR_REQ = 0x50, MR_RECT = 0x51, MR_FILL = 0x52, MR_INPUT = 0x53, MR_REMOTE = 0x54;
+function mrPack7(bytes) {
+  const out = []; let acc = 0, nb = 0;
+  for (const b of bytes) { acc |= b << nb; nb += 8; while (nb >= 7) { out.push(acc & 0x7F); acc >>= 7; nb -= 7; } }
+  if (nb) out.push(acc & 0x7F);
+  return out;
+}
+function mrUnpack7(src) {
+  const out = []; let acc = 0, nb = 0;
+  for (const b of src) { acc |= (b & 0x7F) << nb; nb += 7; if (nb >= 8) { out.push(acc & 0xFF); acc >>= 8; nb -= 8; } }
+  return out;
+}
+const mrRequest = (op) => Uint8Array.from([0xF0, ...mrPack7([0x00, 0x59, MR_REQ, 1, 0, 0, op, ~op & 0xFF]), 0xF7]);
+function mrRemote(seq, op, a = 0, b = 0) {
+  const body = [seq & 255, op & 255, a & 255, b & 255, 0], sum = body.reduce((x, v) => x + v, 0);
+  return Uint8Array.from([0xF0, ...mrPack7([0x00, 0x59, MR_REMOTE, 5, 0, 0, ...body, ~sum & 0xFF]), 0xF7]);
+}
+const mrHash = (c) => (Math.imul(c, 40503) >>> 10) & 63;
+function createMirror(on = {}) {
+  const screen = new Uint16Array(240 * 240);
+  let buf = [], inSx = false, seq = -1;
+  function rect(b) {
+    const x = b[0], y = b[1], w = b[2], h = b[3], total = w * h, cache = new Uint16Array(64);
+    let i = 5, p = 0, cur = 0;
+    if (!w || !h || x + w > 240 || y + h > 240) return false;
+    const put = (c, n) => {
+      if (p + n > total) return false;
+      for (let k = 0; k < n; k++, p++) screen[(y + (p / w | 0)) * 240 + x + p % w] = c;
+      return true;
+    };
+    while (i < b.length) {
+      const op = b[i++];
+      if (op < 0x80) { if (!put(cur, op + 1)) return false; }
+      else if (op < 0xC0) { cur = cache[op & 63]; if (!put(cur, 1)) return false; }
+      else {
+        if (i + 2 > b.length) return false;
+        cur = b[i] << 8 | b[i + 1]; i += 2;
+        cache[mrHash(cur)] = cur;
+        if (!put(cur, (op & 63) + 1)) return false;
+      }
+    }
+    return p === total;
+  }
+  function frame(raw) {
+    const m = mrUnpack7(raw);
+    if (m.length < 7 || m[0] !== 0 || m[1] !== 0x59) return;
+    const n = m[3] | m[4] << 8 | m[5] << 16;
+    let sum = 0;
+    for (let i = 6; i < 6 + n; i++) sum += m[i];
+    if (n + 7 !== m.length || (~sum & 0xFF) !== m[6 + n]) return;
+    const cmd = m[2], b = m.slice(6, 6 + n);
+    if (cmd === MR_RECT || cmd === MR_FILL) {
+      if (seq >= 0 && b[4] !== seq) on.gap?.();
+      seq = (b[4] + 1) & 255;
+    }
+    if (cmd === MR_RECT) { if (!rect(b)) on.gap?.(); on.rect?.(b[0], b[1], b[2], b[3]); }
+    else if (cmd === MR_FILL && n >= 7) {
+      const c = b[5] << 8 | b[6], x = b[0], y = b[1], w = b[2], h = b[3];
+      for (let j = y; j < Math.min(240, y + h); j++) screen.fill(c, j * 240 + x, j * 240 + Math.min(240, x + w));
+      on.rect?.(x, y, w, h);
+    } else if (cmd === MR_INPUT && n >= 21) {
+      const u32 = (o) => (b[o] | b[o + 1] << 8 | b[o + 2] << 16 | b[o + 3] << 24) >>> 0;
+      const lit = b[15] | b[16] << 8;
+      on.input?.({ buttons: b[0] | b[1] << 8, keys: u32(2), litButtons: lit & 0x7FFF, litKeys: u32(17),
+                   dimButtons: n >= 27 ? b[21] | b[22] << 8 : 0, dimKeys: n >= 27 ? u32(23) : 0 });
+    } else if (cmd === MR_REQ && n >= 4) on.hello?.({ version: b[0], on: !!b[1] });
+    else if (cmd === MR_REMOTE && n >= 3) on.remote?.({ seq: b[0], op: b[1], ok: !!b[2] });
+  }
+  function feed(data) {
+    for (const v of data) {
+      if (v === 0xF0) { inSx = true; buf = []; }
+      else if (!inSx || v >= 0xF8) continue;
+      else if (v === 0xF7) { inSx = false; frame(buf); }
+      else if (v & 0x80) inSx = false;
+      else buf.push(v);
+    }
+  }
+  return { feed, screen, resync() { seq = -1; } };
+}
+
+// ------------------------------------------------ the screen
+const $ = (id) => document.getElementById(id);
+const cv = $("screen"), g = cv.getContext("2d"), img = g.createImageData(240, 240);
+let dirty = false;
+const mirror = createMirror({
+  rect() { dirty = true; },
+  gap() { askRefresh(); },
+  hello(h) { heard = true; if (!outPort && h) {} },
+  input(s) { light(s); },
+  remote(r) { remoteAnswer(r); },
+});
+function paint() {
+  if (dirty) {
+    const s = mirror.screen, d = img.data;
+    for (let i = 0, j = 0; i < s.length; i++, j += 4) {
+      const c = s[i];
+      d[j] = (c >> 11 & 31) * 255 / 31; d[j + 1] = (c >> 5 & 63) * 255 / 63; d[j + 2] = (c & 31) * 255 / 31; d[j + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    dirty = false;
+  }
+  requestAnimationFrame(paint);
+}
+requestAnimationFrame(paint);
+
+// ------------------------------------------------ MIDI: the FM-1 found by its mirror's answer
+let access = null, outPort = null, heard = false, lastHeard = 0, lastAsk = 0, wake = null;
+function say(t, state) {
+  $("status").textContent = t;
+  $("dot").className = "dot" + (state ? " " + state : "");
+}
+function send(op) { try { outPort?.send(mrRequest(op)); } catch (e) { /* gone: the state change says so */ } }
+function askRefresh() {
+  const t = performance.now();
+  if (t - lastAsk < 1000) return;
+  lastAsk = t;
+  mirror.resync();
+  send(2);
+}
+const live = (m) => [...m.values()].filter((p) => p.state !== "disconnected");
+async function find() {                         // each output asked for the mirror (op 2): the one answered is the FM-1
+  const outs = live(access.outputs), likely = outs.filter((o) => /loaf|choppah|fm-?1/i.test(o.name || ""));
+  live(access.inputs).forEach((i) => { i.onmidimessage = (e) => { lastHeard = performance.now(); mirror.feed(e.data); }; });
+  for (const o of likely.concat(outs.filter((o) => !likely.includes(o)))) {
+    heard = false;
+    outPort = o;
+    mirror.resync();
+    send(2);
+    await new Promise((r) => setTimeout(r, 700));
+    if (heard) {
+      send(1);                                 // (the mirror on: the panel's input taken from here on)
+      say(`Connected: ${o.name}.`, "on");
+      $("connect").textContent = "Refresh";
+      keepAwake();
+      return true;
+    }
+  }
+  outPort = null;
+  say("No LOAF BREAKER answered. Plug it in (USB), switch it on, and Connect again.", "bad");
+  return false;
+}
+async function connect() {
+  if (outPort) { askRefresh(); return; }
+  if (!navigator.requestMIDIAccess) { say("This browser has no Web MIDI: use Chrome (on Android too) or Edge.", "bad"); return; }
+  try { access = access || await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { say("MIDI wasn't allowed. Press Connect and allow MIDI with SysEx.", "bad"); return; }
+  access.onstatechange = (e) => {
+    if (e.port === outPort && e.port.state === "disconnected") { outPort = null; say("The FM-1 is gone. Plug it back in.", "wait"); }
+    else if (!outPort && e.port.state === "connected") setTimeout(() => { if (!outPort) find(); }, 600);
+  };
+  say("Looking for LOAF BREAKER...", "wait");
+  await find();
+}
+$("connect").addEventListener("click", connect);
+navigator.permissions?.query({ name: "midi", sysex: true }).then((p) => { if (p.state === "granted") connect(); }).catch(() => {});
+async function keepAwake() {
+  try { if (!wake && navigator.wakeLock) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => { wake = null; }); } }
+  catch (e) { /* not allowed here: the phone may sleep */ }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && outPort) { keepAwake(); askRefresh(); } });
+setInterval(() => {                             // the keep-alive (the FM-1 stops mirroring 6 s without one)
+  if (!outPort) return;
+  if (performance.now() - lastHeard > 4000) { mirror.resync(); send(2); say("No answer from the FM-1. Asking again...", "wait"); }
+  else { send(1); if (!$("dot").classList.contains("on")) say(`Connected: ${outPort.name}.`, "on"); }
+}, 2000);
+
+// ------------------------------------------------ the remote: one request at a time, answered (mirror cmd 0x54)
+let rseq = 0, rq = [], rbusy = null;
+function rsend(op, a = 0, b = 0) { if (!outPort) return; rq.push([op, a, b]); rpump(); }
+function rpump() {
+  if (rbusy || !rq.length) return;
+  rseq = (rseq + 1) & 255;
+  rbusy = { seq: rseq, msg: mrRemote(rseq, ...rq.shift()), tries: 0, t: 0 };
+  rtry();
+}
+function rtry() {
+  if (!rbusy) return;
+  if (rbusy.tries++ >= 5) { rbusy = null; rq = []; say("The FM-1 doesn't answer the panel. Connect again.", "wait"); return; }
+  try { outPort?.send(rbusy.msg); } catch (e) { /* gone */ }
+  rbusy.t = setTimeout(rtry, 300);
+}
+function remoteAnswer(r) {
+  if (!rbusy || r.seq !== rbusy.seq) return;
+  clearTimeout(rbusy.t);
+  rbusy = null;
+  if (!r.ok) { rq = []; askRefresh(); return; }
+  rpump();
+}
+function hold(el, op, id) {                    // held as long as the finger (several at once)
+  let down = false;
+  el.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    el.setPointerCapture?.(e.pointerId);
+    if (down) return;
+    down = true;
+    el.classList.add("held");
+    rsend(op, id, 1);
+    navigator.vibrate?.(8);
+  });
+  const up = () => { if (down) { down = false; el.classList.remove("held"); rsend(op, id, 0); } };
+  el.addEventListener("pointerup", up);
+  el.addEventListener("pointercancel", up);
+  el.addEventListener("lostpointercapture", up);
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
+  el.addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat && !down) { e.preventDefault(); down = true; rsend(op, id, 1); } });
+  el.addEventListener("keyup", (e) => { if (e.key === " " || e.key === "Enter") up(); });
+}
+const BTN = {};
+document.querySelectorAll("[data-b]").forEach((b) => { BTN[+b.dataset.b] = b; hold(b, 1, +b.dataset.b); });
+$("drop").addEventListener("pointerdown", (e) => {   // SEL + ENV: SEL down, ENV pressed, SEL up
+  e.preventDefault();
+  rsend(1, 1, 1); rsend(1, 2, 1); rsend(1, 2, 0); rsend(1, 1, 0);
+  navigator.vibrate?.(20);
+});
+// the keys: the FM-1 numbers them along the keyboard (fm1-base plat.h PLAT_WHITE_KEYS, PLAT_BLACK_KEYS)
+const WKI = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26], BKI = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];
+const KEY = {};
+WKI.forEach((k, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = String(i + 1); b.setAttribute("aria-label", `White key ${i + 1}`);
+  $("wk").appendChild(b); KEY[k] = b; hold(b, 2, k);
+});
+BKI.forEach((k, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = String(i + 1); b.setAttribute("aria-label", `Black key ${i + 1}`);
+  $("bk").appendChild(b); KEY[k] = b; hold(b, 2, k);
+});
+// the knobs: a detent every 14 px dragged (up: right), or - and +
+const KNOBS = [["SELECT", 0], ["ALGO", 1], ["PRESETS", 2], ["K1", 3], ["K2", 4], ["K3", 5], ["K4", 6]];
+KNOBS.forEach(([name, r]) => {
+  const k = document.createElement("div");
+  k.className = "knob";
+  k.innerHTML = `<span class="nm">${name}</span><div class="pad" role="slider" tabindex="0" aria-label="${name}: drag up or down"></div>` +
+                `<div class="pm"><button type="button" aria-label="${name} left">-</button><button type="button" aria-label="${name} right">+</button></div>`;
+  $("knobs").appendChild(k);
+  const pad = k.querySelector(".pad"), [minus, plus] = k.querySelectorAll("button");
+  const turn = (n) => { for (let i = 0; i < Math.abs(n); i++) rsend(3, r, n > 0 ? 1 : 255); if (n) navigator.vibrate?.(4); };
+  let y0 = null, acc = 0;
+  pad.addEventListener("pointerdown", (e) => { e.preventDefault(); pad.setPointerCapture?.(e.pointerId); y0 = e.clientY; acc = 0; pad.classList.add("on"); });
+  pad.addEventListener("pointermove", (e) => {
+    if (y0 === null) return;
+    acc += y0 - e.clientY; y0 = e.clientY;
+    const n = Math.trunc(acc / 14);
+    if (n) { turn(n); acc -= n * 14; }
+  });
+  const end = () => { y0 = null; pad.classList.remove("on"); };
+  pad.addEventListener("pointerup", end); pad.addEventListener("pointercancel", end);
+  pad.addEventListener("keydown", (e) => {
+    const n = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 5, PageDown: -5 }[e.key];
+    if (n) { e.preventDefault(); turn(n); }
+  });
+  const rep = (el, n) => {                    // - and +: a detent, and on while held
+    let t = 0;
+    el.addEventListener("pointerdown", (e) => { e.preventDefault(); turn(n); t = setTimeout(function again() { turn(n); t = setTimeout(again, 90); }, 400); });
+    const stop = () => clearTimeout(t);
+    el.addEventListener("pointerup", stop); el.addEventListener("pointercancel", stop); el.addEventListener("pointerleave", stop);
+    el.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); turn(n); } });
+  };
+  rep(minus, -1); rep(plus, 1);
+});
+// MASTER: the phone's slider in place of the knob, or the knob again
+let mt = 0;
+$("master").addEventListener("input", () => {
+  clearTimeout(mt);
+  mt = setTimeout(() => { const v = +$("master").value; rsend(4, v & 255, v >> 8); }, 40);
+});
+$("masterOff").addEventListener("click", () => rsend(4, 255, 255));
+// the lights, as the FM-1's: lit, mid (dim), held
+function light(s) {                            // (lit only: the FM-1's glow at rest is on every one)
+  for (const [i, b] of Object.entries(BTN)) b.classList.toggle("lit", !!(s.litButtons >> i & 1));
+  for (const [k, b] of Object.entries(KEY)) b.classList.toggle("lit", !!((s.litKeys >>> k) & 1));
+}
+addEventListener("pagehide", () => { rq = []; try { outPort?.send(mrRemote((rseq + 1) & 255, 0)); } catch (e) {} send(0); });
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(() => {});
+</script>
+</body>
+</html>

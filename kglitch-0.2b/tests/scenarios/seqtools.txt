@@ -1,0 +1,73 @@
+# LOAF BREAKER: SEQ's hands. Stopped, the kick 64 steps (K4 twice), steps 1 and 3 on (0x0005); SEQ held + key 3: bar 1
+# copied onto bar 3; SEQ held + K1 right: the whole lane a step later (bar 1 0x000A, bar 3 0x000A); SEQ held + REC:
+# every drum lane cleared. Then playing: the keys follow the bar playing (KICK 17-32 in bar 2); ALGORITHM: no more until
+# stopped. REC on, a drum lane: a white key writes the kick where it lands.
+#   app/build/host/loaf-breaker_host tests/scenarios/seqtools.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 300
+expect seq_lane 2
+turn K4 2 10
+wait 100
+press SEQ
+key w0 down
+wait 30
+key w0 up
+release SEQ
+wait 100
+press SEQ
+tap REC
+release SEQ
+wait 200
+expect lane_kick 0
+key w0 down
+wait 30
+key w0 up
+key w2 down
+wait 30
+key w2 up
+wait 100
+expect lane_kick 5
+press SEQ
+key w2 down
+wait 30
+key w2 up
+release SEQ
+wait 200
+expect seq_lane 2
+expect kbar2 5
+shot sq_copy.png
+press SEQ
+turn K1 1 10
+release SEQ
+wait 200
+expect seq_lane 2
+expect lane_kick 10
+expect kbar2 10
+press SEQ
+tap REC
+release SEQ
+wait 200
+expect lane_kick 0
+expect kbar2 0
+key w0 down
+wait 30
+key w0 up
+tap PLAY
+wait 2100
+expect seq_lane 3
+shot sq_follow.png
+turn ALGO -1 10
+wait 1800
+expect seq_lane 2
+tap REC
+wait 100
+key w5 down
+wait 30
+key w5 up
+wait 300
+tap REC
+tap PLAY
+wait 300
+expect seq_lane 2
+expect kbar2 32768

@@ -1,0 +1,49 @@
+# LOAF BREAKER (0.9.43, FLEXOR): DRV, a black key's switch for the kick's DRIVE (INTENSITY), as DST for its DISTO: a
+# press off, the next on again, its amount never touched; each kick its own; a built-in kick picked with a DRIVE puts it
+# on again. Here on the last key of a CUSTOM layout (ARP › BLACK KEYS: the key pressed picks itself, K3 its function).
+#   app/build/host/loaf-breaker_host tests/scenarios/drvkey.txt app/build/scenarios
+wait 4200
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+expect opage 1
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect bk_key 8
+expect bk_fn 14
+turn K3 1 10
+wait 200
+expect bk_pre 2
+expect bk_fn 15
+shot a_blackkeys_drv.png
+tap HOME
+wait 300
+expect drv_off 0
+expect intensity 85
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect drv_off 1
+expect intensity 85
+shot drv_off.png
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect drv_off 0
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect drv_off 1
+tap EDIT
+wait 300
+turn K1 4 10
+wait 300
+expect kpreset 9
+expect drv_off 0
+expect intensity 95

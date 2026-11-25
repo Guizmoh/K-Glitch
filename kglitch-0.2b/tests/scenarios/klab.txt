@@ -1,0 +1,97 @@
+# LOAF BREAKER: the KICK LAB (0.205: in the anatomy's sections). EDIT twice: TAIL: K1 CLEAN, K2 the note (D#1), K3 the
+# drop LINEAR, K4 END at 200 ms; ALGORITHM: TAIL +, K1 the TAIL FILTER, K3 DRIVE; EDIT four times, ATTACK, ALGORITHM
+# twice: STACK: K1 the attack from KICK 1, K4 SOLO ATTACK and back; EDIT five times, KNOBS, ALGORITHM back: TOOLS: K1
+# MUTATE three times, left: undone; K2 A/B: B (as saved) and back to A. PRESETS:
+# KICK 5, its own LAB (EARLY HC's, 0.9.39: CLEAN, no STACK); back to KICK 4: CLEAN and its STACK again. SAVE.
+#   app/build/host/loaf-breaker_host tests/scenarios/klab.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 15
+expect kl_mode 0
+turn K1 1 60
+turn K2 5 60
+turn K3 1 60
+turn K4 9 60
+wait 200
+expect kl_mode 1
+expect kl_note 5
+expect kl_end 9
+shot kl_tail.png
+turn ALGO 1 60
+wait 200
+expect kpage 16
+turn K1 20 40
+turn K3 10 40
+wait 200
+shot kl_tail2.png
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect ksect 0
+# (0.253: ATTACK's PRESET first: three parts to STACK)
+turn ALGO 3 60
+wait 200
+expect kpage 17
+turn K1 1 60
+wait 200
+expect kl_src 1
+turn K4 1 60
+wait 100
+turn K4 -1 60
+wait 200
+shot kl_stack.png
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 11
+turn ALGO -3 60
+wait 200
+expect kpage 18
+turn K1 3 80
+wait 200
+turn K1 -1 80
+wait 200
+turn K2 1 80
+wait 200
+expect ab 1
+expect kl_mode 0
+turn K2 -1 80
+wait 200
+expect ab 0
+expect kl_mode 1
+shot kl_tools.png
+turn PRESET 1 80
+wait 200
+expect kslot 4
+expect kl_mode 1
+expect kl_src 0
+turn PRESET -1 80
+wait 200
+expect kslot 3
+expect kl_mode 1
+expect kl_src 1
+tap SAVE
+wait 300
+expect store_writes 11

@@ -1,0 +1,17 @@
+# LOAF BREAKER (0.9.73, FLEXOR: "a chaque démarrage, remettre le pitch de tous les breaks a zero"): the breaks' PITCH
+# (OCT+ / OCT-) raised, saved, the FM-1 restarted: 0 again (another break too)
+#   app/build/host/loaf-breaker_host tests/scenarios/pitchboot.txt app/build/scenarios
+wait 4200
+expect bpitch 0
+tap OCT+
+wait 100
+tap OCT+
+wait 100
+tap OCT+
+wait 200
+expect bpitch 3
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect bpitch 0

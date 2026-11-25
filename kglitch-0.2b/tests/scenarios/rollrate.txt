@@ -1,0 +1,39 @@
+# LOAF BREAKER (0.9.30, FLEXOR): the roll keys' RATE (K1 while held) has the white keys' dotted lengths too: 3/8 before
+# 1/4, 3/16 before 1/8, 3/32 before 1/16 (longest to shortest, the triplets last). R8 starts at 1/8; left three: 3/16,
+# 1/4, 3/8; right three: 1/8; one more: 3/32; rolled while playing.
+#   app/build/host/loaf-breaker_host tests/scenarios/rollrate.txt app/build/scenarios
+wait 4200
+tap PLAY
+wait 300
+key b0 down
+wait 200
+expect rdiv0 1
+turn K1 -1 10
+wait 150
+expect rdiv0 9
+shot rr_3_16.png
+turn K1 -1 10
+wait 150
+expect rdiv0 0
+turn K1 -1 10
+wait 150
+expect rdiv0 8
+turn K1 -1 10
+wait 150
+expect rdiv0 8
+turn K1 3 10
+wait 150
+expect rdiv0 1
+turn K1 1 10
+wait 150
+expect rdiv0 10
+shot rr_3_32.png
+turn K1 1 10
+wait 150
+expect rdiv0 2
+turn K1 -1 10
+wait 1000
+key b0 up
+wait 300
+tap PLAY
+wait 200

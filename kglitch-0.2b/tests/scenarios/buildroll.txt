@@ -1,0 +1,43 @@
+# LOAF BREAKER (0.9.50, FLEXOR): SONG's fifth tab, BREAK: the break in the build, STILL (it plays on) or ROLL (it rolls
+# on shorter and shorter, R8, R16, R32, to the drop), over any BUILD STYLE; ROLL FROM: the build's start, half way, or
+# its last quarter. Here ROLL from HALF WAY, a 4-bar build (SEL + ENV): still, then rolled, let go at the drop.
+#   app/build/host/loaf-breaker_host tests/scenarios/buildroll.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 300
+turn SELECT 4 10
+wait 300
+expect broll 0
+turn K1 1 10
+turn K2 1 10
+wait 200
+expect broll 5
+shot t_break.png
+tap PLAY
+wait 500
+press SEL
+tap ENV
+release SEL
+wait 2500
+expect building 1
+expect stut -1
+wait 1600
+expect building 1
+expect stut 0
+wait 1300
+expect stut 1
+wait 600
+expect stut 2
+shot t_break_roll.png
+wait 1500
+expect building 0
+expect stut -1
+tap PLAY
+wait 200
+turn K1 -1 10
+wait 100
+expect broll 4
+turn SELECT 1 10
+wait 200
+tap HOME
+wait 200

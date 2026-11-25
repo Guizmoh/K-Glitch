@@ -1,0 +1,20 @@
+# LOAF BREAKER (FLEXOR, 11 Nov 2026, 0.229): a new FM-1 asks for its mode after the start screen: TUTORIAL, BEGINNER
+# (chosen to start) or EXPERT; a knob moves the choice, PLAY takes it. Run with LOAF_ASK=1 (the simulator otherwise
+# starts EXPERT): the question, TUTORIAL chosen (its first step running, BEGINNER).
+#   LOAF_ASK=1 app/build/host/loaf-breaker_host tests/scenarios/firstboot.txt app/build/scenarios
+wait 3000
+tap HOME
+wait 600
+expect tut 253
+shot fb_ask.png
+turn K1 -1 80
+wait 300
+expect tut 253
+shot fb_tutorial.png
+tap PLAY
+wait 400
+expect tut 1
+expect playing 0
+expect auto_save 0
+wait 600
+shot fb_step1.png

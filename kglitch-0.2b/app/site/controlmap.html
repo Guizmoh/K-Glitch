@@ -1,0 +1,307 @@
+<!-- LOAF BREAKER's control map (from CHOPPAH's) (tools/site_style.py puts it in the manual's "The control map" section). Its data is the
+     PAGES list below: keep it in step with app/ui/main.c when a page's controls change. -->
+<style>
+.cmap { container-type: inline-size; display: grid; gap: 34px; margin: 6px 0 10px; }
+.cmap > div { min-width: 0; }
+.cmap h3 { margin: 0 0 10px; }
+.cmap .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 12px var(--f-mono); color: var(--dim); margin-bottom: 10px; }
+.cmap .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.cmap .explorer { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 18px; align-items: start; }
+.cmap .picker { display: grid; gap: 7px; }
+.cmap .pbtn {
+  display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 10px; width: 100%;
+  background: var(--panel); border: 1px solid var(--line); color: var(--fg); padding: 9px 10px; border-radius: 6px;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.cmap .pbtn:hover { border-color: var(--faint); }
+.cmap .pbtn[aria-pressed="true"] { border-color: var(--amber); background: var(--raise); }
+.cmap .cap {
+  font: 600 11px var(--f-mono); letter-spacing: .06em; text-align: center; padding: 5px 0; border-radius: 4px;
+  background: #2a261d; color: var(--hot); box-shadow: inset 0 -2px 0 #11100c;
+}
+.cmap .pbtn[aria-pressed="true"] .cap { background: var(--amber); color: #1a0907; }
+.cmap .pname { font: 600 14.5px/1.25 var(--f-display); }
+.cmap .pname small { display: block; font: 12px var(--f-body); color: var(--dim); }
+.cmap .device { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 16px; min-width: 0; }
+.cmap .subs { display: flex; flex-wrap: wrap; gap: 6px; }
+.cmap .sub { font: 500 12px var(--f-mono); padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--dim); cursor: pointer; }
+.cmap .sub[aria-pressed="true"] { color: #1a0907; background: var(--amber); border-color: var(--amber); }
+.cmap .devtop { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
+.cmap .screen {
+  width: 240px; max-width: 100%; aspect-ratio: 1; background: #000; border: 6px solid #050505; border-radius: 6px;
+  position: relative; box-shadow: 0 0 0 1px var(--line); font-family: var(--f-mono); overflow: hidden;
+}
+.cmap .zone { position: absolute; left: 0; right: 0; display: flex; align-items: center; padding: 0 6px; font-size: 9px; letter-spacing: .03em; }
+.cmap .z-head { top: 0; height: 11.7%; border-bottom: 1px solid #2a2a2a; color: #fff; justify-content: space-between; }
+.cmap .z-head b { color: var(--amber); font-weight: 500; }
+.cmap .z-wave { top: 18.3%; height: 18.3%; }
+.cmap .z-tabs { top: 12.5%; height: 5.8%; gap: 3px; font-size: 7px; color: #fff; }
+.cmap .z-tabs span { background: #1f1f1f; color: #9a9a9a; padding: 1px 3px; border-radius: 1px; }
+.cmap .z-tabs span.on { background: var(--amber); color: #000; }
+.cmap .z-tabs em { margin-left: auto; color: var(--amber); font-style: normal; }
+.cmap .z-help { top: 31.7%; height: 5%; justify-content: center; font-size: 6.5px; color: #777; }
+.cmap .z-help.steps { color: var(--amber); }
+.cmap .z-strip { top: 36.7%; height: 43.3%; align-items: stretch; padding: 4px 6px; }
+.cmap .z-pads { top: 80%; height: 5.8%; gap: 2px; padding: 0 3px; }
+.cmap .z-pads span { flex: 1; background: #1d2230; color: #8a93a8; font-size: 6px; text-align: center; line-height: 11px; border-radius: 1px; }
+.cmap .z-knobs { top: 87.5%; height: 12.5%; display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 4px; align-items: center; }
+.cmap .z-knobs div { font-size: 7.5px; color: #8b8b8b; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cmap .z-knobs div b { display: block; color: #fff; font-weight: 400; }
+.cmap .z-knobs div.empty { color: #3a3a3a; }
+.cmap .wave { width: 100%; height: 100%; }
+.cmap .strip-box { flex: 1; border: 1px dashed #3a3424; border-radius: 3px; color: var(--amber); display: grid; place-items: center; text-align: center; font-size: 9.5px; padding: 6px; line-height: 1.35; }
+.cmap .strip-box em { display: block; color: #8b8b8b; font-style: normal; font-size: 8px; margin-top: 4px; }
+.cmap dl.zl { font: 12px var(--f-mono); color: var(--dim); display: grid; gap: 7px; margin: 0; }
+.cmap .zl div { display: grid; grid-template-columns: 82px 1fr; gap: 8px; align-items: baseline; }
+.cmap .zl dt { color: var(--amber); }
+.cmap .zl dd { margin: 0; color: var(--fg); min-width: 0; overflow-wrap: anywhere; }
+.cmap .zl dd.same { color: var(--dim); }
+.cmap .encoders { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.cmap .enc { display: grid; justify-items: center; gap: 6px; text-align: center; min-width: 0; }
+.cmap .knob { width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #3b362b, #15130f 70%); border: 1px solid #000; position: relative; box-shadow: 0 2px 0 #050504; }
+.cmap .knob::after { content: ""; position: absolute; left: 50%; top: 4px; width: 2px; height: 10px; background: var(--hot); transform: translateX(-50%); border-radius: 1px; }
+.cmap .enc.on .knob { box-shadow: 0 0 0 2px var(--amber); }
+.cmap .enc.dead .knob { opacity: .35; }
+.cmap .ename { font: 600 10px var(--f-mono); color: var(--dim); letter-spacing: .06em; }
+.cmap .efn { font: 500 12px/1.25 var(--f-body); color: var(--fg); min-height: 30px; overflow-wrap: anywhere; }
+.cmap .enc.dead .efn { color: var(--faint); }
+.cmap .kbd-wrap { overflow-x: auto; }
+.cmap .kbd { position: relative; height: 104px; min-width: 520px; }
+.cmap .wk { position: absolute; top: 0; height: 104px; width: calc(100% / 16 - 2px); background: #e8e2d2; border-radius: 0 0 4px 4px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font: 600 10px var(--f-mono); color: #3a3426; }
+.cmap .wk.lit { background: var(--amber); color: #1a0907; }
+.cmap .bk { position: absolute; top: 0; height: 62px; width: calc(100% / 16 * .62); background: #15130f; border: 1px solid #000; border-radius: 0 0 3px 3px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font: 500 8px var(--f-mono); color: var(--pad); }
+.cmap .keyrole { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--dim); }
+.cmap .keyrole b { color: var(--fg); font-weight: 500; }
+.cmap .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.cmap .note { border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; font-size: 13px; min-width: 0; }
+.cmap .note span { display: block; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); margin-bottom: 3px; }
+.cmap .nav { display: grid; gap: 7px; }
+.cmap .navrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 170px; gap: 12px; align-items: center; padding: 9px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.cmap .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.cmap .chip { font: 500 12px var(--f-mono); padding: 4px 9px; border-radius: 4px; background: var(--raise); border: 1px solid var(--line); white-space: nowrap; }
+.cmap .chip.first { border-color: var(--amber); color: var(--amber); }
+.cmap .arr { color: var(--faint); font: 12px var(--f-mono); }
+.cmap .again { font: 12px var(--f-mono); color: var(--dim); }
+.cmap .again.none { color: var(--faint); }
+.cmap .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.cmap table { min-width: 900px; font-size: 13px; }
+.cmap table td:first-child { color: var(--fg); font-family: var(--f-display); font-weight: 600; font-size: 14px; }
+.cmap table td small { display: block; font: 11px var(--f-mono); color: var(--dim); font-weight: 400; }
+.cmap td.e { color: var(--faint); }
+.cmap td.brk { color: var(--amber); }
+.cmap tr.grp td { border-top: 2px solid var(--line); }
+.cmap .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.cmap .layer { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--panel); display: grid; gap: 6px; align-content: start; }
+.cmap .layer .rank { font: 600 28px/1 var(--f-display); color: var(--amber); }
+.cmap .layer b { font: 600 16px var(--f-display); }
+.cmap .layer ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 13.5px; }
+@container (max-width: 820px) {
+  .cmap .explorer { grid-template-columns: 1fr; }
+  .cmap .picker { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .cmap .navrow { grid-template-columns: 58px minmax(0, 1fr); }
+  .cmap .navrow .again { grid-column: 2; }
+}
+@container (max-width: 560px) {
+  .cmap .devtop { grid-template-columns: 1fr; justify-items: center; }
+  .cmap dl.zl { justify-self: stretch; }
+  .cmap .encoders { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 14px; }
+}
+</style>
+
+<div class="cmap" id="cmap">
+  <div>
+    <h3>Explorer</h3>
+    <p>Pick a page: the screen, the seven encoders and the keys show what they do there; the chips above the screen
+    are its parts (the button again, or ALGORITHM, goes to the next). The panel is a schematic, not to scale.</p>
+    <div class="explorer">
+      <div class="picker" data-cm="picker" role="group" aria-label="Pages"></div>
+      <div class="device">
+        <div class="subs" data-cm="subs" role="group" aria-label="Parts"></div>
+        <div class="devtop">
+          <div class="screen" aria-label="The 240 by 240 screen">
+            <div class="zone z-head"><span>&#9654; AMEN20 164 P1</span><b>170.0 BPM</b></div>
+            <div class="zone z-wave"><svg class="wave" data-cm="wave" viewBox="0 0 240 32" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+            <div class="zone z-tabs" data-cm="tabs"></div>
+            <div class="zone z-strip"><div class="strip-box" data-cm="strip"></div></div>
+            <div class="zone z-pads" data-cm="pads"></div>
+            <div class="zone z-knobs" data-cm="knobs"></div>
+          </div>
+          <dl class="zl" data-cm="zones"></dl>
+        </div>
+        <div class="encoders" data-cm="encoders"></div>
+        <div class="kbd-wrap"><div class="kbd" data-cm="kbd" aria-label="Keys"></div></div>
+        <div class="keyrole" data-cm="keyrole"></div>
+        <div class="notes" data-cm="notes"></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <h3>Buttons and their parts</h3>
+    <div class="legend"><span><i style="background:var(--amber)"></i>where a press lands from another page</span></div>
+    <div class="nav" data-cm="nav"></div>
+  </div>
+  <div>
+    <h3>Every page, every control</h3>
+    <div class="legend"><span><i style="background:var(--amber)"></i>ALGORITHM changes the break</span><span><i style="background:var(--faint)"></i>does nothing</span></div>
+    <div class="tbl"><table data-cm="matrix" aria-label="Every page and control"></table></div>
+  </div>
+  <div>
+    <h3>Who owns K1–K4</h3>
+    <p>First match wins.</p>
+    <div class="stack">
+      <div class="layer"><div class="rank">1</div><b>A white key held</b><ul><li>Anywhere but SEQ and ENV (tracks)</li><li>Its loop: LENGTH (3/32, 3/16 and 3/8 too), PITCH, MODE, DECAY (each repeat fades), each break its own (0.9.71)</li><li>FX flips to its slice effect: EFFECT, AMOUNT, TONE, LEVEL</li><li>SEL resets the key</li></ul></div>
+      <div class="layer"><div class="rank">2</div><b>A pad held</b><ul><li>Any page; a pad pressed after the key wins</li><li>R8 · R16 · R32: RATE (3/8 … 1/64, 3/16 and 3/32 too, triplets), BRK FLT, DRUM FLT, DECAY (what they roll: MIX › ROUTING K4 ROLL)</li><li>REV: SPEED, -, -, LATCH · FRZ: LENGTH, PITCH, -, LATCH · RND: AMOUNT, PITCH, -, LATCH</li><li>GAT: RATE, LENGTH, -, LATCH · FLT: TARGET, RESO, SPEED, THRU (BREAK, DRUMS, BOTH) · DUB: TIME, FEEDBACK, TONE, MIX (a DELAY in the chain: its own)</li><li>HLF: SPEED, M. TEMPO, LATCH · VNL: THRU, LATCH, STOP, SPIN UP</li><li>KIL: the sequencer's kicks quiet while held (K1 LATCH) · X2 (CUSTOM): the kicks doubled, every odd step of a bar with kicks (K1 LATCH, on at first) · DST: a switch, the kick's DISTO on or off (its amount never touched) · DRV: the same for its DRIVE</li><li>ARP: EFFECT, AMOUNT, TIME, LATCH; FX while held: THRU, ON / OFF, RATE, SWEEP; several ARP keys (CUSTOM): each its own effect and LATCH</li><li>SUB: a press, the kick's SUB FX on or off · SDR (0.9.57): SUB DRIVE, the SUB layer through its DRIVE, a press on, the next off</li><li>KBR (0.9.58): KILL BREAK, the break out while held: K1 MODE FADE / CUT / BAR END (into the reverb) / END FADE (at the loop's end), K2 TIME, K3 REVERB, K4 LATCH</li><li>CHS (0.9.76): a press, HOME › CHAOS off (its settings kept), the next on</li></ul></div>
+      <div class="layer"><div class="rank">3</div><b>The page</b><ul><li>What the explorer shows</li><li>SELECT is the tempo (SEL + SELECT: the drums' filter), but on the KICK menu's big view: the next drum</li><li>MASTER the volume</li><li>ALGORITHM and PRESETS follow the page</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const root = document.getElementById("cmap");
+  if (!root) return;
+  const $ = (n) => root.querySelector('[data-cm="' + n + '"]');
+  const PAGES = [
+    { id: "home", btn: "HOME", name: "LIVE", sub: "The main page: perform; how the break rearranges", again: "next part (PERFORM, GENERATOR, SPLIT in EXPERT, CHAOS)", subs: [
+      { n: "PERFORM", k: ["GATE", "FILTER", "DRUM FLT", "SUB DECAY"], strip: "THE MIX AS A CDJ, IN WAVE TYPE'S COLOURS (HOME HELD: THE 16 SLICES)", note: "a track playing: its progress and DROP IN 4" },
+      { n: "GENERATOR", k: ["COMPLEXITY", "ANCHOR", "ROLL", "FILL"], strip: "THE MIX AS A CDJ (HOME HELD: THE 16 SLICES)", note: "HOME again" },
+      { n: "SPLIT", k: ["SPLIT", "BREAK B", "BAR A", "BAR B"], strip: "THE FOUR AS CARDS, THE TWO BREAKS AND THEIR BARS", note: "EXPERT (0.9.71, from CHOPPAH 1.5): bar 1 a bar of A, bar 2 a bar of B in A's tempo; keys 1-8 A, 9-16 B, a key plays its slices, the loop always A + B (0.9.73), a key of each held layered; ALGORITHM: break A, K2 break B" }, { n: "CHAOS", k: ["CHAOS", "MATH", "ROLLS", "SEED"], strip: "THE FOUR AS CARDS, THE BREAK'S SLICES WITH THEIR ROLES (K S H P)", note: "0.9.75: the break scrambled by role (CHOPPAH's Slice Map): a hit for another of its role, MATH 3-13 loops, rolls; the same seed, the same chaos every loop" } ],
+      algo: "Break (next bar; SEL: BREAK TIME, NORMAL / HALF)", brk: true, presets: "Pattern P1–P64", keys: "slices", sel: "Tempo (SEL: drum filter)",
+      notes: [["SEL", "Tapped alone: the shortcuts, everywhere and this page's own"], ["SEL + ALGO · SEL + PRESETS", "Break · pattern, any page; here BREAK TIME (NORMAL / HALF) · the kick, KICK 1–20"],
+              ["SEL + K1–K4", "LIVE: the kick changed while it plays, any page (EDIT › KNOBS gives the four); named at the foot while SEL is held or locked"], ["SEL ×2 · SEL + ENV", "SEL locked down, blinking: both hands free for SEL + K1–K4 (again: free) · the drop"],
+              ["HOME held", "The slices, or the CDJ view again"], ["HOME + PLAY", "Back to bar 1"], ["ARP", "The ARP page: an effect on each white key"], ["LFO + K1–K4", "Break, kick, drums levels, K4 the FX fader (0.9.50), any page: 5 % a detent"]] },
+    { id: "edit", btn: "EDIT", name: "SOUNDS", sub: "Kick, drums, break (SEL + EDIT: the next source)", again: "EXPERT: the next sound (KICK, SNARE, HAT, CLAP) · BEGINNER: the kick's next page", part: true, subs: [
+      { n: "PRESET", k: ["PRESET", "", "", ""], strip: "THE KICK IN RGB · ATTACK'S PARTS: PRESET, CLICK, PUNCH, STACK", note: "where EDIT opens (EXPERT): K1 a built-in kick, 909 to SPINE" }, { n: "ATTACK", k: ["LEVEL · ATTACK", "PITCH · CROSS", "DECAY · FADE", "TONE · SOLO"], strip: "THE KICK IN RGB (OR WAVE, CLASSIC: EDIT HELD) · ITS PARTS IN A ROW · 4 KNOB CARDS", note: "ALGO: CLICK, PUNCH (each LEVEL PITCH DECAY TONE), STACK (another kick's attack on this one's tail: ATTACK, CROSS, FADE, SOLO)" },
+      { n: "BODY", k: ["(MIX, SUB, GRIT,", "SYNTH, SYNTH +,", "MACRO, OUT: ALGO)", "(OUT: PRESET)"], strip: "THE KICK IN RGB, ITS PITCH FALLING, ITS REAL SOUND IN WHITE · ITS PARTS IN A ROW · 4 KNOB CARDS", note: "MIX: SUB PUNCH GRIT CLICK; a layer: LEVEL PITCH DECAY TONE; SYNTH: DROP TIME SHAPE HOLD; SYNTH +: RUMBLE LENGTH ASYM TUNE; OUT: VOLUME DISTO SCREAM PRESET (a built-in kick on the kick selected)" },
+      { n: "TAIL", k: ["MODE · FILTER · GLIDE · C SUB", "NOTE · F TIME · REV BASS · MORPH", "CURVE · DRIVE · START · TO KICK", "END · SPLIT AT / DIRT RISE · CURVE"], strip: "THE KICK, ITS PITCH CURVE, END MARKED · 4 KNOB CARDS", note: "ALGO: TAIL (MODE CLASSIC, CLEAN, SPLIT, DIRTY; its note, the drop's curve, END), TAIL + (FILTER, F TIME, DRIVE, K4 SPLIT AT or DIRT RISE), BASS (GLIDE, REV BASS), MORPH (CLEAN SUB, MORPH, TO KICK)" },
+      { n: "DIRT", k: ["AMOUNT · DRIVE", "SUB · TYPE", "FIZZ · SCREECH", "SUSTAIN · TAIL"], strip: "THE KICK'S WAVE · 4 KNOB CARDS", note: "ALGO: DISTO, DISTO +, SCREAM, each layer's effect" },
+      { n: "FX1 / FX2", k: ["THE EFFECT'S 1st", "2nd", "3rd", "4th"], strip: "THE EFFECT'S PICTURE · ITS PARTS: MAIN, MORE, MOD", note: "Two sections, the kick's two FX slots (0.9.29); ALGO: the effect's parts (MAIN, MORE, MOD, or the MB COMP's); PRESETS: the effect" },
+      { n: "MORE", k: ["SEL + K1's", "SEL + K2's", "SEL + K3's", "SEL + K4's"], strip: "THE KICK'S WAVE, THE PART (K4 DISTO) · 4 KNOB CARDS", note: "ALGO: KNOBS (the four live functions), ASSIGN (K1–K4 each knob's function; PRESETS a style, on KNOBS too (0.9.66): TERROR, EARLY NEXT GEN, HARDCORE … the four at once, then PRESET 1–4, your own, functions and values, SAVE there stores them), K1 SET .. K4 SET (each one's settings; PRESETS there: that knob's function; SEL + PRESETS the kick on these parts), TOOLS (MUTATE, A/B, K3 EDIT VIEW: the whole kick or the part edited, K4 DRUM VIEW ZOOM: the time EDIT's pictures show), EQ B and EQ S (the kick's EQ: LOW, MID, HIGH, MID FREQ; its shape; PRESETS nothing there; KNOBS until 0.9.28); the kick playing's, KICK 1–20 each its own" },
+      { n: "DRUM (BIG)", k: ["LEVEL", "TUNE", "DECAY", "TONE"], strip: "THE DRUM'S HIT LARGE, ITS DECAY MARKED · THE 4 DRUMS · 4 KNOB CARDS", note: "SELECT from the kick's big view: SNARE, HAT, CLAP, KICK" },
+      { n: "DRUM (CLASSIC)", k: ["LEVEL", "TUNE", "DECAY", "TONE"], strip: "ITS 6 SETTINGS · THE 4 DRUMS' SHAPES", note: "SEL + EDIT (in the kick's view); EDIT held: the other view; EDIT again: the next drum (SNARE HAT CLAP)" },
+      { n: "BREAK", k: ["PITCH", "GRAIN", "SNAP", "LEVEL"], strip: "PITCH MODE · GRAIN · SNAP", note: "SEL + EDIT from the drums; ALGORITHM: the break; SEL + ALGORITHM: BREAK TIME; SEL + PRESETS: the kick" } ],
+      algo: "Part (in its section) · drums: SOUND / SHAPE / SPACE", presets: "Kick 1–20 in the KICK menu (KNOBS, ASSIGN: the knobs' presets, K1–K4 SET the knob's function, SEL + PRESETS the kick there, 0.9.66); FX section: PRESETS the effect (FX1, FX2; nothing on EQ B, EQ S), SEL + PRESETS the kick · the drum's memories", keys: "slices", sel: "KICK: its section (the tabs at the top) · drums: the next drum",
+      notes: [["EDIT again", "EXPERT: the next sound, KICK SNARE HAT CLAP (SELECT: the sections ATTACK, BODY, TAIL, DIRT, FX1, FX2, MORE)"], ["EDIT held", "The kick's next view: RGB, WAVE, CLASSIC (the drums: big or classic)"], ["SELECT", "KICK menu: the tabs at the top (sections), ALGORITHM those at the bottom (parts) · drums: SNARE, HAT, CLAP"],
+              ["SEL + EDIT", "The next source: KICK, DRUMS, BREAK"], ["SEL + ARP", "Copy the kick (or the drum); PRESETS to another; SEL + ARP again: pasted there, its FX too"], ["Keys 1–4, stopped", "Play KICK SNARE HAT CLAP (big and classic views, the drums)"],
+              ["SHAPE (drums)", "SNAP / CUT / SPREAD / BEND · DRIVE · PRESET"], ["SEL + REC on a layer's FX", "That effect back to its start"],
+              ["MIDI 36 · 38 · 39 · 42", "Kick · snare · clap · hat"]] },
+    { id: "seq", btn: "SEQ", name: "PATTERN", sub: "64 patterns, every step, the groove", again: "back to HOME (SELECT or ALGORITHM: the lane)", subs: [
+      { n: "BREAK", k: ["", "", "", "STEPS"], strip: "THE BREAK'S ROWS ON THE GRID", note: "EXPERT: above the first lane; K4 HIDDEN, 16, 32 (it plays 32 whatever)" },
+      { n: "STEPS 1-16", k: ["SLICE", "PITCH", "HITS", "REVERSE"], strip: "THE BREAK'S STEPS · THE DRUM LANES", note: "the step edited outlined" },
+      { n: "STEPS 17-32", k: ["SLICE", "PITCH", "HITS", "REVERSE"], strip: "THE BREAK'S STEPS · THE DRUM LANES", note: "" },
+      { n: "KICK 1-64", k: ["FILL", "KICK", "CLR / 4X4", "LENGTH"], strip: "THE KEYS: THIS BAR'S 16 STEPS · ALL THE LANES", note: "four lanes: 1-16 … 49-64; LENGTH 16, 32 or 64 (32 to start, every drum, whatever the mode; BEGINNER: the only LENGTH it changes)" },
+      { n: "SNARE · HAT · CLAP", k: ["FILL", "SOUND", "CLR / 4X4", "LENGTH"], strip: "THE KEYS: THIS BAR'S 16 STEPS · ALL THE LANES", note: "up to four lanes each: 1-16 … 49-64, LENGTH 16, 32 or 64 (BEGINNER: 16, LONGER in EXPERT); steps 33-64 share 1-32's HITS, CHANCE, NUDGE" },
+      { n: "A STEP HELD", k: ["NOTE", "HITS", "COND", "NUDGE"], strip: "THAT STEP'S OWN (THE FOOT NAMES THEM)", note: "COND: ALWAYS 75% 50% 25% 1:2 2:2" },
+      { n: "GROOVE", k: ["SWING", "BREAK ROWS", "FOLLOW", ""], strip: "THE THREE, LARGE · THE BAR'S 16THS, SWUNG", note: "SELECT's third view (GROOVE until 0.9.30, SETTINGS 0.9.31-0.9.67); also SEL + ARP; BREAK ROWS: 16 or 32 in FULL; FOLLOW: the grid on the bar playing" } ],
+      algo: "Every lane, top to bottom, round", presets: "Pattern P1–P64 (SEL + PRESETS: the kick)", keys: "steps", sel: "The view: FULL, DRUMS, GROOVE (SEL: drum filter)",
+      notes: [["REC", "Record the keys and MIDI notes into the pattern"], ["SEL + REC", "Clear: the lane here, the pattern elsewhere"],
+              ["SEQ held, then SEQ", "Clear the whole pattern (SEL + SAVE undoes)"], ["SEL + SEQ", "Copy the pattern; on another: paste"],
+              ["EDIT (a drum lane)", "That drum's sound"], ["SEQ held + white key 1–4", "The bar shown copied onto that bar"],
+              ["SEQ held + K1", "The whole lane a step later / earlier, round"], ["SEQ held + REC", "Every drum lane cleared, the break kept"],
+              ["REC, playing, a drum lane", "Any white key writes the drum where it lands"], ["Playing", "The keys follow the bar playing (ALGORITHM: not, until stopped)"]] },
+    { id: "env", btn: "ENV", name: "SONG", sub: "Tracks, drops, builds", again: "back to HOME (SELECT: the tabs)", subs: [
+      { n: "TRACKS", k: ["KICK", "PUT", "LOOPS", "BREAK"], strip: "THE TRACK'S 32 ITEMS: PATTERNS, DROPS, SPACES", note: "ALGO the item; K1 its kick (SAME, KICK 1–20); a white key puts its pattern in; K2 left of P1: EMPTY, ENV held: gone; on a DROP: K1 its build's kick, K3 STUTTER (the break rolled in its build), K4 GAP KEEPS (NOTHING, BREAK, DRUMS, ECHOES: what plays in BUILD's GAP)" },
+      { n: "PLAY", k: ["TRACK", "FROM", "END", ""], strip: "A RADIO: THE TRACKS ON A DIAL", note: "PLAY: the track, then HOME" },
+      { n: "DROP", k: ["BUILD", "AFTER", "BREAK", "CRASH"], strip: "THE DROP'S SETTINGS", note: "AFTER: SAME (0.9.55), NEXT or P1–P64; BREAK: SAME, NEXT (0.9.71: the one after, round) or any break; SEL + ENV: the build from the next bar; PRESETS: BUILD KICK, the kick the build plays (back at the drop)" },
+      { n: "BUILD", k: ["STYLE", "SWEEP", "RISER", "GAP"], strip: "THE BUILD BEFORE A DROP", note: "PRESETS: TEMPO RISE, up to +30 % to the drop" },
+      { n: "BUILD BRK", k: ["BREAK", "ROLL FROM", "GAP KEEPS", ""], strip: "THE BREAK IN THE BUILD", note: "0.9.50: STILL, or ROLL (shorter and shorter, R8 R16 R32, to the drop) over any build style; ROLL FROM the build's start, half way, its last quarter; K3 GAP KEEPS (0.9.58): what plays in the GAP" },
+      { n: "DROP BANK", k: ["DROP", "BUILD", "STYLE", "AFTER"], strip: "DROP 1-8 AS CARDS, THE ONE SELECTED LIT", note: "0.9.58: each a whole drop (DROP, BUILD, BREAK); keys 1-8 or K1 pick the one SEL + ENV plays and the pages edit; SEL + ARP copy, then paste; TRACKS K2 gives a DROP item its own" } ],
+      algo: "TRACKS: the item · else the break (next bar; SEL: BREAK TIME)", brk: true, presets: "Track 1–8 · BUILD: tempo rise", keys: "patterns / tracks", sel: "The tabs: TRACKS, PLAY, DROP, BUILD, BUILD BRK, DROP BANK (SEL: drum filter)",
+      notes: [["White key (TRACKS)", "Its pattern at the item"], ["ALGORITHM (TRACKS)", "Move along the items (SEL + ALGO: the break)"],
+              ["ENV held (TRACKS)", "A space after the item; on a space: it goes"], ["SEL + PLAY (TRACKS)", "The track starts here"],
+              ["PLAY (TRACKS)", "The track from its start item, on TRACKS"], ["White keys 1–8 (PLAY)", "That track played"]] },
+    { id: "lfo", btn: "LFO", name: "MIX", sub: "Levels, sends, master, dynamics", again: "back to HOME (SELECT: the tabs)", subs: [
+      { n: "LEVELS", k: ["BREAK", "KICK", "PERC", ""], strip: "3 FADERS, 3 METERS", note: "the snare, the hat and the clap together on PERC" },
+      { n: "ROUTING", k: ["FX", "DRUMS", "DUCKS", "ROLL"], strip: "THE FX FADER AND ITS 4 SLOTS · THE DRUMS AROUND THE FX OR THROUGH · DUCKS · ROLL", note: "DUCKS (0.9.64): what MASTER's DUCK pushes down at each kick, BREAK, PERC (the snare, hats, clap alone) or BOTH; DRUMS: AROUND by default, THRU when turned (saved: kept); the ARP's THRU: each effect's, on the ARP page (0.9.50); ROLL: what the three roll keys roll, BREAK, KICK, BOTH; SWING: PATTERN › GROOVE" },
+      { n: "MASTER", k: ["COMP", "RATIO", "DUCK", "MAX OUT"], strip: "COMP AND ITS REDUCTION · DUCK · MAX OUT", note: "the mix as it leaves" },
+      { n: "DYNAMICS", k: ["C ATTACK", "C RELEASE", "D RELEASE", "DUCKS"], strip: "THE FOUR VALUES", note: "COMP's and DUCK's timing" } ],
+      algo: "Break (next bar; SEL: BREAK TIME)", brk: true, presets: "Pattern P1–P64 (SEL: the kick)", keys: "slices", sel: "The tabs: LEVELS, ROUTING, MASTER, DYNAMICS (SEL: drum filter)", notes: [] },
+    { id: "fx", btn: "FX", name: "EFFECTS", sub: "The FX chain: four slots in series", again: "back to HOME (SELECT: the slot; ALGORITHM: MAIN, MORE, MOD)", part: true, subs: [
+      { n: "MAIN", k: ["PARAM 1", "PARAM 2", "PARAM 3", "MIX"], strip: "THE EFFECT LIVE · THE CHAIN · ITS MODULATOR · IN / OUT", note: "SELECT: the slot (1–4); ALGORITHM: the part" },
+      { n: "MORE", k: ["EXTRA 1", "EXTRA 2", "EXTRA 3", "EXTRA 4"], strip: "THE EFFECT LIVE · THE CHAIN · ITS MODULATOR · IN / OUT", note: "each effect its own: see §6" },
+      { n: "MOD", k: ["RATE", "DEPTH", "SHAPE", "TARGET"], strip: "THE EFFECT LIVE · THE CHAIN · ITS MODULATOR · IN / OUT", note: "ENV follows the effect's input" } ],
+      algo: "Part: MAIN, MORE, MOD", presets: "Effect (then MAGIC EQ, MAGIC MBC; BEGINNER: two slots, a short list)", keys: "slices", sel: "Slot 1–4 (SEL: drum filter)",
+      notes: [["SEL + FX", "Bypass the focused slot"], ["SEL + REC", "The effect back to its start (again within 4 s: undo)"], ["FX held + ALGO", "Move the slot along the chain"],
+              ["Key held + FX", "That key's slice effect on K1–K4"], ["Each effect", "Remembers its settings when you change it and back"],
+              ["MB COMP focused", "ALGORITHM steps AMOUNT · LOW · MID · HIGH · GAIN · X-OVER, then AMOUNT again"],
+              ["MB COMP · band", "THRESH · RATIO · ATTACK · RELEASE"], ["MB COMP · GAIN / X-OVER", "LOW MID HIGH SOLO · LOW X HIGH X KNEE OUTPUT"]] },
+    { id: "glo", btn: "GLO", name: "SYSTEM", sub: "MIDI, setup, screen effects, reset", again: "back to HOME (SELECT: the parts)", subs: [
+      { n: "MIDI", k: ["CLOCK IN", "CLOCK OUT", "METER", ""], strip: "MIDI OVER USB AND THE TRS JACK · CLOCK IN · CLOCK OUT", note: "PRESETS: NOTES IN, ALL / DRUMS / OFF (0.9.64; a drum machine's notes no longer holding slices); BREAK TIME: SYSTEM › DISPLAY; no Bluetooth; K3 METER (EXPERT only): CPU, IMG, FR in the header" },
+      { n: "SETUP", k: ["SKIN", "KICK EQ", "MODE", "AUTO SAVE"], strip: "THE 24 SKINS' COLOURS, MODE, AUTO SAVE", note: "PRESETS: the skin; the knobs top to bottom; WAVE ZOOM: SYSTEM › DISPLAY; K3 MODE: TUTORIAL (30 guided steps; SEL + GLO skips, GLO quits), BEGINNER (the essentials: the KICK's three pages, KICK, SHAPE, MIX; two FX slots and a short list; the drums' PRESET, FX, LEVEL, DECAY; SONG whole) or EXPERT (all of it)" },
+      { n: "DISPLAY", k: ["VIEW", "WAVE TYPE", "WAVE ZOOM", "BREAK TIME"], strip: "THE FOUR AS CARDS · WHAT THEY DO", note: "SYSTEM's since 0.9.56 (HOME's third tab before); VIEW: WAVEFORM or SLICES (HOME held: the same); WAVE TYPE: RGB, SERATO, 3 BAND, BLUE (0.9.70); PRESETS: the strip over the master\'s wave, RGB, 3 BAND, BLUE, SERATO, GREY (0.9.70); BREAK TIME HALF: the break at half the tempo" },
+      { n: "SCREEN FX", k: ["EFFECT", "ON / OFF", "DRUM FILTER", "KICK SWITCH"], strip: "THE SEVEN SCREEN EFFECTS, EACH CARD A PICTURE WITH ITS EFFECT, LIT WHEN ON", note: "K3 DRUM FILTER (0.9.67): the drums' filter's kind, CLASSIC, SMOOTH (a club mixer's), SOFT (6 dB), RESO; K4 KICK SWITCH (0.9.64): the drums' filter as KIL brings the kicks back, SMART (OFF, unless turned while they were quiet), FLT OFF, FLT KEEP; keys 1–7: CRT VHS GRAIN RGB SHAKE STROBE 8-BIT, several at once; the waves' colours: SYSTEM › DISPLAY; EDIT VIEW and DRUM VIEW ZOOM: KICK › MORE › TOOLS" },
+      { n: "SCREEN SET", k: ["AMOUNT", "KICK", "DROP", "LENGTH"], strip: "THE EFFECTS' FOUR SETTINGS AS BARS", note: "0..100 %, 5 % a detent; KICK, DROP 0: none" },
+      { n: "LIGHTS", k: ["GLOW", "PULSE", "PULSE ON", "STYLE"], strip: "WHAT THEY DO · THE FM-1'S LIGHTS AS THEY ARE NOW · THE FOUR AS CARDS", note: "0.9.57: GLOW, the lights at rest (OFF, 1–7; the lit ones always full); PULSE on the tempo while playing: OFF, KICK, 1/8, 1/4, 1/2, BAR; on BUTTONS, WHITE KEYS, BLACK KEYS, ALL KEYS or EVERYTHING; FLASH, FADE, BREATHE, BLINK or CHASE" },
+      { n: "RESET", k: ["", "RESET", "", "WHAT"], strip: "20 PARTS: DROP BUILD KNOB KICK KICK TONE ALL KICKS DRUMS MIX FX CHAIN STEPS BLACK KEYS ARP WHITE KEYS WHITE LENGTH SPLITS SEL KEYS TRACK SCREEN WIPE MEMORY EVERYTHING · 5 BOXES FILL", note: "K4 the part; K2 five clicks (each within 2 s), then GLO: reset" } ],
+      algo: "Part (RESET: what)", presets: "Pattern P1–P64 (SEL: the kick, but SETUP, EFFECTS; SETUP: the skin)", keys: "slices", sel: "The parts: MIDI, SETUP, DISPLAY, SCREEN FX, SCREEN SET, LIGHTS, RESET (SEL: drum filter)", notes: [["RESET › EVERYTHING", "RESET ALL: K2 five turns, then GLO"], ["RESET › WIPE MEMORY", "Every LOAF BREAKER save erased, before installing another firmware"]] },
+    { id: "arp", btn: "ARP", name: "ARP", sub: "Sixteen effects over everything; the black keys' layout", again: "back to HOME (SELECT: its tabs ARP, BLACK, SEL BLACK, EXPERT)", subs: [
+      { n: "ARP", k: ["AMOUNT", "THRU", "RATE / SWEEP", "LATCH"], strip: "SIXTEEN EFFECTS, ONE A WHITE KEY: LIT WHILE THEY SOUND · BREAK / KICK: ITS THRU", note: "ALGORITHM: the 16 effects in order (0.9.52; SEL + ALGO the break); held, or LATCH on: a key switches its effect on and off; K1-K3 the effect touched last: THRU BREAK, KICK or THRU (the whole mix), each effect its own (0.9.50), saved" },
+      { n: "BLACK", k: ["PRESET", "KEY (ALGO too)", "EFFECT", ""], strip: "THE TWELVE BLACK KEYS (THE REC KEY LAST) AND WHAT EACH DOES · THE KEY EDITED · THE PRESET", note: "EXPERT; K1 CHOPPAH, FLEXOR LAYOUT (R8 R16 R32 ARP ARP TRI X4 X2 SUB DST KIL), CUSTOM; a black key pressed picks itself; K3 on a preset: a CUSTOM copy; K4 an ARP key's own effect" },
+      { n: "SEL BLACK", k: ["", "KEY (ALGO too)", "SEL +", ""], strip: "THE TWELVE BLACK KEYS (THE REC KEY LAST) AND WHAT EACH DOES WITH SEL · THE KEY EDITED · WITHOUT SEL", note: "EXPERT (0.9.49); each black key a second function, pressed with SEL held or locked (0.9.70: the REC key too, last; any function but ARP); ITS OWN: as without SEL; a black key pressed picks itself" },
+      algo: "ARP: the 16 effects in order (SEL: the break) · the other tabs: the key", presets: "Pattern P1–P64 (SEL: the kick)", keys: "16 effects", sel: "EXPERT: the next tab, ARP, BLACK, SEL BLACK (BEGINNER: tempo)",
+      notes: [["SEL + ARP", "PATTERN › GROOVE: SWING, BREAK ROWS, FOLLOW"], ["The ARP black key (FLEXOR LAYOUT, CUSTOM)", "Its overlay effect: EFFECT, AMOUNT, TIME, LATCH; FX while held: THRU, ON / OFF, RATE, SWEEP"]] }
+  ];
+  const PADS = ["R8", "R16", "R32", "REV", "FRZ", "HLF", "VNL", "GAT", "RND", "FLT", "DUB"];   // (CHOPPAH's layout, a new FM-1's)
+  let cur = 0, sub = 0;
+
+  (function wave() {
+    let d = "", seed = 7;
+    const r = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let x = 0; x < 240; x += 2) {
+      const hit = (x % 15) < 2 ? 1 : Math.pow(1 - (x % 15) / 15, 2.2), h = Math.max(1, (hit * .85 + r() * .15) * 14);
+      d += '<rect x="' + x + '" y="' + (16 - h) + '" width="1.4" height="' + (h * 2) + '" fill="' + (x >= 60 && x < 75 ? "#ff8470" : "#5a5a66") + '"/>';
+    }
+    $("wave").innerHTML = d + '<rect x="68" y="0" width="1" height="32" fill="#fff"/>';
+  })();
+  $("pads").innerHTML = PADS.map(p => "<span>" + p + "</span>").join("");
+  $("picker").innerHTML = PAGES.map((p, i) => '<button type="button" class="pbtn" data-i="' + i + '" aria-pressed="false"><span class="cap">' +
+    p.btn + '</span><span class="pname">' + p.name + "<small>" + p.sub + "</small></span></button>").join("");
+  $("picker").addEventListener("click", e => { const b = e.target.closest(".pbtn"); if (b) { cur = +b.dataset.i; sub = 0; render(); } });
+  $("subs").addEventListener("click", e => { const b = e.target.closest(".sub"); if (b) { sub = +b.dataset.i; render(); } });
+
+  function render() {
+    const p = PAGES[cur], s = p.subs[sub], steps = p.keys === "steps" || p.keys === "taps" || p.keys === "overlays";
+    root.querySelectorAll(".pbtn").forEach((b, i) => b.setAttribute("aria-pressed", String(i === cur)));
+    $("subs").innerHTML = p.subs.map((x, i) => '<button type="button" class="sub" data-i="' + i + '" aria-pressed="' + (i === sub) + '">' + x.n + "</button>").join("");
+    const tabs = p.id === "edit" ? (sub < 4 ? ["SOUND", "SYNTH", "DIRT", "FX"] : ["SN", "HH", "CP", "HV"]) : p.id === "fx" ? ["1", "2", "3", "4"] : p.subs.length > 1 ? p.subs.map(x => x.n.replace("SLOT ", "")) : [p.name];
+    const on = p.id === "edit" ? (sub < 4 ? sub : 0) : p.id === "fx" ? 0 : sub;
+    $("tabs").innerHTML = "<b>" + p.btn + "</b>" + tabs.map((t, i) => '<span class="' + (i === on ? "on" : "") + '">' + t + "</span>").join("") +
+      (p.part ? "<em>&lt; " + (p.id === "edit" ? (sub < 4 ? "KICK" : "SNARE") : "TREMOLO" + (sub ? " " + s.n : "")) + " &gt;</em>" : "");
+    $("strip").innerHTML = s.strip + (s.note ? "<em>" + s.note + "</em>" : "");
+    $("knobs").innerHTML = s.k.map((k, i) => k ? "<div>" + k + "<b>·····</b></div>" : '<div class="empty">K' + (i + 1) + "<b>&nbsp;</b></div>").join("");
+    $("zones").innerHTML = [["HEADER", "Break, pattern, track, REC, tempo lit on the beat, meter, the line lit on each kick", 1], ["TABS", p.btn + " › " + tabs.join(" · "), 0], ["WAVEFORM", "The break, the slice lit, the playhead", 1],
+      ["STRIP", s.strip.toLowerCase(), 0], ["PADS", "11 black keys, lit while on", 1], ["KNOBS", s.k.map(k => k || "—").join(" · "), 0]]
+      .map(([a, b, same]) => "<div><dt>" + a + '</dt><dd class="' + (same ? "same" : "") + '">' + b + "</dd></div>").join("");
+    const encs = [["SELECT", p.sel || "Tempo", "on"], ["ALGORITHM", p.algo, "on"], ["PRESETS", p.presets, "on"]]
+      .concat(s.k.map((k, i) => ["K" + (i + 1), k || "—", k ? "on" : "dead"]));
+    $("encoders").innerHTML = encs.map(([n, f, c]) => '<div class="enc ' + c + '"><div class="knob"></div><div class="ename">' + n + '</div><div class="efn">' + f + "</div></div>").join("");
+    let h = "";
+    for (let i = 0; i < 16; i++) {
+      const lit = p.keys === "taps" ? true : steps ? (sub >= 2 && i % 4 === 0) : i === 4;
+      h += '<div class="wk' + (lit ? " lit" : "") + '" style="left:calc(' + i + ' * 100% / 16 + 1px)">' + (steps ? i + 1 : "S" + (i + 1)) + "</div>";
+    }
+    [0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14].forEach((g, j) => { h += '<div class="bk" style="left:calc(' + (g + 1) + ' * 100% / 16 - 100% / 16 * .31)">' + PADS[j] + "</div>"; });
+    $("kbd").innerHTML = h;
+    $("keyrole").innerHTML = "<span>White keys: <b>" + (p.keys === "patterns / tracks" ? "TRACKS: A PATTERN AT THE ITEM · PLAY: TRACKS 1–8" : steps ? (sub < 2 ? "PICK THE STEP TO EDIT" : "THIS LANE'S 16 STEPS (HOLD ONE: ITS OWN)") : p.id === "edit" ? "SLICES 1–16 · STOPPED: 1–5 PLAY THE DRUMS" : "SLICES 1–16 (hold to loop)") +
+      "</b></span><span>Black keys: <b>PADS (momentary, any page)</b></span>";
+    $("notes").innerHTML = p.notes.map(([a, b]) => '<div class="note"><span>' + a + "</span>" + b + "</div>").join("") ||
+      '<div class="note"><span>No combinations</span>Only the controls every page shares.</div>';
+  }
+
+  $("nav").innerHTML = PAGES.map(p => '<div class="navrow"><span class="cap">' + p.btn + '</span><div class="chain">' +
+    p.subs.map((s, i) => '<span class="chip' + (i ? "" : " first") + '">' + s.n + "</span>").join('<span class="arr">→</span>') +
+    (p.subs.length > 1 ? '<span class="arr">↺</span>' : "") + '</div><span class="again' + (p.again === "nothing" ? " none" : "") + '">again: ' + p.again + "</span></div>").join("") +
+    '<div class="navrow"><span class="cap">REC</span><div class="chain"><span class="chip">record on / off</span></div><span class="again">SEL + REC: clear</span></div>' +
+    '<div class="navrow"><span class="cap">SAVE</span><div class="chain"><span class="chip">settings, the patterns, the tracks, the steps</span></div><span class="again">SEL + SAVE: undo</span></div>' +
+    '<div class="navrow"><span class="cap">OCT ±</span><div class="chain"><span class="chip">pitch in semitones</span></div><span class="again">both: back to 0</span></div>';
+
+  let m = "<thead><tr><th>Page</th><th>Part</th><th>White keys</th><th>ALGORITHM</th><th>PRESETS</th><th>K1</th><th>K2</th><th>K3</th><th>K4</th></tr></thead><tbody>";
+  PAGES.forEach(p => p.subs.forEach((s, i) => {
+    m += '<tr class="' + (i ? "" : "grp") + '">' + (i ? "<td></td>" : "<td>" + p.btn + "<small>" + p.name + "</small></td>") +
+      "<td>" + s.n + "</td><td>" + p.keys + '</td><td class="' + (p.brk ? "brk" : "") + '">' + p.algo + "</td><td>" + p.presets + "</td>" +
+      s.k.map(k => k ? "<td>" + k + "</td>" : '<td class="e">—</td>').join("") + "</tr>";
+  }));
+  $("matrix").innerHTML = m + "</tbody>";
+  render();
+})();
+</script>

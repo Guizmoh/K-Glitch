@@ -1,0 +1,29 @@
+# LOAF BREAKER (0.218, FLEXOR): FX again on the FX page goes round the slot's parts (MAIN, MORE, MOD, MAIN ..), never
+# to the next slot (ALGORITHM does that); an MB COMP round its six.
+#   app/build/host/loaf-breaker_host tests/scenarios/fxround.txt app/build/scenarios
+wait 4200
+tap FX
+wait 300
+expect page 2
+turn SELECT 1 60
+wait 200
+expect fx_focus 1
+turn ALGO 1 10
+wait 200
+turn ALGO 1 10
+wait 200
+turn ALGO 1 10
+wait 200
+expect fx_focus 1
+turn ALGO 1 10
+wait 200
+turn ALGO 1 10
+wait 200
+turn ALGO 1 10
+wait 200
+turn ALGO 1 10
+wait 200
+expect fx_focus 1
+turn SELECT 1 60
+wait 200
+expect fx_focus 2

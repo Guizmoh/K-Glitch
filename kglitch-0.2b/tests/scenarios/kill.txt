@@ -1,0 +1,154 @@
+# LOAF BREAKER: the 10th black key, KIL: held, the sequencer's kicks are quiet (khits stays 0); let go, they play again. Its LATCH (K1 while held): a press quiet, the next back.
+# The kick on steps 1, 5, 9, 13 of each of its lane's four bars (SEQ).
+#   app/build/host/loaf-breaker_host tests/scenarios/kill.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 200
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+tap HOME
+tap PLAY
+wait 1300
+expect khits 4
+key b10 down
+wait 100
+expect khits 0
+wait 1500
+expect khits 0
+shot kil_held.png
+key b10 up
+wait 1500
+expect khits 4
+# KIL's LATCH (K1 while it is held, right): let go, the kicks stay quiet; KIL again: back. K1 left: held only again
+key b10 down
+wait 50
+turn K1 1 10
+wait 100
+shot kil_latch.png
+key b10 up
+wait 1500
+expect khits 0
+key b10 down
+wait 30
+key b10 up
+wait 1500
+expect khits 4
+key b10 down
+wait 50
+turn K1 -1 10
+wait 100
+key b10 up
+wait 1500
+expect khits 4
+# (0.9.50, FLEXOR) the kicks back with KIL: the drums' filter OFF at once (never a drop filtered by mistake); 0.9.64,
+# FLEXOR, KICK SWITCH SMART (the default): unless it was turned while the kicks were quiet: then they come back into it
+expect kswitch 0
+key b10 down
+wait 50
+press SEL
+turn SELECT -1 10
+release SEL
+wait 100
+expect kick_dj -16
+key b10 up
+wait 100
+expect kickhold 0
+expect kick_dj -16
+key b10 down
+wait 100
+key b10 up
+wait 100
+expect kick_dj 0
+# FLT OFF (SYSTEM › EFFECTS K4): always OFF, as 0.9.50-0.9.63
+tap GLO
+wait 200
+turn SELECT 3 10
+wait 200
+turn K4 1 10
+wait 200
+expect kswitch 1
+shot kswitch.png
+tap HOME
+wait 200
+key b10 down
+wait 50
+press SEL
+turn SELECT -1 10
+release SEL
+wait 100
+expect kick_dj -16
+key b10 up
+wait 100
+expect kick_dj 0
+# FLT KEEP: never touched
+tap GLO
+wait 200
+turn SELECT 3 10
+wait 200
+turn K4 1 10
+wait 200
+expect kswitch 2
+tap HOME
+wait 200
+press SEL
+turn SELECT -1 10
+release SEL
+wait 100
+expect kick_dj -16
+key b10 down
+wait 100
+key b10 up
+wait 100
+expect kick_dj -16

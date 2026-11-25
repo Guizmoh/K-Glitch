@@ -1,0 +1,60 @@
+# LOAF BREAKER: KIL and the kick triplets. 0.9.67, FLEXOR ("le triolet de kick fonctionne de l'exacte même façon que kick
+# x2 et x4"): KIL quiets them while held and leaves TRI as it is, TRI turned on or off whatever KIL does (0.9.57-0.9.66:
+# KIL turned TRI off and refused it). TRI here on key 1 of a CUSTOM layout.
+#   app/build/host/loaf-breaker_host tests/scenarios/kiltri.txt app/build/scenarios
+wait 4200
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 200
+turn K3 -4 10   # (left of R8: CHS, KBR, SDR, TRI; 0.9.58, CHS 0.9.76)
+wait 300
+expect bk_fn 18
+tap HOME
+wait 200
+tap PLAY
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 4
+wait 1300
+expect khits >8
+# (0.9.67, FLEXOR: TRI as X2 and X4) KIL held: the triplets stay on, quiet
+key b10 down
+wait 100
+expect kx2on 4
+wait 1300
+expect khits 0
+shot kil_tri.png
+# KIL let go: they play on at once, no press
+key b10 up
+wait 100
+expect kickhold 0
+wait 1300
+expect khits >8
+# TRI turned off and on while KIL holds, as X2 and X4
+key b10 down
+wait 100
+key b0 down
+wait 50
+key b0 up
+wait 50
+expect kx2on 0
+key b0 down
+wait 50
+key b0 up
+wait 50
+expect kx2on 4
+wait 1000
+expect khits 0
+key b10 up
+wait 100
+wait 1300
+expect khits >8
+tap PLAY

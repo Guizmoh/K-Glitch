@@ -1,0 +1,40 @@
+# LOAF BREAKER (0.9.62, FLEXOR): KNOBS' ASSIGN, the style FLEXOR (last before PRESET 1-4): SEL + K1 DRIVE, K2 D+ TYPE, K3
+# SUB DRIVE (the SUB layer's DRIVE gain; 0.9.66: the gain alone, SDR switches it on and off), K4 DISTO. On ASSIGN,
+# PRESETS the styles (0.9.66; SEL + PRESETS before).
+#   app/build/host/loaf-breaker_host tests/scenarios/flexstyle.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 11
+turn ALGO 1 10
+wait 200
+expect kpage 14
+turn PRESET 8 60   # (0.9.66: on ASSIGN, PRESETS the styles)
+wait 200
+expect selk1_fn 5
+expect selk3_fn 21
+expect selk4_fn 3
+shot kn_flexor.png
+expect subdrv -1
+expect subfa 50
+press SEL
+turn K3 10 10
+release SEL
+wait 200
+# (0.9.66, FLEXOR: the gain alone, independent of the SDR switch: the SUB's effect not turned on)
+expect subdrv -1
+expect subfa 70
+shot kn_sdroff.png

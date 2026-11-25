@@ -1,0 +1,23 @@
+# LOAF BREAKER (0.256, FLEXOR; 0.9.2 on HOME › SETTINGS, K4): BREAK TIME: HALF, the break at half the tempo (its steps every
+# other 16th, at its own speed: a 115 break under a 230 kick), the drums and the clock at the tempo; NORMAL again.
+#   app/build/host/loaf-breaker_host tests/scenarios/breaktime.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 300
+expect page 11
+expect bhalf 0
+turn K4 1 10
+wait 300
+expect bhalf 1
+tap PLAY
+wait 1500
+shot g_breaktime.png
+turn K4 -1 10
+wait 300
+expect bhalf 0
+tap PLAY
+wait 300

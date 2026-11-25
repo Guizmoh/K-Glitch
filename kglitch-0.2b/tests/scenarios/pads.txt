@@ -1,0 +1,134 @@
+# (0.9.64, FLEXOR: VINYL BREAK's K2 its LATCH, the break's filter before)
+# CHOPPAH: each pad held shows its animation; K1-K4 tune it while held (LOAF BREAKER, FLEXOR LAYOUT since 0.9.53: the 4th key VINYL BREAK,
+# the 5th GATE, the 6th FILTER, the 7th and 8th ARP keys, the 9th KIL: the sequencer's kicks quiet while held, the 10th TER, as SUB: the kick's TERROR on (an amount at nothing: 50 %), off (its amount kept), on;
+# REVERSE, FREEZE, GATE and DUB have no key)
+#   app/build/host/loaf-breaker_host tests/scenarios/pads.txt app/build/scenarios
+wait 4200
+layout_0953   # (0.9.58: FLEXOR LAYOUT changed; this scenario was written on the one before, as CUSTOM)
+tap PLAY
+wait 800
+peakreset
+key b0 down
+wait 250
+turn K2 10 10
+wait 300
+wait 350
+shot p_roll8.png
+key b0 up
+wait 250
+key b1 down
+wait 250
+turn K1 -1 10
+wait 300
+wait 350
+shot p_roll16.png
+key b1 up
+wait 250
+key b4 down
+wait 250
+turn K1 6 10
+wait 300
+wait 350
+shot p_gate.png
+key b4 up
+wait 250
+key b5 down
+wait 250
+wait 350
+shot p_filter.png
+key b5 up
+wait 250
+key b3 down
+wait 250
+turn K3 2 10
+wait 300
+expect brk_dj 48
+turn K2 1 10
+wait 300
+shot p_stop.png
+expect padlat 64
+expect brk_dj 48
+key b3 up
+wait 250
+expect padlat 64
+expect pads 64
+key b3 down
+wait 100
+key b3 up
+wait 250
+expect padlat 0
+key b3 down
+wait 100
+turn K2 -1 10
+wait 100
+key b3 up
+wait 250
+expect padlat 0
+key b3 down
+wait 100
+key b3 up
+wait 250
+expect pads 0
+key b6 down
+wait 250
+turn K2 5 10
+wait 300
+wait 350
+shot p_arp.png
+key b6 up
+wait 250
+key b8 down
+wait 250
+turn K2 20 10
+wait 300
+wait 350
+shot p_kil.png
+key b8 up
+wait 250
+# (0.265, FLEXOR: DST a switch, DISTO used or not, its amount never touched: at 0 % it stays 0 %)
+key b9 down
+wait 250
+expect ter_off 1
+expect terror 0
+shot p_ter.png
+key b9 up
+wait 250
+key b9 down
+wait 30
+key b9 up
+wait 250
+expect ter_off 0
+expect terror 0
+key b9 down
+wait 30
+key b9 up
+wait 250
+expect ter_off 1
+key b9 down
+wait 30
+key b9 up
+wait 250
+expect ter_off 0
+key b10 down
+wait 250
+turn K2 8 10
+wait 300
+wait 350
+shot p_dub.png
+key b10 up
+wait 250
+shot p_after.png
+expect peak_db_min -30
+tap SAVE
+wait 50
+expect store_writes 11
+# LOAF BREAKER: a roll pad's K3 is the kick's filter (HOME's K3): the rolls' pitch stays 0
+key b0 down
+wait 100
+turn K3 5 10
+wait 50
+expect roll_pitch_x10 0
+shot r_kickflt.png
+turn K3 -10 10
+wait 50
+key b0 up

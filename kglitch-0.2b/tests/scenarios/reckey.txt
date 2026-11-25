@@ -1,0 +1,59 @@
+# LOAF BREAKER (0.9.58, FLEXOR; 0.9.70, FLEXOR: "ne pas avoir de REC key dans les options, seulement son comportement
+# change quand il est assigné dans les black keys"): ARP › BLACK, the REC key last on the right (press REC there): NONE
+# (REC records, as ever) or any function but ARP, whatever the layout (the preset kept). Here KILL BREAK, then DST, then
+# NONE again: REC records. (0.9.76: CHS, CHAOS, last before NONE: K3 -2 to KILL BREAK)
+#   app/build/host/loaf-breaker_host tests/scenarios/reckey.txt app/build/scenarios
+wait 4200
+expect reckey 0
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+expect opage 1
+tap REC
+wait 200
+expect bk_key 11
+expect reckey 0
+expect recording 0
+shot a_blackkeys_recnone.png
+turn K3 -2 10
+wait 200
+expect reckey 1
+expect recfn 20
+expect bk_pre 1
+turn K3 -7 10
+wait 1500
+expect recfn 13
+expect bk_pre 1
+shot a_blackkeys_rec.png
+tap HOME
+wait 300
+tap PLAY
+wait 500
+expect ter_off 0
+tap REC
+wait 200
+expect ter_off 1
+expect recording 0
+tap REC
+wait 200
+expect ter_off 0
+# NONE again: REC records
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+tap REC
+wait 200
+expect bk_key 11
+turn K3 9 10
+wait 200
+expect reckey 0
+tap HOME
+wait 200
+tap REC
+wait 200
+expect recording 1
+tap REC
+wait 200
+tap PLAY

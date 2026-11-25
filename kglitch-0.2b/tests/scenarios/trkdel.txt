@@ -1,0 +1,22 @@
+# LOAF BREAKER 0.9.26 (FLEXOR): SONG › TRACKS, an item deleted with K2 left (past EMPTY, END: the items after it moved
+# up): then K2 left does nothing until the knob has rested 0.7 s (each turn meanwhile counted again), so a hard turn
+# deletes one item, not the next ones moved into its place. Track 1 as it starts: P1 x4, P2 x4, DROP, P3.
+#   app/build/host/loaf-breaker_host tests/scenarios/trkdel.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 300
+expect page 8
+expect trk_cur 0
+expect trk_it 1
+turn K2 -12 20
+wait 200
+expect trk_cur 0
+expect trk_it 2
+shot t_del.png
+turn K2 -3 300
+wait 200
+expect trk_it 2
+wait 800
+turn K2 -1 10
+wait 200
+expect trk_it 1

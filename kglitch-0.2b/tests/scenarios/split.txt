@@ -1,0 +1,139 @@
+# LOAF BREAKER (0.9.71, FLEXOR, from CHOPPAH 1.5 / 1.5.1, PRD S-030 to S-033): the split, HOME's third part (EXPERT:
+# HOME, HOME again): K1 SPLIT on, K2 break B, K3 / K4 the bar of each. Bar 1 is a bar of break A (keys 1-8), bar 2 a bar
+# of break B (keys 9-16) in A's tempo: a key plays its slices, the loop always A + B (0.9.73: no half latched); a key of
+# each half held plays both, layered; ALGORITHM changes break A.
+#   app/build/host/loaf-breaker_host tests/scenarios/split.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 150
+tap HOME
+wait 300
+expect page 12
+expect split 0
+expect split_at 0
+turn K1 1 10
+wait 400
+expect split 1
+expect split_at 8
+turn K2 2 10
+wait 400
+expect split_b 4
+turn K4 1 10
+wait 400
+expect split_at 8
+shot split_page.png
+tap PLAY
+wait 3000
+# (0.9.73, FLEXOR: "je reste bloqué sur un seul loop", "aucun verrouillage") a key of A, then of B: their slices,
+# the loop goes on over A + B, no half latched
+tapkey w3
+wait 3000
+expect half_ask -1
+expect half -1
+shot split_a.png
+tapkey w12
+wait 3000
+expect half_ask -1
+expect half -1
+# a key of each held: layered
+key w2 down
+wait 400
+key w11 down
+wait 600
+expect key 2
+expect layer 11
+expect half -1
+shot split_layer.png
+key w11 up
+wait 400
+expect layer -1
+key w2 up
+wait 400
+expect key -1
+# B from HOME › SPLIT K2 (ALGORITHM is A's)
+turn K2 1 10
+wait 3000
+expect brk 0
+expect split_b 5
+expect half -1
+# both halves: ALGORITHM changes break A. (0.9.71, FLEXOR: "chaque break a un split indépendant en mémoire") Break 2
+# has no split of its own: one break, none until one is set there; back on break 1, its split as it was
+turn ALGO 1 10
+wait 3000
+expect brk 1
+expect split 0
+expect split_at 0
+expect split_b 0
+turn ALGO -1 10
+wait 3000
+expect brk 0
+expect split 1
+expect split_b 5
+expect split_at 8
+# break 2 its own split (B the one after it, bar 2 of A): break 1's stays as it was
+turn ALGO 1 10
+wait 3000
+turn K1 1 10
+turn K3 1 10
+wait 3000
+expect brk 1
+expect split 1
+expect split_b 3
+turn ALGO -1 10
+wait 3000
+expect brk 0
+expect split_b 5
+# both kept by SAVE through a restart, each on its break
+tap PLAY
+wait 300
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect brk 0
+expect split 1
+expect split_b 5
+turn ALGO 1 10
+wait 400
+expect brk 1
+expect split 1
+expect split_b 3
+# off by hand on break 2: one break again there, break 1's kept
+expect page 12
+turn K1 -1 10
+wait 400
+expect split 0
+expect split_at 0
+turn ALGO -1 10
+wait 400
+expect brk 0
+expect split 1
+# (0.9.73, FLEXOR: "un reset split pour mettre off sur tous les splits") break 2's on again, then SYSTEM › RESET ›
+# SPLITS: both off; K1 ON again on break 1: its B kept
+turn ALGO 1 10
+wait 400
+turn K1 1 10
+wait 400
+expect brk 1
+expect split 1
+tap GLO
+wait 150
+turn SELECT -1 10
+wait 300
+expect gpage 5
+turn K4 -20 10
+turn K4 14 10
+wait 200
+shot split_reset.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 3300
+expect split 0
+tap HOME
+wait 300
+turn ALGO -1 10
+wait 400
+expect brk 0
+expect split 0
+expect split_b 5

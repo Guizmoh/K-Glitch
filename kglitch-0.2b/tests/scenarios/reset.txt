@@ -1,0 +1,170 @@
+# LOAF BREAKER: RESET (GLO's sixth part). 0.239 (FLEXOR): K4 picks what, K2 alone counts the five clicks, then GLO
+# resets (not pressed within 5 s: cancelled). BUILD changed (KICK ROLL, a beat's gap); RESET: K4 to BUILD; K2 four
+# clicks, a pause of 2.5 s, one more: nothing (counted from 0 again); K2 two clicks, then three: asked; GLO: BUILD back
+# to SNARE ROLL, no gap; then 3 s where RESET's knobs do nothing (a turn there: lost), DONE shown. KNOB: K1 given T+
+# TAIL (EDIT KICK KNOBS, K1 SET, PRESETS), then RESET KNOB (K4, K2 five clicks, GLO): K1 DUCK again. Five clicks left
+# without GLO: nothing reset.
+#   app/build/host/loaf-breaker_host tests/scenarios/reset.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 300
+turn K1 1 10
+turn K4 3 10
+wait 200
+expect drop_style 1
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 200
+turn ALGO 2 10
+wait 100
+expect kpage 12
+turn PRESET -1 10   # (0.9.66: on K1 SET, PRESETS that knob's function)
+wait 200
+expect selk1 8
+tap GLO
+wait 100
+turn SELECT -1 10   # (0.9.57: RESET, left of MIDI: LIGHTS before it)
+wait 100
+wait 100
+wait 100
+wait 100
+wait 300
+expect page 3
+expect gpage 5
+shot rs_reset.png
+turn K4 1 10
+turn K2 4 10
+wait 2500
+turn K2 1 10
+wait 200
+expect drop_style 1
+turn K2 2 10
+wait 200
+shot rs_armed.png
+turn K2 3 10
+wait 200
+expect drop_style 1
+shot rs_ask.png
+tap GLO
+wait 200
+expect gpage 5
+expect drop_style 0
+expect rst_cool 1
+shot rs_done_build.png
+turn K2 2 10
+turn K4 1 10
+wait 200
+expect rst_cool 1
+wait 2800
+expect rst_cool 0
+turn K4 1 10
+wait 100
+turn K2 5 10
+wait 6000
+expect selk1 8
+turn K2 5 10
+wait 200
+tap GLO
+wait 200
+expect selk1 0
+shot rs_done.png
+wait 3100
+# SCREEN: VHS and the skin MIAMI on (GLO EFFECTS key 2, MORE K4), then RESET SCREEN: no effect, RED again
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn K4 13 10
+turn SELECT 2 10
+wait 200
+key w1 down
+wait 30
+key w1 up
+wait 100
+expect sfx_on 2
+turn SELECT 1 10
+wait 150
+turn SELECT 2 10   # (0.9.57: past LIGHTS)
+wait 300
+expect gpage 5
+turn K4 15 10   # (0.9.71: WHITE LENGTH before SEL KEYS; 0.9.72: SPLITS too)
+wait 200
+shot rs_screen.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 300
+expect sfx_on 0
+# (0.9.52, FLEXOR) WHITE KEYS, ARP, SEL KEYS: each its own reset. A white key's LENGTH and DECAY changed (held, K1, K4),
+# ARP's DIST on the BREAK; then RESET WHITE KEYS, ARP, SEL KEYS: all as they came (0.9.71: SEL WHITE gone)
+tap HOME
+wait 200
+key w0 down
+wait 300
+turn K1 2 10
+turn K4 3 10
+wait 100
+key w0 up
+wait 100
+expect klen0 4
+tap ARP
+wait 200
+tapkey w6
+wait 100
+turn K2 -2 10
+wait 100
+expect arp_thru 1
+tap HOME
+wait 200
+tap GLO
+wait 150
+turn SELECT -1 10
+wait 3000
+expect gpage 5
+turn K4 -20 10
+turn K4 12 10
+wait 200
+shot rs_white.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 3300
+expect klen0 3
+turn K4 -1 10
+wait 100
+turn K2 5 10
+wait 200
+tap GLO
+wait 3300
+turn K4 4 10
+wait 100
+turn K2 5 10
+wait 200
+tap GLO
+wait 3300
+tap ARP
+wait 200
+expect opage 0
+tapkey w6
+wait 100
+expect arp_thru 0
+tap HOME
+wait 200

@@ -1,0 +1,35 @@
+# LOAF BREAKER (24 Nov 2026, FLEXOR: "de quoi envoyer ce que j'ai fait sur le VST sur la machine"): fm1-base's backup
+# and restore over USB (fm1.toml backup = true, app.h APP_BACKUP_*): everything saved taken as one image, put back whole
+# (a restart after it). Refused while playing (STOP FIRST). Here CHAOS 40 and the tempo saved and backed up, changed,
+# then the backup put back: CHAOS 40 again.
+#   app/build/host/loaf-breaker_host tests/scenarios/backup.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 150
+tap HOME
+wait 150
+tap HOME
+wait 300
+expect page 13
+turn K1 20 10
+wait 200
+expect chaos 40
+tap SAVE
+wait 500
+backup out:lbrk.bak
+wait 300
+turn K1 20 10
+wait 200
+expect chaos 80
+tap SAVE
+wait 500
+tap PLAY
+wait 500
+restore out:lbrk.bak
+wait 300
+expect chaos 80
+tap PLAY
+wait 500
+restore out:lbrk.bak
+wait 6000
+expect chaos 40

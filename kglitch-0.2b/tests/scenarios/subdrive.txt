@@ -1,0 +1,22 @@
+# GLOUPI BREAKS: the last black key (FREEZE's in CHOPPAH, DUB's before the swap), SUB: since 0.9.43 (FLEXOR) a switch,
+# the kick's SUB FX (the SUB layer's effect, whichever) off and on, the effect itself untouched; its light and the
+# strip's SUB lit while on; EDIT shows the SUB layer's effect
+#   app/build/host/loaf-breaker_host tests/scenarios/subdrive.txt app/build/scenarios
+wait 4200
+tapkey w0
+wait 300
+key b10 down
+wait 100
+key b10 up
+wait 300
+shot sd_on.png
+tap EDIT
+wait 300
+turn ALGO 1 10
+wait 300
+shot sd_edit.png
+key b10 down
+wait 100
+key b10 up
+wait 300
+shot sd_off.png

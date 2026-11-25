@@ -1,0 +1,82 @@
+# LOAF BREAKER (0.9.45, FLEXOR): every black key set to ARP is its own: its effect (ARP › BLACK KEYS K4, or K1 while
+# the key is held) and its LATCH (K4 held), several at once. Here key 1 made a second ARP beside FLEXOR LAYOUT's (key 7).
+#   app/build/host/loaf-breaker_host tests/scenarios/arpkeys.txt app/build/scenarios
+wait 4200
+layout_0953   # (0.9.58: FLEXOR LAYOUT changed; this scenario was written on the one before, as CUSTOM)
+expect bk_pre 2   # (0.9.58: the layout before, as CUSTOM)
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+expect opage 1
+key b0 down
+wait 100
+key b0 up
+wait 200
+expect bk_key 0
+turn K3 11 10
+wait 300
+expect bk_pre 2
+expect bk_fn 11
+turn K4 3 10
+wait 300
+expect bk_arpfx 3
+shot a_arpkeys.png
+# the old ARP key (7) keeps its own
+key b6 down
+wait 100
+key b6 up
+wait 200
+expect bk_key 6
+expect bk_arpfx 0
+tap HOME
+wait 200
+tap PLAY
+wait 800
+# both held: both effects (bits 3 and 0)
+key b0 down
+wait 100
+key b6 down
+wait 300
+expect arp_bits 9
+wait 400
+shot a_arpkeys_two.png
+key b0 up
+wait 200
+expect arp_bits 1
+key b6 up
+wait 200
+expect arp_bits 0
+# key 1 latched, key 7 held: key 1 stays on, key 7 only while held
+key b0 down
+wait 100
+turn K4 1 10
+wait 200
+key b0 up
+wait 200
+key b0 down
+wait 100
+key b0 up
+wait 300
+expect arp_bits 8
+key b6 down
+wait 200
+expect arp_bits 9
+key b6 up
+wait 200
+expect arp_bits 8
+key b0 down
+wait 100
+key b0 up
+wait 300
+expect arp_bits 0
+# back to FLEXOR LAYOUT
+tap ARP
+wait 200
+turn SELECT 1 10
+wait 200
+turn K1 -1 10
+wait 200
+expect bk_pre 1
+tap HOME
+wait 200

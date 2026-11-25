@@ -1,0 +1,88 @@
+# LOAF BREAKER: KNOBS' STYLE (EDIT five times: KNOBS; ALGORITHM twice back: STYLE). PRESETS right once: EARLY NEXT GEN, SEL +
+# K1 PITCH DROP, K2 RUMBLE, K3 PUNCH, K4 DRUM FLT. SEL + K1 deepens the pitch drop. K1 there: K1's own function alone
+# (PITCH DROP to RUMBLE: CUSTOM). KICK 5 (KNOBS, PRESETS) has its own knobs (TERROR's); KICK 4 again: its own back (the
+# fifth bit with it). PRESETS on STYLE once more: HARDCORE.
+#   app/build/host/loaf-breaker_host tests/scenarios/knobstyle.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 11
+turn ALGO 1 10
+wait 200
+expect kpage 14
+turn PRESET 1 10
+wait 200
+expect selk1_fn 15
+expect selk3_fn 17
+expect selk4_fn 18
+shot ks_style.png
+press SEL
+turn K1 5 10
+release SEL
+wait 200
+expect kdrop 10
+turn K1 1 10
+wait 200
+expect selk1_fn 16
+expect selk4_fn 18
+shot ks_custom.png
+turn ALGO -1 10
+wait 200
+expect kpage 11
+press SEL
+turn PRESET 1 10
+release SEL
+wait 200
+expect kslot 4
+expect selk1_fn 5
+expect selk3_fn 7
+press SEL
+turn PRESET -1 10
+release SEL
+wait 200
+expect kslot 3
+expect selk1_fn 16
+expect selk4_fn 18
+turn ALGO 1 10
+wait 200
+expect kpage 14
+turn PRESET 1 10
+wait 200
+expect selk1_fn 5
+expect selk4_fn 3
+# NEW SCHOOL: K1 DRIVE, K2 CLEAN SUB, K3 T+ TYPE, K4 TERROR (DRIVE always on K1, TERROR on K4)
+turn PRESET 1 10
+wait 200
+expect selk1_fn 5
+expect selk3_fn 6
+expect selk4_fn 3
+# STYLE's cards: each knob's value by its name, its bar as SEL + it turns (SEL locked: SEL twice)
+turn PRESET -2 10
+wait 200
+tap SEL
+wait 120
+tap SEL
+wait 500
+expect sel_lock 1
+turn K1 8 10
+turn K2 10 10
+turn K3 -6 10
+turn K4 15 10
+wait 300
+shot ks_bars.png
+tap SEL
+wait 300
+expect sel_lock 0

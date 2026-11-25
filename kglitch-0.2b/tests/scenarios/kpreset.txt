@@ -1,0 +1,41 @@
+# LOAF BREAKER: the KICK menu's OUT part (BODY: ALGORITHM six times from MIX): K4 PRESET, the built-in kick on the kick
+# selected (KICK 5 here, EARLY HC: PRESETS once from KICK 4; K4 once ROTTERDAM, twice more TERROR, 0.9.39's round). Stopped, keys 1-5 play the drums on the big views too (the kick's, the drums').
+#   app/build/host/loaf-breaker_host tests/scenarios/kpreset.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 300
+expect page 4
+turn PRESET 1 10
+wait 200
+expect kslot 4
+turn ALGO 6 10
+wait 300
+expect kpage 4
+turn K4 1 10
+wait 200
+expect kpreset 3
+shot kp_out.png
+turn K4 2 10
+wait 200
+expect kpreset 6
+key w1 down
+wait 30
+expect aud_d 1
+key w1 up
+wait 100
+shot kp_aud.png
+wait 200
+# (0.264: SELECT on the KICK menu is its sections; the drums: SEL + EDIT)
+press SEL
+tap EDIT
+release SEL
+wait 300
+expect page 14
+key w2 down
+wait 30
+expect aud_d 2
+key w2 up
+wait 300

@@ -1,0 +1,115 @@
+# LOAF BREAKER: ENV held on TRACKS: a gap after the item edited (the ones after it one place right), filled with a
+# white key; K2 left on a gap: gone again; a gap left is played past. Track 1 as it starts: P1 x4, P2 x4, DROP, P3.
+#   app/build/host/loaf-breaker_host tests/scenarios/trkgap.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 300
+expect page 8
+expect trk_cur 0
+press ENV
+wait 600
+release ENV
+wait 200
+expect page 8
+expect trk_cur 1
+expect trk_it 253
+shot t_gap.png
+turn ALGO 1 10
+wait 100
+expect trk_it 2
+turn ALGO -1 10
+key w4 down
+key w4 up
+wait 200
+expect trk_cur 2
+expect trk_it 2
+turn ALGO -1 10
+wait 100
+expect trk_it 5
+shot t_gap_put.png
+turn ALGO -1 10
+press ENV
+wait 600
+release ENV
+wait 200
+expect trk_it 253
+turn K2 -1 10
+wait 200
+expect trk_cur 1
+expect trk_it 5
+# track 2: P1, P2, then a gap between them, played past
+turn PRESET 1 10
+key w0 down
+key w0 up
+key w1 down
+key w1 up
+turn ALGO -2 10
+press ENV
+wait 600
+release ENV
+wait 200
+expect trk_cur 1
+expect trk_it 253
+turn SELECT 1 10
+wait 300
+tap PLAY
+wait 300
+expect page 0
+expect trk_on 1
+expect pattern 0
+wait 3200
+expect pattern 1
+expect trk_pos 2
+tap PLAY
+wait 300
+# ENV held on a space: it goes, the sides close up (track 2: P1, space, P2 -> P1, P2), the cursor on P1
+tap ENV
+wait 300
+expect page 8
+turn ALGO -5 10
+turn ALGO 1 10
+wait 100
+expect trk_it 253
+press ENV
+wait 600
+release ENV
+wait 200
+expect trk_cur 0
+expect trk_it 1
+turn ALGO 1 10
+wait 100
+expect trk_it 2
+# ALGORITHM on TRACKS: the item (K1 is its kick), the break left as it is
+turn ALGO 1 10
+wait 200
+expect trk_cur 2
+expect brk_next -1
+turn ALGO -1 10
+wait 200
+expect trk_cur 1
+# each item its break (K4): track 3, P1 (the break playing), then P2 with break 3: in with P2
+expect page 8
+expect brk 0
+turn PRESET 1 10
+key w0 down
+key w0 up
+key w1 down
+key w1 up
+turn ALGO -1 10
+turn K4 3 10
+wait 200
+shot t_brk.png
+turn K4 -1 10
+turn K4 1 10
+turn SELECT 1 10
+wait 300
+tap PLAY
+wait 300
+expect trk_on 1
+expect pattern 0
+expect brk 0
+wait 3400
+expect pattern 1
+expect brk 2
+tap PLAY
+wait 300

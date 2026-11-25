@@ -1,0 +1,38 @@
+# LOAF BREAKER's build settings (fm1-base's tools/build.py: ./build.sh). LOAF BREAKER is FLEXOR's fork of CHOPPAH
+# (Laurens Profittlich, https://github.com/profikid/fm1-break-choppah): its own name, files and identity, CHOPPAH credited
+name = "K-GLITCH"          # the build's files: loaf-breaker.fwsc, loaf-breaker-X.Y.fwsc, loaf-breaker_host (CHOPPAH's: choppah)
+id_prefix = "FM-1_4519"        # package identity, its own (CHOPPAH's: FM-1_86): dev FM-1_262300, releases FM-1_2623XXYYZZ;
+                               # free on the Firmware Hub's catalogue, 9 Nov 2026 (no identity there starts 2623)
+usb_manufacturer = "K-GLITCH"
+usb_product = "K-GLITCH FM-1"     # LOAF BREAKER: "FM-1" kept in the name, so the installer and the tools find the port by themselves
+ble = false                    # GLOUPI BREAKS: no Bluetooth (CHOPPAH: true, Bluetooth MIDI, PRD A-71)
+ble_stack = "own"              # fm1-base's own stack: nothing of JieLi's, ~40 KB
+bt_audio = false               # GLOUPI BREAKS: no Bluetooth audio out (CHOPPAH: true, PRD A-72)
+usb_audio_in = true            # the FM-1 recordable over USB (PRD A-50)
+usb_audio_out = false
+mirror = true                  # LOAF BREAKER (0.9.43, FLEXOR): the screen and panel live on a computer over USB, the
+                               # panel played from it (fm1-base's web/mirror: the site's mirror/; tools/fm1_mirror.py)
+backup = true                  # (LOAF BREAKER, 24 Nov 2026: everything saved over USB, the VST <-> FM-1 transfer; app.h APP_BACKUP_*)
+pool_spare = 3072              # LOAF BREAKER (0.9.43): the mirror's buffers (mr_seg, mr_msg, mr_wire, ~3 KB) spent the
+                               # pool's 8 KB margin on purpose; 3,352 B are left: anything more in the pool frees its room first
+midi_stamp = true             # LOAF BREAKER: MIDI in (the clock) stamped where it lands, USB and TRS (fm1-base)
+words = "words.tsv"
+font_trim = true               # LOAF BREAKER: each glyph stored as its lit box (the same pixels, the fonts ~55 % smaller);
+                               # the unused faces (S, M, L: base's sys_text, APP_SYS_TEXT here) are left out by the
+                               # compiler, being static and never read
+include = ["dsp"]
+o2 = ["dsp/*.c"]               # the engine, at -O2
+unity_opt = "z"                # the platform and the UI at -Oz (the engine stays -O2): smaller
+boot_pack = true               # the start-up's RAM images stored LZMA-packed: smaller
+# the site (tools/make_site.py)
+title = "K-GLITCH"         # the name people see (firmware.json; the site: tools/site_style.py)
+install_app = "site/install_app.js"   # confetti when the install is done
+tagline = "A break chopper and glitch destroyer for the FM-1"
+repo = "https://github.com/guizmoh/k-glitch"   # LOAF BREAKER (CHOPPAH: https://github.com/profikid/fm1-break-choppah)
+licence = "MPL-2.0"
+credits = "K-GLITCH 0.2b by Guizmoh, built on LOAF BREAKER by FLEXOR, on CHOPPAH by Laurens Profittlich, on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments)."
+# firmware.json (required by fm1-base for a --release build: the releases of loaf.yml)
+author = "Guizmoh (K-GLITCH), from LOAF BREAKER by FLEXOR and CHOPPAH by Laurens Profittlich"
+description = "K-GLITCH 0.2b: a break chopper and glitch destroyer for the M-VAVE FM-1, from FLEXOR's LOAF BREAKER (CHOPPAH): its breaks, kick and sequencer, with K-GLITCH's sixteen CHOP effects (stutter, repeats, reverse, skip, half time, scratch, backspin, tape stop...) live on the white keys and as a 64-step CHOP lane, the drums' settings replaced by the GLITCH page."
+tags = ["drum-machine", "sampler"]
+install = "https://charlesvestal.github.io/fm1-base/install/"

@@ -1,0 +1,63 @@
+# LOAF BREAKER: 64 patterns, four groups of 16 (one in RAM). PRESETS left of P1: P64 (the fourth group, empty). A
+# change there, then P1 while stopped: the group saved first (its three objects), P1-16 in. Back to P64: the change
+# kept. Playing, a change, then PRESETS to P1: refused (SAVE OR STOP: a write would stop the sound); SAVE, then it
+# comes in at the loop's end. After a reboot: the group saved with SAVE in again.
+#   app/build/host/loaf-breaker_host tests/scenarios/pat64.txt app/build/scenarios
+wait 4200
+expect pattern 0
+expect pgrp 0
+expect grp_dirty 0
+tap SEQ
+wait 300
+turn PRESET -1 10
+wait 200
+expect pattern 63
+expect pgrp 3
+expect lane_kick 0
+tapkey w0
+wait 200
+expect grp_dirty 1
+expect lane_kick 1
+shot q_p64.png
+turn PRESET 1 10
+wait 200
+expect pattern 0
+expect pgrp 0
+expect grp_dirty 0
+expect store_writes 4
+turn PRESET -1 10
+wait 200
+expect pattern 63
+expect lane_kick 1
+tap PLAY
+wait 600
+tapkey w2
+wait 100
+expect grp_dirty 1
+turn PRESET 1 10
+wait 300
+shot q_p64_wait.png
+wait 3200
+expect pattern 63
+expect pgrp 3
+tap SAVE
+wait 300
+expect grp_dirty 0
+turn PRESET 1 10
+wait 3500
+expect pattern 0
+expect pgrp 0
+expect playing 1
+turn PRESET -1 10
+wait 3500
+expect pattern 63
+expect lane_kick 5
+tap PLAY
+wait 300
+tap SAVE
+wait 300
+reboot
+wait 4200
+expect pattern 63
+expect pgrp 3
+expect lane_kick 5

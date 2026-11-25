@@ -1,0 +1,25 @@
+# LOAF BREAKER: GLO's FX SET (GLO five times): the screen effects' four settings: K1
+# AMOUNT, K2 ON A KICK, K3 AT THE DROP, K4 LENGTH (0..100 %, 5 % a detent; 50 % as before). Kicks off here (K2 to 0),
+# longer moments (K4 to 100 %); 
+#   app/build/host/loaf-breaker_host tests/scenarios/sfxset.txt app/build/scenarios
+wait 4200
+tap GLO
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 300
+expect gpage 4
+turn K2 -10 10
+turn K4 10 10
+wait 200
+shot sfx_set.png
+tap GLO
+wait 150
+tap GLO
+wait 300
+expect gpage 0

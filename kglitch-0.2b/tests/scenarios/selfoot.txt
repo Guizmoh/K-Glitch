@@ -1,0 +1,24 @@
+# LOAF BREAKER (0.258, FLEXOR): SEL held a moment, or locked (SEL x2): the foot shows SEL + K1-K4, the functions
+# EDIT KICK › KNOBS gave them and their values; SEL + K4 turned, its value moves; let go (or SEL again), the page's.
+#   app/build/host/loaf-breaker_host tests/scenarios/selfoot.txt app/build/scenarios
+wait 4200
+press SEL
+wait 600
+shot sf_held.png
+turn K4 5 10
+wait 300
+expect terror 10
+shot sf_turned.png
+release SEL
+wait 300
+tap SEL
+wait 100
+tap SEL
+wait 700
+expect sel_lock 1
+shot sf_locked.png
+tap SEL
+wait 600
+expect sel_lock 0
+shot sf_free.png
+expect help 0

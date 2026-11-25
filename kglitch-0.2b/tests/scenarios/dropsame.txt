@@ -1,0 +1,34 @@
+# LOAF BREAKER (0.9.55, FLEXOR): SONG › DROP K2 AFTER DROP: SAME (left of NEXT), the drop back into the pattern
+# playing, from its start. Here BUILD NONE (the bar playing ends in the drop), P1 playing: P1 again after it.
+#   app/build/host/loaf-breaker_host tests/scenarios/dropsame.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 200
+turn SELECT 2 10
+wait 300
+turn K1 -4 10
+turn K2 -1 10
+wait 200
+expect dafter 255
+shot t_dropsame.png
+tap HOME
+wait 200
+expect pattern 0
+tap PLAY
+wait 600
+press SEL
+tap ENV
+release SEL
+wait 3000
+expect pattern 0
+tap PLAY
+wait 200
+tap ENV
+wait 200
+turn SELECT 2 10
+wait 300
+turn K2 1 10
+wait 100
+expect dafter 0
+tap HOME
+wait 200

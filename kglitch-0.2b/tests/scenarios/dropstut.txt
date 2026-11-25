@@ -1,0 +1,33 @@
+# LOAF BREAKER 0.9.26 (FLEXOR): SONG › TRACKS, a DROP item's K3 its STUTTER (OFF / ON): its build rolls the break
+# (8ths, 16ths, 32nds) over the BUILD's style (SNARE ROLL here); the item drawn "DRP S". Track 1 as it starts: P1 x4,
+# P2 x4, DROP, P3; played from P2 (SEL + PLAY on it, then PLAY's PLAY).
+#   app/build/host/loaf-breaker_host tests/scenarios/dropstut.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 300
+turn ALGO 2 10
+wait 200
+expect trk_it 254
+turn K3 1 10
+wait 300
+shot t_dropstut.png
+turn ALGO -1 10
+wait 200
+expect trk_it 2
+press SEL
+tap PLAY
+release SEL
+wait 200
+expect trk_from 1
+turn SELECT 1 10
+wait 300
+tap PLAY
+wait 300
+expect trk_on 1
+expect bstut 0
+wait 11500
+expect bstut 1
+shot t_dropstut_build.png
+wait 6500
+expect bstut 0
+expect trk_pos 3

@@ -1,0 +1,74 @@
+# LOAF BREAKER: STYLE's PRESET 1-4 (EDIT five times: KNOBS; ALGORITHM twice back: STYLE). EARLY NEXT GEN, SEL + K1 deepens
+# the pitch drop; PRESETS to PRESET 1 (empty: the knobs stay); SAVE stores the four knobs and their values in it.
+# The drop back to nothing, TERROR; PRESET 1 again: EARLY NEXT GEN's knobs and the deep drop. KICK 6 (INDUSTRIAL, no DROP of
+# its own, 0.9.39): PRESET 1 gives it the same knobs and values.
+#   app/build/host/loaf-breaker_host tests/scenarios/knobpre.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect kpage 11
+turn ALGO 1 10
+wait 200
+expect kpage 14
+turn PRESET 1 60
+wait 200
+expect selk1_fn 15
+press SEL
+turn K1 5 10
+release SEL
+wait 200
+expect kdrop 10
+turn PRESET 8 60   # (0.9.62: past FLEXOR)
+wait 200
+expect selk1_fn 15
+shot kp_empty.png
+tap SAVE
+wait 300
+expect kpre 1
+shot kp_stored.png
+turn PRESET -8 60   # (0.9.62: past FLEXOR)
+wait 200
+press SEL
+turn K1 -5 10
+release SEL
+wait 200
+expect kdrop 0
+turn PRESET -1 60
+wait 200
+expect selk1_fn 5
+turn PRESET -4 60
+wait 200
+expect selk1_fn 15
+expect selk4_fn 18
+expect kdrop 10
+shot kp_applied.png
+turn ALGO -1 10
+wait 200
+expect kpage 11
+press SEL
+turn PRESET 2 60
+release SEL
+wait 200
+expect kslot 5
+turn ALGO 1 10
+wait 200
+expect kpage 14
+turn PRESET 1 60
+wait 200
+turn PRESET -1 60
+wait 200
+expect selk1_fn 15
+expect kdrop 10

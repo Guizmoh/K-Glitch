@@ -1,0 +1,153 @@
+# LOAF BREAKER (0.9.55, FLEXOR): two more black keys for the kicks: X4, a kick on every step of a bar that has
+# kicks (four to the floor becomes sixteen), and TRI, the kicks in 8th-note triplets (three a beat, from the next beat,
+# the pattern's kicks out meanwhile). Each with its LATCH on K1 while held, on at first, as X2. Key 1 made X4 then TRI
+# (ARP › BLACK, CUSTOM); the kick on steps 1, 5, 9, 13 of its lane's four bars (as kickx2.txt).
+#   app/build/host/loaf-breaker_host tests/scenarios/kickx4.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 200
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 200
+turn K3 -5 10   # (left of R8: CHS, KBR, SDR, TRI, X4; 0.9.58, CHS 0.9.76)
+wait 300
+expect bk_fn 17
+shot x4_key.png
+tap HOME
+wait 200
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 2
+tap PLAY
+wait 1300
+expect khits 16
+tap PLAY
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 0
+tap ARP
+wait 200
+turn SELECT 1 10
+wait 300
+turn K3 1 10
+wait 300
+expect bk_fn 18
+tap HOME
+wait 200
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 4
+tap PLAY
+wait 1300
+expect khits 12
+shot tri_on.png
+tap PLAY
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 0
+tap ARP
+wait 200
+turn SELECT 1 10
+wait 200
+turn K1 -1 10
+wait 200
+expect bk_pre 1
+# (0.9.55, FLEXOR) the same three as ARP effects, the last of the sixteen: KICK X2, X4, TRI on white keys 14-16 (LATCH on)
+tap HOME
+wait 200
+tap ARP
+wait 300
+expect opage 0
+turn K4 1 10
+wait 100
+tapkey w14
+wait 100
+tap PLAY
+wait 1300
+expect khits 16
+tap PLAY
+wait 300
+tapkey w14
+wait 100
+tapkey w15
+wait 100
+tap PLAY
+wait 1300
+expect khits 12
+tap PLAY
+wait 300
+tapkey w15
+wait 100
+turn K4 -1 10
+wait 100
+tap HOME
+wait 200

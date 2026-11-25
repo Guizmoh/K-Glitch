@@ -1,0 +1,31 @@
+# LOAF BREAKER (0.263, FLEXOR): SYSTEM › RESET, WIPE MEMORY (K4 to the end, one back: EVERYTHING stays last), K2 five clicks, GLO: every sector LOAF
+# BREAKER saves in erased, a sector a frame ("WIPING n / 40"), then "MEMORY WIPED": SAVE off until a restart. Before
+# installing another firmware, so it finds that memory blank.
+#   app/build/host/loaf-breaker_host tests/scenarios/wipe.txt app/build/scenarios
+wait 4200
+tap SAVE
+wait 300
+tap GLO
+wait 150
+turn SELECT -1 10   # (0.9.57: RESET, left of MIDI: LIGHTS before it)
+wait 150
+wait 100
+wait 150
+wait 150
+wait 300
+turn K4 20 10
+wait 300
+turn K4 -1 10
+wait 300
+shot rst_wipe.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 200
+expect wiped 1
+wait 2000
+expect wiped 2
+shot rst_wiped.png
+tap SAVE
+wait 300
+expect wiped 2

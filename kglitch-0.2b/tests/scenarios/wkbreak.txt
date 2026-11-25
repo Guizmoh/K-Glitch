@@ -1,0 +1,85 @@
+# LOAF BREAKER (0.9.71, FLEXOR: "assigner des réglages de length de white key pour chaque break afin de mieux chopper,
+# que les réglages des white keys restent sur les breaks"): each break its own white keys (LENGTH, PITCH, MODE, DECAY,
+# held K1-K4): a break change brings in its own, SAVE keeps them all, a restart finds them on their breaks.
+#   app/build/host/loaf-breaker_host tests/scenarios/wkbreak.txt app/build/scenarios
+wait 4200
+expect brk 0
+expect klen0 3
+# break 1: key 1 two lengths longer
+key w0 down
+wait 200
+turn K1 2 10
+wait 200
+key w0 up
+wait 200
+expect klen0 4
+# break 2: its own, as they started; key 1 a length shorter there
+turn ALGO 1 10
+wait 400
+expect brk 1
+expect klen0 3
+key w0 down
+wait 200
+turn K1 -1 10
+wait 600
+shot wkbreak_len.png
+key w0 up
+wait 200
+expect klen0 10
+# back to break 1, then 2: each its own
+turn ALGO -1 10
+wait 400
+expect brk 0
+expect klen0 4
+turn ALGO 1 10
+wait 400
+expect brk 1
+expect klen0 10
+# a third break never touched: as they start
+turn ALGO 1 10
+wait 400
+expect brk 2
+expect klen0 3
+# SAVE and restart on break 2: its own; then break 1's
+turn ALGO -1 10
+wait 400
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect brk 1
+expect klen0 10
+turn ALGO -1 10
+wait 400
+expect brk 0
+expect klen0 4
+# (0.9.71, FLEXOR: "un RESET WHITE LENGTH") SYSTEM › RESET › WHITE LENGTH on break 1: its keys one slice again, key 1's
+# DECAY kept; break 2's own lengths untouched
+key w0 down
+wait 200
+turn K4 2 10
+wait 200
+key w0 up
+wait 200
+expect kdec0 2
+tap GLO
+wait 150
+turn SELECT -1 10
+wait 300
+expect gpage 5
+turn K4 -20 10
+turn K4 13 10
+wait 200
+shot wkbreak_rstlen.png
+turn K2 5 10
+wait 200
+tap GLO
+wait 300
+expect klen0 3
+expect kdec0 2
+tap HOME
+wait 300
+turn ALGO 1 10
+wait 400
+expect brk 1
+expect klen0 10

@@ -1,0 +1,85 @@
+# LOAF BREAKER (0.9.58, FLEXOR): KILL BREAK, a black key: the break out while held, as its K1 MODE says: FADE (over K2
+# TIME, 1/4 to start), CUT at once, BAR END (at the bar's end, its last 8th into the reverb, K3 REVERB), or END FADE (0.9.60: to the break's loop end, then the fade); K4 LATCH.
+# Here on key 1 of a CUSTOM layout (left of R8 on ARP › BLACK K3: KBR, the last function).
+#   app/build/host/loaf-breaker_host tests/scenarios/killbreak.txt app/build/scenarios
+wait 4200
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 200
+turn K3 -2 10   # (left of R8: CHS, KBR; CHS 0.9.76)
+wait 300
+expect bk_fn 20
+tap HOME
+wait 200
+tap PLAY
+wait 1200
+expect kbgain 100
+# FADE (1/4): out within a beat
+key b0 down
+wait 100
+expect kbrk 1
+expect kbmode 0
+expect kbgain <90
+expect kbgain >40
+wait 400
+expect kbgain 0
+shot kbr_fade.png
+key b0 up
+wait 400
+expect kbrk 0
+expect kbgain 100
+# CUT: K1 right while held
+key b0 down
+wait 50
+turn K1 1 10
+wait 100
+key b0 up
+wait 400
+key b0 down
+wait 150
+expect kbmode 1
+expect kbgain 0
+key b0 up
+wait 400
+expect kbgain 100
+# BAR END: still heard at first, out by the next bar's start
+key b0 down
+wait 50
+turn K1 1 10
+wait 100
+key b0 up
+wait 400
+key b0 down
+wait 30
+expect kbmode 2
+expect kbgain 100
+shot kbr_bar.png
+wait 1800
+expect kbgain 0
+key b0 up
+wait 400
+expect kbgain 100
+# END FADE: the break plays on to its loop's end (2 bars), then fades out over TIME (1/4)
+key b0 down
+wait 50
+turn K1 1 10
+wait 100
+key b0 up
+wait 400
+key b0 down
+wait 30
+expect kbmode 3
+expect kbgain 100
+wait 1000
+shot kbr_endfade.png
+wait 2800
+expect kbgain 0
+key b0 up
+wait 400
+expect kbgain 100
+tap PLAY

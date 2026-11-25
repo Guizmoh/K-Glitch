@@ -1,0 +1,56 @@
+# LOAF BREAKER (0.216): DRUM VIEW ZOOM, the time EDIT's pictures show (KICK › KNOBS › TOOLS K4 since 0.9.29, FLEXOR;
+# SYSTEM › EFFECTS' PRESETS before). AUTO (each part its own: the kick 500 ms in RGB); 250 MS, 500 MS, 750 MS (0.257),
+# 1 S, 1.5 S, 2 S: the kick's tail whole; the drums too; back to AUTO.
+#   app/build/host/loaf-breaker_host tests/scenarios/ezoom.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 400
+expect ezoom 0
+expect kv_ms 500
+shot ez_auto.png
+turn SELECT -1 10
+wait 200
+expect ksect 6
+turn ALGO 6 10
+wait 300
+expect kpage 18
+turn K4 5 60
+wait 300
+expect ezoom 5
+wait 1800
+shot ez_tools.png
+turn K4 9 60
+wait 200
+expect ezoom 6
+wait 400
+expect page 4
+expect kv_ms 2000
+shot ez_2s.png
+press SEL
+tap EDIT
+release SEL
+wait 400
+shot ez_drum.png
+press SEL
+tap EDIT
+release SEL
+wait 300
+press SEL
+tap EDIT
+release SEL
+wait 400
+expect page 4
+expect kpage 18
+turn K4 -2 60
+wait 200
+expect ezoom 4
+# (0.257: 750 MS between 500 MS and 1 S)
+turn K4 -1 60
+wait 200
+expect ezoom 3
+turn K4 -9 60
+wait 200
+expect ezoom 0
+turn SELECT 2 10
+wait 400
+expect kv_ms 500

@@ -1,0 +1,142 @@
+# LOAF BREAKER (0.9.48, FLEXOR): X2, a black key that doubles the kicks: on, every odd step (1, 3 .. 15) of a bar that
+# has kicks plays one (four to the floor becomes eight; the even steps as programmed). Its LATCH (K1 while held) on at
+# first: a press on, the next off; LATCH off: while held. Here key 1 made X2 (ARP › BLACK KEYS, CUSTOM); the kick on
+# steps 1, 5, 9, 13 of its lane's four bars (as kill.txt).
+#   app/build/host/loaf-breaker_host tests/scenarios/kickx2.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 200
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+key b0 down
+wait 100
+key b0 up
+wait 200
+turn K3 -6 10   # (left of R8: CHS, KBR, SDR, TRI, X4, X2; 0.9.58, CHS 0.9.76)
+wait 300
+expect bk_fn 16
+shot x2_key.png
+tap HOME
+wait 200
+tap PLAY
+wait 1300
+expect khits 4
+tap PLAY
+wait 300
+expect khits 0
+expect kx2on 0
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 1
+tap PLAY
+wait 1300
+expect khits 8
+tap PLAY
+wait 300
+expect khits 0
+shot x2_on.png
+key b0 down
+wait 100
+key b0 up
+wait 50
+expect kx2on 0
+tap PLAY
+wait 1300
+expect khits 4
+tap PLAY
+wait 300
+expect khits 0
+key b0 down
+wait 50
+turn K1 -1 10
+wait 100
+expect kx2on 1
+shot x2_latch.png
+tap PLAY
+wait 1300
+expect khits 8
+tap PLAY
+wait 300
+expect khits 0
+key b0 up
+wait 100
+expect kx2on 0
+key b0 down
+wait 50
+turn K1 1 10
+wait 50
+key b0 up
+wait 100
+expect kx2on 1
+key b0 down
+wait 50
+key b0 up
+wait 100
+expect kx2on 0
+tap ARP
+wait 200
+turn SELECT 1 10
+wait 200
+turn K1 -1 10
+wait 200
+expect bk_pre 1
+tap HOME
+wait 200

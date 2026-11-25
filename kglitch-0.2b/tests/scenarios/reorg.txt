@@ -1,0 +1,104 @@
+# LOAF BREAKER TEST: the menus rearranged. HOME: PERFORM, GENERATOR (and back). EDIT KICK's parts past OUT: EQ BANDS,
+# EQ SHAPE, FX 1, FX 2, TERROR, TERROR + (DRIVE, TYPE, SCREECH, TAIL), TERROR 2. LFO three times: MASTER (COMP, RATIO,
+# DUCK, MAX OUT). EDIT KICK's KNOBS (LOAF BREAKER TEST: ENV's KNOB no more): K2 SET (ALGORITHM) given DRIVE (PRESETS to its end); SEL + K2 then turns the kick's
+# INTENSITY; K1 given T+ SCREECH (PRESETS: DUCK, TERROR 2, COMP, TERROR, T+ DRIVE, T+ TYPE, T+ SCREECH): SEL + K1 turns it.
+#   app/build/host/loaf-breaker_host tests/scenarios/reorg.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 200
+expect page 1
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+expect page 11
+tap HOME
+wait 200
+expect page 0
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.9.29: SELECT six times MORE, its EQ B two parts back; SELECT
+# twice back FX1)
+turn SELECT 6 10
+wait 200
+turn ALGO -2 10
+wait 300
+expect page 10
+shot r_kick_eq.png
+turn SELECT -2 10
+wait 300
+expect page 2
+expect fx_focus 4
+shot r_kick_fx.png
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect page 4
+expect kpage 5
+turn K1 20 10
+shot r_terror.png
+turn ALGO 1 10
+wait 200
+expect kpage 6
+turn K2 1 10
+turn K3 30 10
+turn K4 10 10
+wait 300
+expect t_type 1
+shot r_terror_more.png
+turn ALGO 1 10
+wait 200
+expect kpage 7
+shot r_terror2.png
+tap LFO
+wait 100
+tap LFO
+wait 100
+tap LFO
+wait 300
+expect page 5
+turn K1 20 10
+wait 200
+shot r_master.png
+tap EDIT
+wait 300
+turn SELECT 3 10
+wait 300
+expect ksect 6
+# (MORE kept its last part, EQ B: two on, KNOBS)
+turn ALGO 2 10
+wait 300
+expect kpage 11
+turn ALGO 3 10
+wait 100
+expect kpage 12
+turn PRESET 6 10
+wait 300
+shot r_knob.png
+press SEL
+turn K2 -60 10
+turn K2 10 10
+release SEL
+wait 200
+expect intensity 20
+turn ALGO -1 10
+turn PRESET -2 10
+wait 200
+press SEL
+turn K1 10 10
+release SEL
+wait 200
+expect t_screech 80
+shot r_knob_k1.png
+tap PLAY
+wait 2500
+tap PLAY

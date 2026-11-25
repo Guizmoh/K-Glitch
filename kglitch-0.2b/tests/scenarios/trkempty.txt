@@ -1,0 +1,27 @@
+# LOAF BREAKER: TRACKS, K2 PUT left of P1: DROP, DROP 8 .. DROP 1 (0.9.58), then EMPTY (the case emptied, its place kept); ENV held on it: gone, the items
+# after it close up. On the END, K2 right: P1 at once. Track 1 as it starts: P1 x4, P2 x4, DROP, P3.
+#   app/build/host/loaf-breaker_host tests/scenarios/trkempty.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 300
+expect page 8
+expect trk_cur 0
+expect trk_it 1
+turn K2 -10 10   # (0.9.58: past DROP, DROP 8 .. DROP 1)
+wait 200
+expect trk_it 253
+shot t_empty.png
+press ENV
+wait 600
+release ENV
+wait 200
+expect trk_cur 0
+expect trk_it 2
+turn ALGO 3 10
+wait 100
+expect trk_cur 3
+expect trk_it 0
+turn K2 1 10
+wait 100
+expect trk_it 1
+shot t_empty_end.png

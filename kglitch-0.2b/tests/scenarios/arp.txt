@@ -1,0 +1,64 @@
+# LOAF BREAKER: the ARP black key (the tenth), its OVERLAY effect. Held: MAIN, K1 the effect, K2 its AMOUNT, K3 its
+# TIME (RATE for CHOP, GATE, WAH, PAN; SWEEP for DIVE, RISE), K4 LATCH; FX while held: MORE, K1 THRU (BREAK, KICK,
+# THRU), K2 ON / OFF, K3 RATE, K4 SWEEP; FX again: MAIN.
+#   app/build/host/loaf-breaker_host tests/scenarios/arp.txt app/build/scenarios
+wait 4200
+layout_0953   # (0.9.58: FLEXOR LAYOUT changed; this scenario was written on the one before, as CUSTOM)
+tap PLAY
+wait 600
+key b3 down
+wait 400
+shot a_flt.png
+key b3 up
+key b6 down
+turn K1 8 10
+wait 300
+expect arp_fx 8
+turn K2 -20 10
+wait 200
+expect arp_amt 60
+turn K3 1 10
+wait 200
+expect ovl_rate 3
+shot a_arp_held.png
+tap FX
+wait 300
+expect arp_more 1
+turn K1 -1 10
+wait 300
+expect arp_thru 2
+shot a_thru_kick.png
+turn K1 -1 10
+wait 300
+expect arp_thru 1
+shot a_thru_break.png
+turn K1 2 10
+turn K2 -1 10
+wait 300
+shot a_arp_off.png
+turn K2 1 10
+tap FX
+wait 200
+expect arp_more 0
+key b6 up
+wait 200
+key b6 down
+wait 100
+key b6 up
+wait 300
+shot a_latched.png
+key b6 down
+turn K4 1 10
+key b6 up
+wait 200
+key b6 down
+wait 100
+key b6 up
+wait 300
+shot a_latch_on.png
+key b6 down
+wait 100
+key b6 up
+wait 300
+shot a_after.png
+wait 1600

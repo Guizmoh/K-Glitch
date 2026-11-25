@@ -1,0 +1,53 @@
+# LOAF BREAKER: the KICK menu's fifth section, KNOBS (EDIT four times from SOUND): K1-K4 what SEL + K1..K4 turns,
+# under the kick's picture; ALGORITHM then K1 SET .. K4 SET, each knob's function's settings (as ENV KNOB)
+#   app/build/host/loaf-breaker_host tests/scenarios/kickknobs.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 300
+expect page 4
+turn SELECT 1 10
+wait 200
+turn SELECT 1 10
+wait 200
+turn SELECT 1 10
+wait 200
+turn SELECT 1 10
+wait 200
+turn SELECT 1 10
+wait 300
+expect kpage 11
+turn K1 10 10
+wait 100
+turn K4 15 10
+wait 200
+shot kn_knobs.png
+turn ALGO 4 10
+wait 200
+expect kpage 12
+turn K2 5 10
+turn K3 -5 10
+wait 200
+shot kn_k4set.png
+turn ALGO 5 10
+wait 200
+expect kpage 11
+# K SET: PRESETS gives that knob another function (here K2: TERROR 2 to TERROR +, COMP passed over), the kick's own; on KNOBS, PRESETS is
+# the kick memory again
+turn ALGO 2 10
+wait 200
+expect kpage 12
+turn PRESET 2 10
+wait 200
+expect kslot 3
+shot kn_assign.png
+turn ALGO -2 10
+wait 200
+expect kpage 11
+press SEL
+turn PRESET 1 10
+release SEL
+wait 200
+expect kslot 4

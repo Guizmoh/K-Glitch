@@ -1,0 +1,56 @@
+# LOAF BREAKER (0.9.24, FLEXOR): DST (the DISTO switch) and SUB (0.9.43: the SUB FX switch) are each kick's own: on
+# KICK 4, both off; KICK 5 has them on; back on KICK 4, both off again. In BEGINNER too (its layout kept: FLEXOR LAYOUT
+# here). 0.9.40 (FLEXOR): K1 PRESET to SPINE (its DISTO RECT 30, its SUB DRIVE): both on again with it; to 909 the SUB
+# layer's effect none, as 909 is made. SUB never changes the effect itself: ROTTERDAM's stays as it was.
+#   app/build/host/loaf-breaker_host tests/scenarios/dstkick.txt app/build/scenarios
+wait 4200
+tap GLO
+wait 150
+turn SELECT 1 10
+wait 300
+turn K3 -1 80
+wait 300
+tap HOME
+wait 300
+expect ter_off 0
+key b9 down
+wait 100
+key b9 up
+wait 200
+expect ter_off 1
+expect sub_off 0
+expect subdrv -1
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect sub_off 1
+expect subdrv -1
+tap EDIT
+wait 300
+turn PRESET 1 10
+wait 300
+expect kslot 4
+expect ter_off 0
+expect sub_off 0
+turn PRESET -1 10
+wait 300
+expect kslot 3
+expect ter_off 1
+expect sub_off 1
+tap HOME
+wait 300
+tap EDIT
+wait 300
+turn K1 3 10
+wait 300
+expect kpreset 7
+expect ter_off 0
+expect terror 30
+expect subdrv 50
+expect sub_off 0
+turn K1 -7 10
+wait 300
+expect kpreset 0
+expect subdrv -1
+expect sub_off 0

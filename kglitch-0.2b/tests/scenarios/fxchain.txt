@@ -1,0 +1,58 @@
+# CHOPPAH: the FX chain. FX opens it; ALGORITHM picks a slot (FX again its parts, then the next), PRESETS its effect, K1-K4 its
+# settings and mix, SEL + FX bypasses it, FX held + ALGORITHM moves it along; the MIXER's K4 FX fades the whole chain
+#   app/build/host/loaf-breaker_host tests/scenarios/fxchain.txt app/build/scenarios
+wait 4200
+tap PLAY
+wait 400
+tap FX
+wait 300
+shot c_default.png
+expect fx_focus 0
+press SEL
+tap FX
+release SEL
+wait 200
+expect fx_focus 0
+turn K2 -8 10
+wait 300
+shot c_crunch_on.png
+turn SELECT 1 10
+turn PRESET 2 10
+wait 200
+turn K1 -10 10
+turn K2 15 10
+wait 300
+shot c_drive.png
+turn SELECT 1 10
+turn PRESET 2 10
+wait 200
+expect fx_focus 2
+press FX
+turn ALGO -1 10
+release FX
+wait 300
+expect fx_focus 1
+shot c_moved.png
+# FX again: the slot's parts (MAIN, MORE, MOD), then the next slot
+turn ALGO 1 10
+wait 100
+expect fx_focus 1
+expect fx_page 1
+turn ALGO 1 10
+turn ALGO 1 10
+wait 100
+expect fx_focus 2
+expect fx_page 0
+turn SELECT 3 10
+wait 100
+expect fx_focus 1
+peakreset
+wav fx_chain.wav
+wait 2000
+expect peak_db_min -30
+wavstop
+tap LFO
+wait 200
+turn K4 -50 10
+wait 300
+shot c_fx0.png

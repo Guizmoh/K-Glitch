@@ -1,0 +1,88 @@
+# LOAF BREAKER 0.9.26 (FLEXOR's choices on the SEL combinations page): SEL + ALGORITHM, where ALGORITHM alone is the
+# break (HOME, SOUNDS' BREAK, SONG's PLAY DROP BUILD, MIX; OVERLAY until 0.9.51, its ARP tab's ALGORITHM the effects since, SEL + ALGORITHM the break there), BREAK TIME (right HALF, left NORMAL); SEL + PRESETS
+# the kick on PATTERN (SEQ, GROOVE), MIX, OVERLAY, SYSTEM's MIDI, FX SET, RESET; SETUP's PRESETS the skin (SEL WHITE on / off in 0.9.70, gone in 0.9.71); SEQ's
+# ALGORITHM every lane top to bottom, the kick's four bars then the snare's (0.9.31, FLEXOR; SELECT the views).
+#   app/build/host/loaf-breaker_host tests/scenarios/selcombo.txt app/build/scenarios
+wait 4200
+expect bhalf 0
+press SEL
+turn ALGO 1 10
+release SEL
+wait 200
+expect bhalf 1
+shot sc_home_half.png
+tap LFO
+wait 200
+expect page 5
+press SEL
+turn ALGO -1 10
+release SEL
+wait 200
+expect bhalf 0
+expect kslot 3
+press SEL
+turn PRESET 1 10
+release SEL
+wait 200
+expect kslot 4
+tap ARP
+wait 200
+expect page 9
+press SEL
+turn ALGO 1 10
+turn PRESET 1 10
+release SEL
+wait 200
+expect bhalf 0
+expect kslot 5
+tap SEQ
+wait 200
+expect page 6
+expect seq_lane 2
+press SEL
+turn PRESET -2 10
+release SEL
+wait 200
+expect kslot 3
+turn K4 2 60
+wait 200
+expect lane_steps 64
+turn ALGO 1 80
+wait 150
+expect seq_lane 3
+turn ALGO 1 80
+wait 150
+expect seq_lane 4
+shot sc_seq_bar3.png
+turn ALGO 2 80
+wait 150
+expect seq_lane 6
+turn ALGO -1 80
+wait 150
+expect seq_lane 5
+turn ALGO 1 80
+wait 150
+expect seq_lane 6
+turn ALGO 1 80
+wait 150
+expect seq_lane 7
+tap GLO
+wait 200
+expect page 3
+expect gpage 0
+press SEL
+turn PRESET 1 10
+release SEL
+wait 200
+expect kslot 4
+turn SELECT 1 10
+wait 200
+expect gpage 2
+expect skin 10
+turn PRESET 1 10
+wait 200
+expect skin 11
+shot sc_setup_skin.png
+turn PRESET -1 10
+wait 200
+expect skin 10

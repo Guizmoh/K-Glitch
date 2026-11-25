@@ -1,0 +1,33 @@
+# LOAF BREAKER: no saturation. COMP at its most (the MIXER's MASTER: K1 to -36 dB, K2 20:1: its make-up +17 dB): the
+# last guard holds the peaks under 0.95 (no hard clip); MASTER's MAX OUT (K4) from -3 dB to -6 dB.
+#   app/build/host/loaf-breaker_host tests/scenarios/maxout.txt app/build/scenarios
+wait 4200
+master 4096
+tap SEQ
+wait 200
+turn K3 1 10
+tap LFO
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 300
+expect page 5
+turn K1 50 10
+turn K2 7 10
+expect comp 100
+tap PLAY
+wait 3000
+wav m_hot.wav
+wait 3000
+wavstop
+peakreset
+wait 1000
+expect peak_db_max -2.5
+turn K4 -3 10
+wait 200
+shot m_maxout.png
+peakreset
+wait 1500
+expect peak_db_max -5.5
+tap PLAY

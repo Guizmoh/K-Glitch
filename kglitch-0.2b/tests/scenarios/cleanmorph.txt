@@ -1,0 +1,26 @@
+# LOAF BREAKER: the KICK menu's TAIL section (0.205), its part CLEAN MORPH (ALGORITHM three times from TAIL, after BASS): K1
+# CLEAN SUB, K2 MORPH, K3 TO KICK, the kick's own with no knob given them
+#   app/build/host/loaf-breaker_host tests/scenarios/cleanmorph.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 300
+turn SELECT 1 10
+wait 300
+turn ALGO 3 10
+wait 300
+expect kpage 13
+turn K1 20 10
+turn K2 15 10
+turn K3 4 10
+wait 300
+expect csub 40
+expect kmorph 30
+expect kmorph_to 4
+shot cm_part.png
+# (0.9.45: past GATE, the TAIL section's last part since)
+turn ALGO 2 10
+wait 200
+expect kpage 15

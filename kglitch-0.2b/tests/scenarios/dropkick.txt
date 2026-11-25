@@ -1,0 +1,50 @@
+# LOAF BREAKER: a drop's own kick for its build (its kick roll), the one before back at the drop. ENV DROP: BUILD 1 bar
+# (K1), PRESETS BUILD KICK 7; playing, SEL + ENV: KICK 7 through the build, KICK 4 again after. Then a track's DROP
+# item its kick (TRACKS, track 2: P1, a DROP with K1 KICK 5, P2): KICK 5 through its build, KICK 4 at the drop.
+#   app/build/host/loaf-breaker_host tests/scenarios/dropkick.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+turn K1 -2 10
+turn PRESET 7 10
+wait 200
+shot dk_drop.png
+tap PLAY
+wait 500
+press SEL
+tap ENV
+release SEL
+wait 700
+expect kslot 3
+wait 700
+expect kslot 6
+wait 2100
+expect kslot 3
+tap PLAY
+wait 300
+turn PRESET -7 10
+turn SELECT 1 10
+wait 150
+turn SELECT 3 10   # (0.9.58: past DROPS)
+wait 300
+expect page 8
+turn PRESET 1 10
+key w0 down
+key w0 up
+turn K2 1 10
+turn K2 -1 10
+turn K1 5 10
+turn ALGO 1 10
+key w1 down
+key w1 up
+wait 200
+shot dk_track.png
+tap PLAY
+wait 3300
+expect kslot 4
+wait 2100
+expect kslot 3

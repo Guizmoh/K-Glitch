@@ -1,0 +1,61 @@
+# LOAF BREAKER (0.205): the KICK menu by the kick's anatomy: EDIT opens BODY (MIX), its parts in a row at the foot;
+# ALGORITHM: SUB; EDIT: TAIL, DIRT, TONE, KNOBS, ATTACK, BODY again. The picture in RGB (rekordbox's colours); EDIT
+# held: WAVE, held again: CLASSIC, again: RGB.
+#   app/build/host/loaf-breaker_host tests/scenarios/kview.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 300
+expect page 4
+expect ksect 1
+expect kpage 0
+expect kview 0
+shot kv_body.png
+turn ALGO 1 60
+wait 200
+expect kpage 1
+shot kv_sub.png
+turn SELECT 1 10
+wait 300
+expect ksect 2
+expect kpage 15
+shot kv_tail.png
+turn SELECT 1 10
+wait 200
+expect ksect 3
+turn SELECT 1 10
+wait 200
+expect ksect 4
+turn SELECT 1 10
+wait 300
+expect ksect 5
+turn SELECT 1 10
+wait 300
+expect ksect 6
+expect kpage 11
+shot kv_knobs.png
+turn SELECT 1 10
+wait 300
+expect ksect 0
+shot kv_attack.png
+turn SELECT 1 10
+wait 300
+expect ksect 1
+press EDIT
+wait 600
+release EDIT
+wait 300
+expect kview 1
+shot kv_wave.png
+press EDIT
+wait 600
+release EDIT
+wait 300
+expect kview 2
+press EDIT
+wait 600
+release EDIT
+wait 300
+expect kview 0

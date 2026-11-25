@@ -1,0 +1,42 @@
+# LOAF BREAKER: the KICK menu's FX1 (SELECT four times: its FX1 section, the FX page on the kick's slot 1); PRESETS: DRIVE,
+# its GAIN up (K1); SELECT: FX2, PRESETS past TREMOLO: EQ (no REVERB, no DELAY there); HOME: PERFORM; FX: the chain's
+# slot 1 again.
+#   app/build/host/loaf-breaker_host tests/scenarios/kfx.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect page 2
+expect fx_focus 4
+turn PRESET 3 10
+turn K1 10 10
+wait 300
+expect fx_on 1
+shot k_fx1.png
+turn SELECT 1 10
+wait 200
+expect fx_focus 5
+turn PRESET 8 10
+wait 300
+shot k_fx2.png
+tap HOME
+wait 300
+expect page 0
+shot k_home.png
+tap FX
+wait 300
+expect page 2
+expect fx_focus 0
+tap HOME
+wait 200
+tap PLAY
+wait 2500
+tap PLAY

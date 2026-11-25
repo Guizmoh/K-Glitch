@@ -1,0 +1,79 @@
+# PRESS PLAY's picture, its kick: DISTORTO (EDIT, ALGORITHM five: OUT, K4 PRESET five), its SUB decay short for the
+# picture (250 ms), no SUB DRIVE, on steps 1, 5, 9, 13 of the kick lane's four bars, the break's level at 0 (LFO + K1),
+# played, the CDJ view's ring dumped ($OUT)
+wait 4200
+tap EDIT
+wait 300
+turn ALGO 5 10
+wait 200
+turn K4 5 10
+wait 200
+expect kpreset 5
+kick_sub_decay 250
+tap SEQ
+wait 300
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+tap HOME
+wait 200
+press LFO
+turn K1 -20 10
+release LFO
+wait 100
+tap PLAY
+wait 6000
+scope_dump $OUT
+wait 1412
+scope_dump $OUT2

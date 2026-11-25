@@ -1,0 +1,52 @@
+# LOAF BREAKER: what SEL + each knob does (LOAF BREAKER TEST: EDIT KICK's KNOBS, EDIT five times; ENV's KNOB no more) (DUCK and COMP are the MIXER's: not here). K1 DRIVE, K2 TERROR 2,
+# K3 T+ SCREECH, K4 TERROR to start with; K3 SET (ALGORITHM three times): its SCREECH up (K1), SEL + K3 the same; PRESETS left
+# four: T+ TYPE, T+ DRIVE, TERROR, then TERROR 2 (COMP passed over). LFO four times: DYNAMICS (COMP's and DUCK's timing).
+#   app/build/host/loaf-breaker_host tests/scenarios/knob.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 300
+expect page 4
+expect kpage 11
+shot n_knob.png
+turn ALGO 4 10
+wait 200
+expect kpage 12
+expect selk3_fn 7
+turn K1 20 10
+wait 100
+expect t_screech 40
+press SEL
+turn K3 -5 10
+release SEL
+wait 200
+expect t_screech 30
+turn PRESET -4 10
+wait 200
+expect selk3_fn 1
+shot n_assign.png
+tap LFO
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 300
+expect page 5
+turn K1 5 10
+turn K4 1 10
+wait 200
+shot n_dyn.png

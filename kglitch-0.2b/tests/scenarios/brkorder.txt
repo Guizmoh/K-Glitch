@@ -1,0 +1,13 @@
+# LOAF BREAKER (0.9.43, FLEXOR): the firmware's breaks always slowest to fastest (tools/prep_breaks.py sorts the bank by
+# BPM); a new FM-1 starts on the slowest, the first; once saved, it starts on the break it was left on.
+#   app/build/host/loaf-breaker_host tests/scenarios/brkorder.txt app/build/scenarios
+wait 4200
+expect brk 0
+turn ALGO 3 80
+wait 400
+expect brk 3
+tap SAVE
+wait 500
+reboot
+wait 4200
+expect brk 3

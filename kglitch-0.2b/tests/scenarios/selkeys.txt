@@ -1,0 +1,132 @@
+# LOAF BREAKER (0.9.49, FLEXOR): ARP's third tab, SEL KEYS (EXPERT): each black key a second function, pressed with SEL
+# held or locked (K2 or a press the key, K3 its function: ITS OWN, none, then any). Here key 11 (SUB on FLEXOR LAYOUT)
+# made X2 with SEL: alone it switches the SUB FX as ever; SEL + it doubles the kicks (X2 latched), the SUB FX untouched;
+# SEL held, the strip and the lights show the SEL functions. The kick on steps 1, 5, 9, 13 (as kill.txt).
+#   app/build/host/loaf-breaker_host tests/scenarios/selkeys.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 200
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn ALGO 1 10
+wait 100
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+tap ARP
+wait 300
+turn SELECT 2 10
+wait 300
+expect opage 2
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect bk_key 8
+expect selk 0
+turn K3 17 10
+wait 300
+expect selk 17
+shot sk_page.png
+tap HOME
+wait 200
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect sub_off 1
+expect kx2on 0
+press SEL
+wait 400
+shot sk_selheld.png
+key b8 down
+wait 100
+key b8 up
+wait 100
+release SEL
+wait 200
+expect kx2on 1
+expect sub_off 1
+tap PLAY
+wait 1300
+expect khits 8
+tap PLAY
+wait 300
+key b8 down
+wait 100
+key b8 up
+wait 200
+expect sub_off 0
+expect kx2on 1
+press SEL
+wait 100
+key b8 down
+wait 100
+key b8 up
+wait 100
+release SEL
+wait 200
+expect kx2on 0
+tap ARP
+wait 200
+turn SELECT 2 10
+wait 200
+expect opage 2
+key b8 down
+wait 100
+key b8 up
+wait 200
+turn K3 -17 10
+wait 300
+expect selk 0
+turn SELECT 1 10
+wait 200
+tap HOME
+wait 200

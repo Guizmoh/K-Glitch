@@ -1,0 +1,10 @@
+# LOAF BREAKER break picks 1/2: the breaks kept in the break tests (Break Picks) not on the machine, 135-170 BPM, ~235 KB.
+# Copied over breaks/breaks.txt by .github/workflows/tests.yml (paths relative to breaks/). Same columns:
+# in  file                                        bpm     bars  of  name
+*   cw/cw_amen10_135.wav                        135     2     2   AMEN10 135
+*   cw/cw_amen12_137.wav                        137     2     2   AMEN12 137
+*   cw/cw_amen11_145.wav                        145     2     2   AMEN11 145
+*   cw/cw_amen02_165.wav                        165     2     2   AMEN02 165
+*   cw/cw_amen08_165.wav                        165     2     2   AMEN08 165
+*   cw/cw_amen04_170.wav                        170     2     2   AMEN04 170
+*   huge/cw_amen_early.wav                      170     2     2   EARLY

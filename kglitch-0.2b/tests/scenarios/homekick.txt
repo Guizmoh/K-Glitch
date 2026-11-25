@@ -1,0 +1,17 @@
+# LOAF BREAKER (0.9.26, FLEXOR): on HOME, SEL + PRESETS the kick (KICK 1-20), PRESETS alone the pattern; elsewhere SEL +
+# PRESETS stays the pattern.
+#   app/build/host/loaf-breaker_host tests/scenarios/homekick.txt app/build/scenarios
+wait 4200
+expect page 0
+expect kslot 3
+press SEL
+turn PRESET 1 10
+release SEL
+wait 300
+expect kslot 4
+expect pattern 0
+shot hk_kick.png
+turn PRESET 1 10
+wait 300
+expect kslot 4
+expect pattern 1

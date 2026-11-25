@@ -1,0 +1,83 @@
+# LOAF BREAKER (0.9.57, FLEXOR): SYSTEM › LIGHTS. K1 GLOW (the lights at rest, every button and key; OFF .. 7, 6 as
+# before), K2 PULSE (on the tempo while PLAY runs: OFF, KICK, 1/8, 1/4, 1/2, BAR), K3 PULSE ON (BUTTONS, WHITE KEYS,
+# BLACK KEYS, ALL KEYS, EVERYTHING), K4 STYLE (FLASH, FADE, BREATHE, BLINK, CHASE). The step playing on SEQ at the
+# middle level, the SEL functions mid while SEL is held.
+#   app/build/host/loaf-breaker_host tests/scenarios/lights.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+expect lglow 6
+expect lpulse 0
+tap GLO
+wait 200
+turn SELECT 5 10
+wait 300
+expect page 3
+expect gpage 7
+expect ldimk 25
+expect llitk 2
+shot lights_page.png
+# GLOW: down to OFF, nothing at rest; back to 6
+turn K1 -6 10
+wait 300
+expect lglow 0
+expect ldimk 0
+expect ldimb 0
+turn K1 6 10
+wait 300
+expect lglow 6
+# the PULSE: 1/4 on every key, FADE
+turn K2 3 10
+turn K4 1 10
+wait 200
+expect lpulse 3
+expect lon 3
+expect lstyle 1
+tap PLAY
+wait 1500
+shot lights_pulse.png
+# at a beat: every key lit (FADE's first fifth), then mid, then at rest: one of them shows within a beat
+wait 30
+shot lights_pulse2.png
+# CHASE: one key running, the one before it mid
+turn K4 3 10
+wait 400
+expect lstyle 4
+expect llitk <5
+expect lmidk >0
+shot lights_chase.png
+# EVERYTHING
+turn K3 1 10
+wait 300
+expect lon 4
+shot lights_all.png
+turn K2 -3 10
+wait 300
+expect lpulse 0
+tap PLAY
+wait 300
+# SEQ: the step playing at the middle level (a lane's page)
+tap SEQ
+wait 200
+tap PLAY
+wait 600
+expect lmidk 1
+shot lights_seq.png
+tap PLAY
+wait 300
+# SEL held: the buttons with a SEL combination mid
+press SEL
+wait 400
+expect lmidb 4
+shot lights_sel.png
+release SEL
+wait 300
+expect lmidb 0
+# saved, kept at a restart
+tap SAVE
+wait 600
+reboot
+wait 4200
+expect lglow 6
+expect lon 4
+expect lstyle 4

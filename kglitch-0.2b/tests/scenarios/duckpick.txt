@@ -1,0 +1,39 @@
+# LOAF BREAKER (0.9.64, FLEXOR: "entre DRUMS et ROLL ... break, perc ou both"): MIX › SENDS K3 DUCKS, what DUCK
+# (MASTER's K3) pushes down at each kick: BREAK (the break and its throws), PERC (the snare, hat, clap alone, the
+# break left as it is), BOTH. The same setting as DYNAMICS' K4 and the knob function DUCK's K4. An older save's BOTH
+# (stored 1) stays BOTH.
+#   app/build/host/loaf-breaker_host tests/scenarios/duckpick.txt app/build/scenarios
+wait 4200
+tap LFO
+wait 200
+turn SELECT 2 10
+wait 200
+expect mpage 2
+turn K3 15 10
+wait 200
+turn SELECT -1 10
+wait 200
+expect mpage 1
+expect duckwhat 0
+turn K3 1 10
+wait 200
+expect duckwhat 2
+shot x_ducks.png
+turn K3 1 10
+wait 200
+expect duckwhat 1
+turn K3 1 10
+wait 200
+expect duckwhat 1
+turn K3 -1 10
+wait 200
+expect duckwhat 2
+turn SELECT 2 10
+wait 200
+expect mpage 3
+turn K4 1 10
+wait 200
+expect duckwhat 1
+turn K4 -2 10
+wait 200
+expect duckwhat 0

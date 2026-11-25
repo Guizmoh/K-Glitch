@@ -1,0 +1,78 @@
+# LOAF BREAKER (0.9.50, FLEXOR): each ARP effect its own THRU, saved: on the ARP page, K2 the THRU of the effect touched
+# last (BREAK, KICK, THRU: the whole mix); K3 its RATE or SWEEP (the one it has). Here key 7 (RING since 0.9.55) on the BREAK, key 13 (JET)
+# on the KICK, the rest THRU; the cards say BRK / KCK. (MIX › SENDS K3, the ARP's THRU for all of them
+# 0.9.29-0.9.49, is gone.) ARP_SPLIT.wav: DIST and BOOM held together, each on its own.
+#   app/build/host/loaf-breaker_host tests/scenarios/arpthru.txt app/build/scenarios
+wait 4200
+tap PLAY
+wait 300
+tap ARP
+wait 300
+expect page 9
+expect opage 0
+# (0.9.52, FLEXOR) ALGORITHM: the 16 effects in order, round (nothing played)
+tapkey w0
+wait 100
+turn ALGO 3 30
+wait 100
+expect arp_fx 3
+turn ALGO -5 50
+wait 100
+expect arp_fx 14
+turn ALGO 2 20
+wait 100
+expect arp_fx 0
+tapkey w6
+wait 100
+expect arp_thru 0
+turn K2 -2 10
+wait 100
+expect arp_thru 1
+tapkey w12
+wait 100
+expect arp_thru 0
+turn K2 -1 10
+wait 100
+expect arp_thru 2
+tapkey w6
+wait 100
+expect arp_thru 1
+shot a_thru_cards.png
+key w6 down
+key w12 down
+wav ARP_SPLIT.wav
+wait 2800
+wavstop
+shot a_thru_split.png
+key w6 up
+key w12 up
+wait 200
+tapkey w0
+wait 100
+expect arp_thru 0
+tap PLAY
+wait 200
+tap HOME
+wait 200
+tap SAVE
+wait 1500
+reboot
+wait 4200
+tap ARP
+wait 300
+tapkey w6
+wait 100
+expect arp_thru 1
+tapkey w12
+wait 100
+expect arp_thru 2
+turn K2 1 10
+wait 100
+expect arp_thru 0
+tapkey w6
+turn K2 1 10
+turn K2 1 10
+wait 100
+expect arp_thru 0
+tap HOME
+wait 200

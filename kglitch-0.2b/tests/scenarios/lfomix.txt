@@ -1,0 +1,49 @@
+# LOAF BREAKER: LFO held + K1 the break's level, K2 the kick's (K3 the drums', K4 the FX's), on any page: the page stays
+# (HOME here) and LFO let go does not open the MIXER; LFO alone still does. 5 % a detent (the MIXER: 2 %).
+#   app/build/host/loaf-breaker_host tests/scenarios/lfomix.txt app/build/scenarios
+wait 4200
+tap PLAY
+wait 300
+expect page 0
+expect brk_lvl 100
+expect kick_vol 80
+press LFO
+wait 50
+turn K1 -2 10
+turn K2 -1 10
+turn K2 3 10
+wait 100
+shot lfo_mix.png
+release LFO
+wait 200
+expect page 0
+expect brk_lvl 90
+expect kick_vol 90
+tap LFO
+wait 200
+expect page 5
+turn K1 1 10
+wait 100
+expect brk_lvl 92
+# (0.9.50, FLEXOR) LFO + K4 the FX fader (SENDS' K1), any page; the FX page shows it beside its slots: FX MIX nn%
+tap HOME
+wait 200
+tap FX
+wait 300
+expect fxwet 100
+press LFO
+turn K4 -6 10
+wait 100
+release LFO
+wait 300
+expect page 2
+expect fxwet 70
+shot fx_mix.png
+press LFO
+turn K4 6 10
+wait 100
+release LFO
+wait 200
+expect fxwet 100
+tap HOME
+wait 200

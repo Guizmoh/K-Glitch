@@ -1,0 +1,38 @@
+# LOAF BREAKER (0.9.67, FLEXOR: "plusieurs drum filter, des filtres moins agressifs, comme sur une DJM-A9"): SYSTEM ›
+# EFFECTS K3 DRUM FILTER, the drums' filter's kind: CLASSIC (as it always was, an older save's), SMOOTH (12 dB, flat, a
+# club mixer's slow start), SOFT (6 dB), RESO (a resonant peak); the filter itself still SEL + SELECT, HOME's K3.
+#   app/build/host/loaf-breaker_host tests/scenarios/drumflt.txt app/build/scenarios
+wait 4200
+expect dft 0
+tap GLO
+wait 200
+turn SELECT 3 10
+wait 200
+turn K3 1 10
+wait 200
+expect dft 1
+shot drumflt.png
+turn K3 1 10
+wait 200
+expect dft 2
+turn K3 1 10
+wait 200
+expect dft 3
+turn K3 1 10
+wait 200
+expect dft 3
+turn K3 -2 10
+wait 200
+expect dft 1
+tap HOME
+wait 200
+tap PLAY
+wait 300
+# (0.9.68, FLEXOR: SMOOTH a detent two: 12 detents 48 %)
+press SEL
+turn SELECT 12 10
+release SEL
+wait 300
+expect kick_dj 48
+wait 500
+tap PLAY

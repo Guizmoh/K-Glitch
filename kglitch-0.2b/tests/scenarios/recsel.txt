@@ -1,0 +1,73 @@
+# LOAF BREAKER (0.9.70, FLEXOR: "assigner le bouton REC a un SEL + BLACK"): the REC key has a SEL function too, on ARP ›
+# SEL BLACK (its last key, right: press REC there), any function but ARP. Here DST: SEL + REC the kick's DISTO off and
+# on; REC alone, with nothing on BLACK, records as ever; given KILL BREAK on BLACK, REC alone kills the break.
+#   app/build/host/loaf-breaker_host tests/scenarios/recsel.txt app/build/scenarios
+wait 4200
+expect reckey 0
+tap ARP
+wait 300
+turn SELECT 2 10
+wait 300
+expect opage 2
+tap REC
+wait 200
+expect bk_key 11
+expect selk 0
+turn K3 13 10
+wait 1500
+expect selk 14
+shot a_selblack_rec.png
+turn K3 -2 10
+wait 200
+expect selk 11
+turn K3 1 10
+wait 200
+expect selk 13
+turn K3 1 10
+wait 200
+expect selk 14
+tap HOME
+wait 300
+tap PLAY
+wait 500
+expect ter_off 0
+press SEL
+wait 50
+tap REC
+wait 100
+release SEL
+wait 200
+expect ter_off 1
+tap REC
+wait 200
+expect recording 1
+expect ter_off 1
+tap REC
+wait 200
+expect recording 0
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+tap REC
+wait 200
+turn K3 -2 10   # (0.9.76: CHS last, then KBR)
+wait 200
+expect reckey 1
+expect recfn 20
+tap HOME
+wait 300
+press REC
+wait 300
+expect kbrk 1
+expect ter_off 1
+release REC
+wait 300
+press SEL
+wait 50
+tap REC
+wait 100
+release SEL
+wait 200
+expect ter_off 0
+tap PLAY

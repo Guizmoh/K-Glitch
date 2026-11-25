@@ -1,0 +1,43 @@
+# LOAF BREAKER (0.9.67, FLEXOR: "le vinyl stop coupe le kick plutôt que de le ralentir"): VINYL BREAK held (THRU
+# BOTH): the drums' steps follow the record, a step clock slowing with it, so the kicks come on further and further
+# apart down to the stop (0.9.30-0.9.66: none while held, the last one's tail alone slowed). STOP 16 beats here.
+#   app/build/host/loaf-breaker_host tests/scenarios/vinylkick.txt app/build/scenarios
+wait 4200
+layout_0953   # (VINYL BREAK on key 4)
+tap SEQ
+wait 200
+key w0 down
+wait 30
+key w0 up
+key w4 down
+wait 30
+key w4 up
+key w8 down
+wait 30
+key w8 up
+key w12 down
+wait 30
+key w12 up
+turn K4 -5 10   # (the kick's lane 16 steps: its four kicks in every bar)
+wait 100
+expect lane_steps 16
+tap HOME
+wait 200
+tap PLAY
+wait 1500
+expect khits >3
+key b3 down
+wait 50
+turn K3 30 10   # (STOP to 16 beats: a long slow-down)
+wait 50
+expect khits <2
+wait 1500
+expect khits >1
+wait 1500
+expect khits >0
+wait 6000
+expect khits 0
+key b3 up
+wait 1500
+expect khits >3
+tap PLAY

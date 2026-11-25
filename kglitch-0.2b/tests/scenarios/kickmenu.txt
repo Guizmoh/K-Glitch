@@ -1,0 +1,115 @@
+# LOAF BREAKER: the KICK menu. EDIT: ATTACK's PRESET (0.253), EDIT again: BODY (MIX), ALGORITHM: SUB; EDIT: TAIL, DIRT, TONE (its EQ), KNOBS; EDIT: ATTACK (PRESET, K1 a built-in kick), BODY again (SUB
+# kept). EDIT held: the WAVE view; again: the classic view (the part's bars, the five drums' shapes), the part kept; again: RGB.
+# SEL + EDIT: the other drums (SNARE) in the kick's view (big, RGB); EDIT held there: WAVE, then classic, held again:
+# big in RGB (one view for them all, 0.231); EDIT: HAT, CLAP, SNARE again (0.201: the DRUMS' parts); SEL + EDIT twice: BREAK, KICK.
+#   app/build/host/loaf-breaker_host tests/scenarios/kickmenu.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+expect kpage 19
+expect ksect 0
+# (0.253: the KICK menu opens on ATTACK's PRESET; 0.264: SELECT, BODY)
+turn SELECT 1 10
+wait 300
+expect page 4
+expect kpage 0
+shot km_mix.png
+turn ALGO 1 10
+wait 200
+expect kpage 1
+shot km_sub.png
+turn SELECT 1 10
+wait 300
+expect kpage 15
+shot km_synth.png
+turn SELECT 1 10
+wait 300
+expect kpage 5
+shot km_dirt.png
+turn SELECT 1 10
+wait 300
+expect page 2
+expect ksect 4
+shot km_tone.png
+turn SELECT 1 10
+wait 300
+expect page 2
+expect ksect 5
+turn SELECT 1 10
+wait 300
+expect ksect 6
+expect kpage 11
+turn SELECT 1 10
+wait 300
+# (0.253: ATTACK opens on PRESET, K1 the built-in kicks)
+expect kpage 19
+turn K1 1 10
+wait 300
+expect kpreset 4
+shot km_preset.png
+turn SELECT 1 10
+wait 300
+expect page 4
+expect kpage 1
+press EDIT
+wait 700
+release EDIT
+wait 300
+expect kpage 1
+expect kview 1
+shot km_wave.png
+press EDIT
+wait 700
+release EDIT
+wait 300
+expect kpage 1
+expect kview 2
+shot km_classic.png
+press EDIT
+wait 700
+release EDIT
+wait 300
+expect kpage 1
+expect kview 0
+shot km_big.png
+press SEL
+tap EDIT
+release SEL
+wait 300
+expect page 14
+expect pbig 1
+press EDIT
+wait 700
+release EDIT
+wait 300
+expect page 14
+expect pbig 1
+expect kview 1
+press EDIT
+wait 700
+release EDIT
+wait 300
+expect page 14
+expect pbig 0
+shot km_snare.png
+press EDIT
+wait 700
+release EDIT
+wait 300
+expect page 14
+expect pbig 1
+tap EDIT
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 200
+expect page 14
+shot km_snare_again.png
+press SEL
+tap EDIT
+wait 100
+tap EDIT
+release SEL
+wait 300
+expect page 4

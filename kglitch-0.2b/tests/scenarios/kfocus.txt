@@ -1,0 +1,82 @@
+# LOAF BREAKER: HOME › SETTINGS K2 WAVE TYPE, the waves' colours, SERATO; KICK › KNOBS › TOOLS K3 EDIT VIEW (SYSTEM
+# EFFECTS' K4 until 0.9.28, FLEXOR), PART: the KICK menu's picture shows the part edited. BODY's MIX: the whole kick;
+# SUB: the SUB alone; ATTACK's CLICK: the CLICK alone over 50 ms, PUNCH alone over 150; TAIL: the whole tail over a
+# second. K3 back: WHOLE.
+#   app/build/host/loaf-breaker_host tests/scenarios/kfocus.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 200
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+expect page 11
+turn K2 1 60
+wait 200
+expect wstyle 1
+tap EDIT
+wait 300
+turn SELECT -1 10
+wait 200
+expect ksect 6
+turn ALGO 6 10
+wait 300
+expect kpage 18
+turn K3 1 60
+wait 300
+expect wstyle 1
+expect kfocus 1
+shot kf_tools.png
+turn SELECT 2 10
+wait 400
+expect ksect 1
+expect kpage 0
+shot kf_mix.png
+turn ALGO 1 60
+wait 400
+expect kpage 1
+shot kf_sub.png
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 400
+expect ksect 0
+shot kf_click.png
+turn ALGO 1 60
+wait 400
+shot kf_punch.png
+turn SELECT 1 10
+wait 150
+turn SELECT 1 10
+wait 400
+expect ksect 2
+expect kpage 15
+shot kf_tail.png
+turn SELECT 4 10
+wait 300
+expect ksect 6
+expect kpage 18
+turn K3 -1 60
+wait 200
+expect kfocus 0
+expect wstyle 1
+tap HOME
+wait 200
+tap HOME
+wait 200
+tap GLO
+wait 200
+turn SELECT 2 10
+wait 200
+expect page 11
+turn K2 -1 60
+wait 200
+expect wstyle 0

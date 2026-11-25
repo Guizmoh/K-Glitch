@@ -1,0 +1,51 @@
+# LOAF BREAKER (0.9.26, FLEXOR): in the KICK LAB, SEL + ARP copies the kick, on another kick pastes it (everything:
+# here its FX1 DRIVE); on the drums the same for a drum's memory.
+#   app/build/host/loaf-breaker_host tests/scenarios/clip.txt app/build/scenarios
+wait 4200
+tap EDIT
+wait 300
+turn SELECT 4 10
+wait 300
+turn ALGO 2 10
+wait 300
+expect fx_focus 4
+turn PRESET 3 10
+wait 300
+expect fx_type 3
+press SEL
+tap ARP
+release SEL
+wait 300
+shot cl_copied.png
+press SEL
+turn PRESET 1 10
+release SEL
+wait 300
+expect kslot 4
+expect fx_type 0
+press SEL
+tap ARP
+release SEL
+wait 300
+expect kslot 4
+expect fx_type 3
+shot cl_pasted.png
+tap EDIT
+wait 300
+expect page 14
+press SEL
+tap ARP
+release SEL
+wait 200
+turn PRESET 1 10
+wait 200
+press SEL
+tap ARP
+release SEL
+wait 300
+shot cl_drum.png
+wait 1500
+tap SEL
+wait 700
+expect help 1
+shot cl_help.png

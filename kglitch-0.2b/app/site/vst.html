@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- LOAF BREAKER's VST page (24 Nov 2026, FLEXOR: "faire un onglet VST sur le site, et mettre en avant le côté VST"):
+     the plugin, LOAF BREAKER on the computer (VST3 and Standalone, Windows), what it adds to the FM-1, its pictures
+     (app/site/vst_img/, copied to vst/ by tools/site_style.py `vst`), where to get it. tools/site_style.py puts it at
+     vst/ on the site, with the site's style and header. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOAF BREAKER · VST</title>
+<meta name="description" content="LOAF BREAKER as a plugin: the FM-1's firmware running in your DAW (VST3 and Standalone, Windows), with real menus, a full sequencer, 98 breaks in CD quality and a kick library.">
+<style>/*SITE_CSS*/
+.vst h1 { margin-top: 8px; font-size: 44px; letter-spacing: .02em; }
+.vst .lede { color: var(--dim); max-width: 760px; margin: 0 0 22px; font-size: 18px; }
+.vst .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 30px; }
+.vst .cta a {
+  font: 600 14px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
+  padding: 14px 18px; border-radius: 6px; background: #2a261d; color: var(--hot); box-shadow: inset 0 -2px 0 #11100c;
+}
+.vst .cta a.go { background: var(--amber); color: #1a1406; }
+.vst .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 0 0 30px; }
+.vst .grid section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.vst .grid h2 { margin: 0 0 6px; padding: 0; border: 0; font-size: 19px; }
+.vst .grid p { margin: 0; color: var(--dim); font-size: 15px; }
+.vst figure { margin: 0 0 26px; }
+.vst figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block; }
+.vst figcaption { color: var(--dim); font-size: 14px; margin-top: 8px; }
+.vst .keys { columns: 2 280px; color: var(--dim); font-size: 15px; margin: 0 0 30px; padding-left: 18px; }
+.vst .note { color: var(--dim); font-size: 14px; max-width: 760px; }
+</style>
+</head>
+<body>
+<!--HEADER-->
+<main class="page vst">
+<h1>LOAF BREAKER VST</h1>
+<p class="lede">The FM-1's firmware as a plugin: the very same code, breaks, kicks and effects, running in your DAW (VST3) or on
+its own (Standalone), on Windows. No 240 × 240 screen any more: every page as real menus, a full sequencer, and the
+FM-1's limits lifted.</p>
+<div class="cta">
+  <a class="go" href="https://github.com/FLEXOR-R/loaf-breaker-vst/releases/latest">Download (Windows)</a>
+  <a href="../breaks/">The breaks</a>
+  <a href="../manual/">The manual</a>
+</div>
+
+<div class="grid">
+  <section><h2>The same engine</h2><p>Not a remake: the FM-1's firmware itself runs inside the plugin. What you build on one sounds
+  the same on the other.</p></section>
+  <section><h2>98 breaks, CD quality</h2><p>The whole library at 44.1 kHz, 16-bit (the FM-1 holds eight, compressed), on an even
+  grid. Click the break's name: every break by category (FLEXOR, CYBERWORM AMENS, HUGE AMEN PACK, CLASSICS, yours).</p></section>
+  <section><h2>A playlist</h2><p>Your breaks in your order, saved with the project: &lt; and &gt; under the break's name, or a key
+  of your own.</p></section>
+  <section><h2>Real menus</h2><p>Every part of a page at once, each setting with the control it needs: a switch, buttons, a list,
+  or a slider with real ends. Long sliders keep a wide OFF zone.</p></section>
+  <section><h2>A real sequencer</h2><p>The break's 32 steps (each its slice's waveform), the kick's 64, the snare, hat and clap; click
+  or paint, the step's HITS, chance, nudge and notes, the 64 patterns above.</p></section>
+  <section><h2>Keyboard first</h2><p>Arrows through the grid, ENTER puts a step, F1–F8 the pages, CTRL shortcuts for the rest. Every
+  key remappable, with its modifiers.</p></section>
+  <section><h2>Your FM-1, managed</h2><p>Read your FM-1 over USB: hear its kicks, send or take kicks, patterns and tracks one by one,
+  the rest of the machine left as it was.</p></section>
+  <section><h2>A kick library</h2><p>As many kicks as you like on the computer, named and filed in folders, heard before they go
+  to the FM-1 or into the plugin.</p></section>
+  <section><h2>Skins</h2><p>LOAF LORD's black and bone by default, the FM-1's 24 skins, one that follows your FM-1, or your own,
+  colour by colour.</p></section>
+</div>
+
+<figure><img src="sequencer.png" alt="The sequencer: the break's steps with their waveforms, the kick, snare, hat and clap rows, the step's settings below" loading="lazy"><figcaption>The sequencer (skin SYNTHWAVE): the break's steps with their slices' waveforms, the drums, the step's settings below.</figcaption></figure>
+<figure><img src="menus.png" alt="The kick's ATTACK: its five parts as cards, each setting a slider, a list or buttons" loading="lazy"><figcaption>A page as menus: the kick's ATTACK, all its parts at once. The FM-1's screen stays in a corner, if you want it.</figcaption></figure>
+<figure><img src="manager.png" alt="The manager: the VST's kicks, patterns and tracks, the kick library, the FM-1's" loading="lazy"><figcaption>The manager: the plugin, your kick library, your FM-1.</figcaption></figure>
+
+<h2>Keys</h2>
+<ul class="keys">
+  <li>SPACE play · F1–F8 the pages · TAB the tabs</li>
+  <li>Arrows: the sequencer's cursor (SHIFT a beat, CTRL a bar)</li>
+  <li>ENTER a step on / off · DEL off</li>
+  <li>ALT+↑↓ hits (the break: its slice) · SHIFT+↑↓ note / pitch</li>
+  <li>[ ] the lane a step earlier / later</li>
+  <li>CTRL+S save · CTRL+Z undo · CTRL+C / V the pattern</li>
+  <li>CTRL+B the breaks · C / V the playlist · CTRL+G the manager</li>
+  <li>QWERTYUI ASDFGHJK the 16 slices · 1–0 and - the pads</li>
+</ul>
+<p class="note">Windows 10 or 11, 64-bit. Unzip, copy <b>LOAF BREAKER.vst3</b> into C:\Program Files\Common Files\VST3, rescan in
+your DAW. LOAF BREAKER is FLEXOR's, built on CHOPPAH by Laurens Profittlich (profikid).</p>
+</main>
+</body>
+</html>

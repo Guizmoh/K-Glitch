@@ -1,0 +1,45 @@
+# LOAF BREAKER (0.9.58, FLEXOR): FLEXOR LAYOUT: R8 R16 R32 ARP ARP TRI X4 X2 SUB DST KIL (0.9.61: SUB and KIL swapped), key 5's ARP effect RISE.
+#   app/build/host/loaf-breaker_host tests/scenarios/flexlay.txt app/build/scenarios
+wait 4200
+tap ARP
+wait 300
+turn SELECT 1 10
+wait 300
+expect bk_pre 1
+key b3 down
+wait 50
+key b3 up
+wait 150
+expect bk_fn 11
+key b4 down
+wait 50
+key b4 up
+wait 150
+expect bk_fn 11
+expect bk_arpfx 1
+shot a_blackkeys_flexor.png
+key b5 down
+wait 50
+key b5 up
+wait 150
+expect bk_fn 18
+key b6 down
+wait 50
+key b6 up
+wait 150
+expect bk_fn 17
+key b7 down
+wait 50
+key b7 up
+wait 150
+expect bk_fn 16
+key b8 down
+wait 50
+key b8 up
+wait 150
+expect bk_fn 14
+key b10 down
+wait 50
+key b10 up
+wait 150
+expect bk_fn 12

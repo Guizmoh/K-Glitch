@@ -1,0 +1,52 @@
+# LOAF BREAKER: drops unlike each other. ENV's DROP: a 1-bar build; BUILD: KICK ROLL, LOW-PASS, the riser full, a beat
+# of silence before the drop. Playing: SEL + ENV (the build from the next bar, the gap, the drop); then STUTTER with
+# RANDOM sweep: SEL + ENV again. The sound: d_drops.wav
+#   app/build/host/loaf-breaker_host tests/scenarios/drops.txt app/build/scenarios
+wait 4200
+tap ENV
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 200
+turn K1 -2 10
+turn SELECT 1 10
+wait 300
+expect page 8
+turn K1 1 10
+turn K2 1 10
+turn K3 10 10
+turn K4 3 10
+wait 200
+shot d_build.png
+tap HOME
+wait 200
+tap PLAY
+wait 1500
+wav d_drops.wav
+press SEL
+tap ENV
+release SEL
+wait 2000
+shot d_kickroll.png
+wait 3000
+tap ENV
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 100
+turn SELECT 1 10
+wait 200
+turn K1 2 10
+turn K2 2 10
+tap HOME
+wait 300
+press SEL
+tap ENV
+release SEL
+wait 2200
+shot d_stutter.png
+wait 2500
+wavstop
+tap PLAY

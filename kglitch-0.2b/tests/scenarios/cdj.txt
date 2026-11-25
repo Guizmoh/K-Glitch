@@ -1,0 +1,31 @@
+# LOAF BREAKER: PERFORM and GENERATOR show the mix scrolling past the playhead (right edge) as on a CDJ, rekordbox's RGB
+# colours (a 4X4 kick in: its lows red). HOME held: the slice blocks instead, still PERFORM (not GENERATOR); held
+# again: the waveform. HOME pressed: GENERATOR, the waveform there too.
+#   app/build/host/loaf-breaker_host tests/scenarios/cdj.txt app/build/scenarios
+wait 4200
+tap SEQ
+wait 300
+turn K3 1 10
+wait 200
+tap HOME
+wait 300
+tap PLAY
+wait 3000
+shot c_cdj.png
+press HOME
+wait 600
+release HOME
+wait 300
+expect page 0
+shot c_back.png
+press HOME
+wait 600
+release HOME
+wait 300
+expect page 0
+shot c_still.png
+tap HOME
+wait 1000
+expect page 1
+shot c_cdj_gen.png
+tap PLAY
