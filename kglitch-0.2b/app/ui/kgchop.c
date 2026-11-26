@@ -11,7 +11,7 @@ static uint32_t WK_MASK;                 /* (the white keys' bits, kg_boot) */  
 static uint8_t kg_cur;                   /* the step edited, 0..63 */
 static const uint8_t KG_LENS[4] = {0u, 16u, 32u, 64u};
 static uint32_t kg_len(void) { return KG_LENS[kx2.kg_len & 3u]; }
-#define kg_bank (kx2.kg_rsv % KGC_BANKS)   /* CHOP, DESTROY, BEAT: the white keys' sixteen (OCT- / OCT+ on the page) */
+#define kg_bank ((kx2.kg_rsv & 3u) % KGC_BANKS)   /* CHOP, DESTROY, BEAT: the white keys' sixteen (OCT- / OCT+ on the page) */
 static uint8_t kg_lb(uint32_t e) { return (uint8_t)(e ? e | (kx2.kg_amt * 3u / 100u) << 6 : 0u); }   /* a lane byte */
 static void kg_push(void)                /* the engine: the effect held (the last pressed), the lane */
 {
@@ -147,7 +147,7 @@ static void kg_bank_turn(int32_t d)      /* OCT- / OCT+ on the GLITCH page: the 
 {
     if (kx2.kg_tag != KG_TAG)
         kg_defaults();
-    kx2.kg_rsv = (uint8_t)((kg_bank + KGC_BANKS + (d > 0 ? 1u : KGC_BANKS - 1u)) % KGC_BANKS);
+    kx2.kg_rsv = (uint8_t)((kx2.kg_rsv & 0x80u) | (kg_bank + KGC_BANKS + (d > 0 ? 1u : KGC_BANKS - 1u)) % KGC_BANKS);
     set_dirty = 1u;
     app_say("BANK", KGC_BANK_NAME[kg_bank]);
     kg_push();

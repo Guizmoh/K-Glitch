@@ -501,6 +501,8 @@ typedef struct {
 } kx2_t;
 #define KIT_BPM0 32u                     /* (rsv[32..47]: the kits' tempo; rsv[0..31] SEL WHITE's) */
 static kx2_t kx2 PLAT_POOL;
+#define SND_CHOP (kx2.kg_rsv & 0x80u)   /* (K-GLITCH 0.2b: OCT- + OCT+ together, the sound CHOPPAH's: the break 4 dB lower into
+                                          * the limiter (its -16 LUFS bank), no MAX OUT headroom; LOAF's: -12 LUFS, 3 dB) */
 #if LB_BIG
 /* (the VST: kx2 over several store objects, PLAT_STORE_MAX bytes each, the last one shorter) */
 static const int KX2_OBJ[] = {OBJ_KX2, OBJ_KX2B, OBJ_KX2C, OBJ_KX2D};
@@ -2642,7 +2644,7 @@ void app_render(int32_t *lr, uint32_t n, uint32_t master_q12)
                                           * break's, the kick's, the rest on the whole mix) */
     int kick_dry = (mb | mk) != 0u;      /* the kick apart from the chain (as the ARP's THRU BREAK or KICK was) */
     float gain = muted ? 0.0f : (float)master_q12 * (1.0f / 4096.0f) * 8300000.0f *
-                 brk_exp2f(-(float)max_out_db() * 0.16610f);   /* (LOAF BREAKER: MAX OUT's headroom) */
+                 brk_exp2f(-(float)(SND_CHOP ? 0u : max_out_db()) * 0.16610f);   /* (LOAF BREAKER: MAX OUT's headroom) */
     brk_status_t st;
     uint32_t t0 = plat_ms(), done = 0u, total = n;
     if (sync_c != sync_seen) {           /* the outside clock's beat, and how long ago it came */
@@ -2660,7 +2662,7 @@ void app_render(int32_t *lr, uint32_t n, uint32_t master_q12)
         brk_status(&st);
         {                                /* the MIXER's BREAK fader (eased: no zipper), on the break and its throws */
             static float lvl = 1.0f;
-            float want = (float)set.brk_level * 0.01f;
+            float want = (float)set.brk_level * (SND_CHOP ? 0.0063f : 0.01f);
             for (i = 0; i < m; i++) {
                 lvl += (want - lvl) * 0.002f;
                 mono[i] *= lvl;
