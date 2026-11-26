@@ -191,7 +191,7 @@ static void kg_rec(const brk_status_t *st)
  * orange, DESTROY cyan, BEAT yellow; its effect's letter above; the step edited outlined, the playhead under) */
 static void draw_kg(const brk_status_t *st)
 {
-    uint32_t i, len = kg_len() ? kg_len() : 16u, pg = (kg_cur % len) / 16u, now = (uint32_t)brk_kg_now(), c;
+    uint32_t i, len = kg_len() ? kg_len() : 16u, pg = (kg_cur % len) / 16u, now = (uint32_t)brk_kg_now();
     char t[40];
     int32_t w;
     cv_begin(240, 52, C_BLACK);
@@ -200,27 +200,28 @@ static void draw_kg(const brk_status_t *st)
     w = text_w(&FONT_T, KGC_BANK_NAME[kg_bank]) + 16;
     rbox(230 - w, 3, w, 14, C_AMB);
     cv_text(230 - w + 8, 4, &FONT_T, KGC_BANK_NAME[kg_bank], C_BLACK);
-    cv_rect(9, 20, 222, 1, C_AMB);
-    t[0] = 0;
-    text_cat(t, "LANE ");
-    {
+    {                                    /* (the lane and the step, small, beside the title) */
         char n[8];
-        if (kg_len())
-            int_text((int32_t)kg_len(), n);
-        else
-            n[0] = 'O', n[1] = 'F', n[2] = 'F', n[3] = 0;
+        t[0] = 0;
+        text_cat(t, "L");
+        if (kg_len()) int_text((int32_t)kg_len(), n); else n[0] = '-', n[1] = 0;
         text_cat(t, n);
-        text_cat(t, " - STEP ");
+        text_cat(t, " S");
         int_text(kg_cur + 1, n);
         text_cat(t, n);
+        if (ui.rec) text_cat(t, " REC");
+        cv_text(80, 6, &FONT_T, t, ui.rec ? C_AMB : C_GRAY);
     }
-    if (ui.rec)
-        text_cat(t, " - REC");
-    cv_text(9, 23, &FONT_XS, t, ui.rec ? C_AMB : C_GRAY);
-    t[0] = 0;
-    c = kx2.kg_lane[kg_cur % 64u] & 63u;
-    text_cat(t, now ? KGC_NAME[now % KGC_N] : c ? KGC_NAME[c % KGC_N] : "KEYS: THE 16 FX - OCT-/+ BANK");
-    cv_text(9, 36, &FONT_XS, t, now ? C_WHITE : c ? C_HI : C_DIM);
+    cv_rect(9, 20, 222, 1, C_AMB);
+    for (i = 0; i < 16u; i++) {          /* the white keys and their effects (this bank): held orange, playing outlined */
+        uint32_t e = kg_bank * 16u + i + 1u;
+        int32_t x = 8 + (int32_t)(i % 8u) * 28, y = 23 + (int32_t)(i / 8u) * 14;
+        int held = kg_held >> i & 1u;
+        if (now == e)
+            rbox(x - 1, y - 1, 28, 14, C_WHITE);
+        rbox(x, y, 26, 12, held ? C_AMB : C_LINE);
+        cv_text(x + (26 - text_w(&FONT_T, KGC_SHORT[e % KGC_N])) / 2, y, &FONT_T, KGC_SHORT[e % KGC_N], held ? C_BLACK : C_WHITE);
+    }
     cv_blit(0, 88);
     cv_begin(240, 52, C_BLACK);
     rbox(3, 0, 234, 52, C_BLOCK);

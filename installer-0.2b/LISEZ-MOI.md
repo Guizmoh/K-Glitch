@@ -34,4 +34,5 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `9a367640f96ba8e2b3edbb6c6fb1f63ccd77bba4ec12e6aceae69378af1df810`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `1f07ae4c73e990adbf2755fe9a8c04f6183c746030e97b88a4114efe6be1a43a`.
+- Page FX › GLITCH : le plan des 16 touches blanches (2 rangées de 8) affiche l'effet de chaque touche pour la banque choisie (OCT-/OCT+), la touche tenue en orange, l'effet joué cerclé de blanc.
