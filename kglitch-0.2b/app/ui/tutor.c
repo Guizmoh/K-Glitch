@@ -48,7 +48,7 @@ static const struct {
     {2u, TC_SHAPE, 0u, 0u, 1u << B_EDIT, "PRESS EDIT: SHAPE, ITS TAIL"},
     {2u, TC_TAIL, TK_KEY1, 1u, 0u, "TURN KNOB 3, KEY 1: LONGER TAIL"},
     {2u, TC_PRESETS, TK_KEY1, 1u, 0u, "TURN PRESETS, KEY 1: KICK 2"},
-    {3u, TC_SNPG, 0u, 0u, 1u << B_EDIT, "PRESS EDIT: THE GLITCH PAGE"},   /* (K-GLITCH 0.2b: the CHOP FX, the drums' place) */
+    {3u, TC_SNPG, 0u, 0u, 1u << B_FX, "PRESS FX: THE GLITCH PAGE"},   /* (K-GLITCH 0.2b: the CHOP FX, the drums' place) */
     {3u, TC_PPRE, TK_WHITE, 1u, 1u << B_PLAY, "PLAY, HOLD A WHITE KEY: A CHOP FX"},
     {3u, TC_PFX, TK_WHITE, 1u, 0u, "TURN KNOB 3: THE FX AMOUNT"},
     {5u, TC_FXPG, 0u, 0u, 1u << B_FX, "PLAY, THEN PRESS FX: EFFECTS"},   /* (0.252: playing again) */
@@ -308,17 +308,13 @@ static const char *tut_away(uint32_t c, uint16_t *btn)
         }
         return 0;
     case TC_SNPG:
-        if (!kick && ui.page != PG_KG) {
-            *btn = 1u << B_EDIT;
-            return "PRESS EDIT: BACK TO THE KICK";
-        }
         return 0;
     case TC_PPRE:
     case TC_PFX:
         if (ui.page == PG_KG)
             return 0;
-        *btn = 1u << B_EDIT;
-        return kick ? "PRESS EDIT: THE GLITCH PAGE" : "EDIT, THEN EDIT: THE GLITCH PAGE";
+        *btn = 1u << B_FX;
+        return "PRESS FX: THE GLITCH PAGE";
     case TC_KICKS:
     case TC_SNARE:
         if (ui.page != PG_SEQ) {

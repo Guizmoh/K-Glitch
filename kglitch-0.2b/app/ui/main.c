@@ -1044,7 +1044,8 @@ static void input(void)
                                           * both at its release; held 0.7 s, the MIXER's FX fader 0 % or 100 %) */
         ui.fx_hold = 1u;
         ui.fx_turned = 0u;
-        ui.fx_open = (uint8_t)(ui.page != PG_FX);   /* (KICK FX too: FX again, its next part) */
+        ui.fx_open = (uint8_t)(ui.page != PG_FX && ui.page != PG_KG);   /* (KICK FX too: FX again, its next part; K-GLITCH
+                                          * 0.2b: FX opens GLITCH first, again the chain) */
         fxl_t = now;
     }
     if (ui.fx_hold && !ui.fx_turned && btn & 1u << B_FX && now - fxl_t >= 700u) {   /* LOAF BREAKER: FX held: the
@@ -1059,11 +1060,15 @@ static void input(void)
                                           * move */
         ui.fx_hold = 0u;
         if (!ui.fx_turned) {
-            if (ui.fx_open) {
+            if (ui.fx_open) {            /* (K-GLITCH 0.2b: FX, the GLITCH page first: the rhythmic effects) */
+                ui.page = PG_KG;
+                page_say();
+                ui.redraw |= RG_FOOT | RG_BLOCKS | RG_HEAD;
+            } else if (ui.page == PG_KG) {   /* (FX again: the chain) */
                 kfx_open(0);
                 ui.page = PG_FX;
                 page_say();
-                ui.redraw |= RG_FOOT | RG_BLOCKS;
+                ui.redraw |= RG_FOOT | RG_BLOCKS | RG_HEAD;
             } else if (ui.page == PG_FX && IS_KFX())
                 fx_next_part();          /* (KICK FX: the slot's next part, round: MAIN, MORE, MOD) */
             else if (ui.page == PG_FX)
@@ -1521,7 +1526,7 @@ static void leds(void)
     if (st.playing && plat_ms() - ui.kick_t >= 70u)   /* (LOAF BREAKER TEST: PLAY blinks off on each kick) */
         b |= 1u << B_PLAY;
     static const uint8_t PAGE_BTN[NPAGES] = {B_HOME, B_HOME, B_FX, B_GLO, B_EDIT, B_LFO, B_SEQ, B_EDIT, B_ENV, B_ARP,
-                                             B_EDIT, B_GLO, B_HOME, B_HOME, B_EDIT};   /* (TEST: KICK EQ under EDIT; 0.9.56 SETTINGS under GLO) */
+                                             B_EDIT, B_GLO, B_HOME, B_HOME, B_FX};   /* (TEST: KICK EQ under EDIT; 0.9.56 SETTINGS under GLO) */
     b |= 1u << (IS_KFX() || (ui.page == PG_GLOBAL && ui.gpage == GP_BREAK) ? B_EDIT : ui.page == PG_GLOBAL &&
                 ui.gpage == GP_FILL ? B_SEQ : PAGE_BTN[ui.page]);   /* (LOAF BREAKER: SOUNDS' BREAK, PATTERN's GROOVE) */
     if (rec_key_on() ? bkf_lit(rec_fn(), &st) != 0 : ui.rec != 0u)   /* (0.9.58: the REC key lit as its function) */
@@ -1758,7 +1763,7 @@ static int32_t tab_pad(int32_t x, const char *s, int on, int32_t pad, int32_t ga
 static int32_t tab(int32_t x, const char *s, int on) { return tab_pad(x, s, on, 4, 3); }
 /* the pages' buttons as printed, GLOBAL's parts, SEQ's lanes: for the tabs and the header (page_say) */
 static const char *const BTN[NPAGES] = {"HOME", "HOME", "FX", "GLO", "EDIT", "LFO", "SEQ", "EDIT", "ENV", "ARP",
-                                        "EDIT", "GLO", "HOME", "HOME", "EDIT"};   /* (0.9.56: SETTINGS, SYSTEM's) */
+                                        "EDIT", "GLO", "HOME", "HOME", "FX"};   /* (0.9.56: SETTINGS, SYSTEM's) */
 static const char *const GPART[NGPART] = {"MIDI", "PITCH", "SETUP", "SCREEN FX", "SCREEN SET", "RESET",
                                                    "GROOVE", "LIGHTS"};   /* (6: GP_FILL; 7 GP_LIGHTS, 0.9.57) */
 static int32_t tab_glo(int32_t x, uint32_t g, int on)   /* (0.9.57: SYSTEM's seven, narrower so they fit; 0.9.68,
@@ -1769,7 +1774,7 @@ static int32_t tab_glo(int32_t x, uint32_t g, int on)   /* (0.9.57: SYSTEM's sev
 /* LOAF BREAKER (0.201): each button a domain, its name on the screen (the button keeps its print): LIVE (HOME), SOUNDS
  * (EDIT: the kick, the drums, the melody, the break), PATTERN (SEQ), SONG (ENV), MIX (LFO), EFFECTS (FX), SYSTEM (GLO) */
 static const char *const DOM[NPAGES] = {"LIVE", "LIVE", "EFFECTS", "SYSTEM", "SOUNDS", "MIX", "PATTERN", "SOUNDS", "SONG",
-                                        "ARP", "SOUNDS", "SYSTEM", "LIVE", "LIVE", "SOUNDS"};
+                                        "ARP", "SOUNDS", "SYSTEM", "LIVE", "LIVE", "EFFECTS"};
 static const char *dom_name(void)
 {
     if (IS_KFX() || (ui.page == PG_GLOBAL && ui.gpage == GP_BREAK))
@@ -1870,9 +1875,9 @@ static void draw_tabs(void)
         }
         if (x + text_w(&FONT_T, part) + 16 > 236)
             part[0] = 0;
-    } else if (ui.page == PG_KG) {       /* (K-GLITCH 0.2b: SOUNDS' two: the KICK, the GLITCH page) */
-        x = tab(x, "KICK", 0);
+    } else if (ui.page == PG_KG) {       /* (K-GLITCH 0.2b: EFFECTS' two: GLITCH (FX), the chain (FX again)) */
         x = tab(x, "GLITCH", 1);
+        x = tab(x, "FX CHAIN", 0);
         text_cat(part, KGC_BANK_NAME[kg_bank]);   /* (the white keys' bank) */
     } else {                             /* SOUNDS: the drum, and its part */
         for (i = set.novice ? 0u : 1u; i < NDRUMS; i++)

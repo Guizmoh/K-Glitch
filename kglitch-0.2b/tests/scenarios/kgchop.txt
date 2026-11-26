@@ -2,9 +2,7 @@
 # them into the CHOP lane; SEL + a key takes that effect out of the lane.
 #   app/build/host/k-glitch_host tests/scenarios/kgchop.txt app/build/scenarios
 wait 4200
-tap EDIT
-wait 300
-tap EDIT
+tap FX
 wait 300
 expect page 14
 shot kg_page.png
@@ -43,9 +41,9 @@ expect kg_steps 0
 tap PLAY
 wait 300
 # 0.2b: the banks, OCT- / OCT+ on the page: DESTROY (17..32), BEAT (33..48)
-tap EDIT
+tap HOME
 wait 300
-tap EDIT
+tap FX
 wait 300
 expect page 14
 tap PLAY
@@ -78,3 +76,12 @@ expect kg_now 1
 key w0 up
 tap PLAY
 wait 300
+# FX: GLITCH first; FX again: the chain (EFFECTS); FX again: HOME
+tap HOME
+wait 300
+tap FX
+wait 300
+expect page 14
+tap FX
+wait 300
+expect page 2

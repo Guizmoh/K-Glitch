@@ -102,6 +102,7 @@ static void rows_send(uint32_t x, uint32_t y)
         lcd_blit(x, y + r0, 240u, r1 - r0, cv_px + r0 * 240u);
     }
 }
+static void rib_frame(uint32_t x, uint32_t y);
 static void crt_blit(uint32_t x, uint32_t y)   /* (the effects on, in this order: 8-BIT, GRAIN, CRT, RGB, VHS, SHAKE,
                                           * STROBE) */
 {
@@ -158,6 +159,7 @@ static void crt_blit(uint32_t x, uint32_t y)   /* (the effects on, in this order
     if (SFX_ON(SFX_STROBE) && ((ds && sinc_drop < sfx_win(160u)) || (ks > 50u && km)))
         for (i = 0; i < cv_w * cv_h; i++)
             cv_px[i] = (uint16_t)~cv_px[i];
+    rib_frame(x, y);                     /* (K-GLITCH 0.2b, RIBBON: the page's card behind its content) */
     rows_send(x, y);                     /* (only the rows that changed) */
 }
 #define cv_blit crt_blit
@@ -209,7 +211,7 @@ static const uint8_t SKIN_RGB[NSKINS][7][3] = {
     {{34, 32, 44}, {76, 72, 90}, {152, 148, 166}, {150, 100, 240}, {196, 166, 255}, {24, 22, 34}, {255, 255, 255}}   /* IRIS: iris violet */,
     {{21, 11, 48}, {56, 32, 116}, {170, 155, 208}, {255, 90, 200}, {140, 90, 255}, {11, 5, 24}, {244, 238, 255}}   /* GLUCKSMAN: deep violet and UV pink */,
     {{60, 12, 48}, {130, 36, 110}, {240, 170, 225}, {255, 0, 170}, {255, 70, 215}, {44, 0, 34}, {255, 232, 250}}   /* MAXENCE: a very loud pink, neon on plum */,
-    {{66, 82, 100}, {96, 110, 128}, {138, 150, 164}, {255, 136, 56}, {84, 200, 240}, {34, 44, 56}, {236, 240, 244}}   /* RIBBON (K-GLITCH 0.2b): cyan values, an orange accent, slate cards on a slate night */};
+    {{66, 82, 100}, {96, 110, 128}, {138, 150, 164}, {255, 136, 56}, {84, 200, 240}, {44, 57, 72}, {236, 240, 244}}   /* RIBBON (K-GLITCH 0.2b): cyan values, an orange accent, slate cards on a slate night */};
 static uint32_t skin_idx(void) { return (set.skin & 0x7Fu) % NSKINS; }
 static uint32_t skin_old(uint32_t s) { return s < 18u ? SKIN_OLD[s] : SKIN_LOAF_DEFAULT; }
 static uint16_t skin_block = RGB(24, 24, 30), skin_hi = RGB(255, 132, 112), skin_white = 0xFFFFu;
@@ -318,6 +320,37 @@ static void rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
     cv_rect(x + 2, y, w - 4, h, c);
     cv_rect(x + 1, y + 1, w - 2, h - 2, c);
     cv_rect(x, y + 2, w, h - 4, c);
+}
+/* RIBBON CLASSIC (K-GLITCH 0.2b): every page's content (rows RIB_Y0..RIB_Y1, under the tabs, over the black keys) on one
+ * rounded card, a line round it: in a full-width strip about to be sent, the ground's pixels there become the card's */
+#define RIB_Y0 36u
+#define RIB_Y1 190u
+static void rib_frame(uint32_t x, uint32_t y)
+{
+    uint32_t r, i, Y;
+    uint16_t bg, card, line;
+    if (!RIB || x || cv_w != 240u)
+        return;
+    bg = swap16(skin_bg);
+    card = swap16(RGB(29, 39, 50));
+    line = swap16(pal[0]);
+    for (r = 0; r < cv_h; r++) {
+        uint16_t *p = cv_px + r * 240u;
+        uint32_t in = 0u;
+        Y = y + r;
+        if (Y < RIB_Y0 || Y > RIB_Y1)
+            continue;
+        if (Y == RIB_Y0 || Y == RIB_Y1) {          /* the top and bottom lines, the corners cut */
+            for (i = 6u; i < 234u; i++)
+                if (p[i] == bg) p[i] = line;
+            continue;
+        }
+        in = Y == RIB_Y0 + 1u || Y == RIB_Y1 - 1u ? 2u : Y == RIB_Y0 + 2u || Y == RIB_Y1 - 2u ? 1u : 0u;
+        if (p[3u + in] == bg) p[3u + in] = line;
+        if (p[236u - in] == bg) p[236u - in] = line;
+        for (i = 4u + in; i < 236u - in; i++)
+            if (p[i] == bg) p[i] = card;
+    }
 }
 #undef C_BLACK                           /* (the ground is the skin's: RIBBON's slate) */
 #define C_BLACK skin_bg

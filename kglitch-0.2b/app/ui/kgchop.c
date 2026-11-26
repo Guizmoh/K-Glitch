@@ -186,46 +186,61 @@ static void kg_rec(const brk_status_t *st)
     kg_push();
     ui.redraw |= RG_BLOCKS;
 }
-/* the four as cards, then the lane's 16 steps of the page of the step edited (the playhead white), the effect playing */
+/* RIBBON CLASSIC (K-GLITCH 0.2b): a card, its title, the bank as an orange pill, an orange rule, the lane and the step;
+ * then the lane's 16 steps of the page edited as bars (DASH: the bar's height its amount, its colour its bank: CHOP
+ * orange, DESTROY cyan, BEAT yellow; its effect's letter above; the step edited outlined, the playhead under) */
 static void draw_kg(const brk_status_t *st)
 {
-    uint32_t i, len = kg_len() ? kg_len() : 16u, pg = (kg_cur % len) / 16u, now = (uint32_t)brk_kg_now();
-    static const char *const N[4] = {"STEP", "EFFECT", "AMOUNT", "LANE"};
-    char t[16];
+    uint32_t i, len = kg_len() ? kg_len() : 16u, pg = (kg_cur % len) / 16u, now = (uint32_t)brk_kg_now(), c;
+    char t[40];
+    int32_t w;
     cv_begin(240, 52, C_BLACK);
-    for (i = 0; i < 4u; i++) {
-        int32_t x = 2 + (int32_t)i * 60;
-        if (RIB) rbox(x, 0, 56, 50, C_BLOCK); else cv_rect(x, 0, 56, 50, C_BLOCK);
-        cv_text(x + 4, 3, &FONT_XS, N[i], C_GRAY);
-        kg_value((int)i, t);
-        if (i == 1u) {
-            t[0] = 0;
-            text_cat(t, KGC_SHORT[(kx2.kg_lane[kg_cur % 64u] & 63u) % KGC_N]);
-        }
-        cv_text(x + 4, 30, &FONT_T, t, i == 3u && !kg_len() ? C_DIM : C_HI);
+    rbox(3, 0, 234, 52, C_BLOCK);
+    cv_text(9, 2, &FONT_B, "GLITCH", C_WHITE);
+    w = text_w(&FONT_T, KGC_BANK_NAME[kg_bank]) + 16;
+    rbox(230 - w, 3, w, 14, C_AMB);
+    cv_text(230 - w + 8, 4, &FONT_T, KGC_BANK_NAME[kg_bank], C_BLACK);
+    cv_rect(9, 20, 222, 1, C_AMB);
+    t[0] = 0;
+    text_cat(t, "LANE ");
+    {
+        char n[8];
+        if (kg_len())
+            int_text((int32_t)kg_len(), n);
+        else
+            n[0] = 'O', n[1] = 'F', n[2] = 'F', n[3] = 0;
+        text_cat(t, n);
+        text_cat(t, " - STEP ");
+        int_text(kg_cur + 1, n);
+        text_cat(t, n);
     }
+    if (ui.rec)
+        text_cat(t, " - REC");
+    cv_text(9, 23, &FONT_XS, t, ui.rec ? C_AMB : C_GRAY);
+    t[0] = 0;
+    c = kx2.kg_lane[kg_cur % 64u] & 63u;
+    text_cat(t, now ? KGC_NAME[now % KGC_N] : c ? KGC_NAME[c % KGC_N] : "KEYS: THE 16 FX - OCT-/+ BANK");
+    cv_text(9, 36, &FONT_XS, t, now ? C_WHITE : c ? C_HI : C_DIM);
     cv_blit(0, 88);
     cv_begin(240, 52, C_BLACK);
+    rbox(3, 0, 234, 52, C_BLOCK);
     for (i = 0; i < 16u; i++) {
-        uint32_t p = pg * 16u + i, c = kx2.kg_lane[p % 64u] & 63u;
-        int32_t x = 2 + (int32_t)i * 15;
+        uint32_t p = pg * 16u + i, b = kx2.kg_lane[p % 64u], e = b & 63u, lv = b >> 6;
+        int32_t x = 8 + (int32_t)i * 14, h = e ? 14 + (int32_t)(lv ? lv : 2u) * 9 : 3;
+        uint16_t col = !e ? C_LINE : e <= 16u ? C_AMB : e <= 32u ? C_HI : RGB(255, 196, 48);
         int on = st->step >= 0 && kg_len() && (uint32_t)st->step % len == p;
-        (RIB ? rbox : cv_rect)(x, 2, 13, 22, p == kg_cur ? C_WHITE : !c ? ((i & 3u) ? C_BLOCK : C_DIM) : c <= 16u ? C_AMB : c <= 32u ? C_HI : C_GRAY);
-        if (c && x)
-            cv_text(x + 1, 6, &FONT_XS, KGC_SHORT[c % KGC_N], p == kg_cur ? C_BLACK : C_BLACK);
+        if (p == kg_cur)
+            rbox(x - 1, 46 - h - 1, 13, h + 2, C_WHITE);
+        rbox(x, 46 - h, 11, h, col);
+        if (e) {
+            char l[2] = {KGC_SHORT[e % KGC_N][0], 0};
+            cv_text(x + 3, 46 - h - 11 < 0 ? 0 : 46 - h - 11, &FONT_T, l, C_WHITE);
+        }
         if (on)
-            cv_rect(x, 25, 13, 3, C_WHITE);
+            cv_rect(x, 48, 11, 3, C_WHITE);
+        else if (!(i & 3u))
+            cv_rect(x, 49, 11, 1, C_DIM);
     }
-    t[0] = 0;
-    if (now)
-        text_cat(t, KGC_NAME[now % KGC_N]);
-    else {
-        text_cat(t, "KEYS: ");
-        text_cat(t, KGC_BANK_NAME[kg_bank]);
-        text_cat(t, " (OCT-/+)");
-    }
-    cv_text(6, 32, &FONT_XS, t, now ? C_WHITE : C_DIM);
-    cv_text(130, 32, &FONT_XS, ui.rec ? "REC: HELD FX WRITTEN" : "SEL+KEY: FX OUT", ui.rec ? C_AMB : C_DIM);
     cv_blit(0, 140);
 }
 static void kg_boot(void)                /* (app.c, at power-on: a save without the lane: its defaults) */

@@ -14,7 +14,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
   - **CHOP** : STUTTER, REPEAT 1/8, REPEAT 1/4, REVERSE X, SKIP, HALF TIME, DOUBLE, PITCH MAD, SCRATCH, BACKSPIN, SHUFFLE, GATE X, MICRO, TRIPLET, TAPE STOP, CHAOS ;
   - **DESTROY** (le DRUM DESTROYER de K-GLITCH) : LOOP DESTROY, STUTTER X, GLITCH, SCRATCH X, REVERSE XX, PITCH MAD X, GATE XX, FILTER CHAOS, BEAT REPEAT, BEAT SKIP, MICRO STUT, TIME STRETCH, RING MOD, FUZZ, RANDOMIZER, TOTAL CHAOS (RING MOD, FUZZ et FILTER CHAOS passent par les effets ARP RING, DIST et RADIO) ;
   - **BEAT** (des programmes sur la mesure) : RND STUTTER, RND BAR, RND FILL, ROLL UP, SKIP 8TH, STAMMER, GATE 8, GATE 16, GATE 3-3-2, GATE RAMP, REV BEAT, REV OFFBEAT, SCRATCH BAR, SCRATCH CUT, TAPE STOP, HALF TIME.
-- **Page GLITCH** : le dernier onglet de HOME (HOME, HOME… jusqu'à GLITCH) ; en EXPERT aussi EDIT, puis EDIT encore (à la place des réglages snare / hat / clap). C'est l'éditeur de chop.
+- **Page GLITCH = la première page du bouton FX** (FX encore : la chaîne d'effets de LOAF BREAKER ; aussi le dernier onglet de HOME). C'est l'éditeur de chop, ses pas en barres (hauteur = intensité, couleur = banque : CHOP orange, DESTROY cyan, BEAT jaune).
   - **OCT− / OCT+** : la banque des touches blanches (CHOP, DESTROY, BEAT), écrite en haut à droite.
   - Touches blanches : les 16 effets de la banque, tant qu'elles sont tenues.
   - REC en lecture : l'effet tenu s'écrit dans le **couloir** (automation de 16 / 32 / 64 pas ; les 3 banques s'y mélangent).
@@ -26,7 +26,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
   - OCT− / OCT+ tapé seul : le pitch du break, comme avant (à la relâche).
 
 ## Apparence
-- **RIBBON** (le look de K-GLITCH) est l'apparence de base : fond ardoise, onglets en pastille orange, cartes arrondies, valeurs en cyan, une couleur par potard.
+- **RIBBON CLASSIC** (le look de K-GLITCH / K-WASUB) est l'apparence de base : fond ardoise, onglets en pastille orange, chaque page sur une grande carte arrondie, blocs et potards en cartes, une couleur par potard, valeurs en cyan.
 - L'ancienne apparence de LOAF BREAKER reste au choix : **SYSTEM › SETUP, K1 SKIN** (ses 24 skins, RIBBON est le dernier). Un FM-1 qui avait déjà un skin enregistré le garde.
 
 ## Bon à savoir
@@ -34,4 +34,4 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `e966254474d75d17149d11883f00b521f3f0bc4ec3447188e1aaf5ea7c5d81c4`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `4a24617e56d21268be80a9a2de8a3a341cae326a292721d82f9ca51e8b339258`.

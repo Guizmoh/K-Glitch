@@ -4,6 +4,8 @@ wait 4200
 tap PLAY
 wait 400
 tap FX
+wait 300
+tap FX   # (K-GLITCH 0.2b: FX opens GLITCH first, again the chain)
 wait 200
 # slot 1 CRUNCH: on, its view
 press SEL
