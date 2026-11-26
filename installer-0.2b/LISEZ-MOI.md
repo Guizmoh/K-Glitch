@@ -26,7 +26,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
   - OCT− / OCT+ tapé seul : le pitch du break, comme avant (à la relâche).
 
 ## Apparence
-- **RIBBON CLASSIC** (le look de K-GLITCH / K-WASUB) est l'apparence de base : fond ardoise, onglets en pastille orange, chaque page sur une grande carte arrondie, blocs et potards en cartes, une couleur par potard, valeurs en cyan.
+- **RIBBON CLASSIC** (le look de K-GLITCH / K-WASUB) est l'apparence de base : fond ardoise, onglets en pastille orange, chaque page sur une grande carte arrondie, blocs et potards en cartes, une couleur par potard, valeurs en cyan ; l'onde en couleurs RIBBON (basses orange = kicks, médiums cyan = caisses claires, aigus blancs = charleys).
 - L'ancienne apparence de LOAF BREAKER reste au choix : **SYSTEM › SETUP, K1 SKIN** (ses 24 skins, RIBBON est le dernier). Un FM-1 qui avait déjà un skin enregistré le garde.
 
 ## Bon à savoir
@@ -34,4 +34,4 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `4a24617e56d21268be80a9a2de8a3a341cae326a292721d82f9ca51e8b339258`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `9a367640f96ba8e2b3edbb6c6fb1f63ccd77bba4ec12e6aceae69378af1df810`.

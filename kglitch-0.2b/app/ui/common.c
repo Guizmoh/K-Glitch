@@ -251,7 +251,7 @@ static uint16_t serato_col(uint32_t lo, uint32_t mi, uint32_t hi, uint32_t br)
  * mids orange, the highs white in front), BLUE (rekordbox's classic: blue, lighter where there are highs). wave_col draws
  * one column of a coloured wave in it: the CDJ view, the kick's and the drums' pictures, the strip (strip_style) */
 enum { WS_RGB, WS_SERATO, WS_3BAND, WS_BLUE, WS_N };
-static const char *const WS_NAME[WS_N] = {"RGB", "SERATO", "3 BAND", "BLUE"};
+static const char *const WS_NAME[WS_N] = {"RGB", "SERATO", "3 BAND", "BLUE"};   /* (RGB: RIBBON's colours with that skin) */
 static uint32_t ws_style(void) { return set.wstyle < WS_N ? set.wstyle : WS_RGB; }
 static void wave_col(int32_t x, int32_t mid, int32_t h, uint32_t lo, uint32_t mi, uint32_t hi, uint32_t br, uint32_t st,
                      int sq)                /* (sq: RGB's bands squared, saturated, as the kick's and the drums' pictures) */
@@ -260,7 +260,20 @@ static void wave_col(int32_t x, int32_t mid, int32_t h, uint32_t lo, uint32_t mi
     m = hi > m ? hi : m;
     if (!m || h <= 0)
         return;
-    if (st == WS_SERATO) {
+    if (st == WS_RGB && RIB) {           /* (K-GLITCH 0.2b, RIBBON: the bands in the skin's colours, the lows orange (the
+                                          * kicks), the mids cyan (the snares), the highs white (the hats), mixed by their
+                                          * share; dimmer outside, the core (half its height) full: depth) */
+        uint32_t wl = lo * 255u / m, wm = mi * 255u / m, wh = hi * 255u / m, s, r, g, b, k = br * 205u / 255u;
+        wl = wl * wl * wl / 65025u, wm = wm * wm * wm / 65025u, wh = wh * wh * wh / 65025u;   /* (cubed: the strongest band wins) */
+        s = wl + wm + wh + 1u;
+        r = (wl * 255u + wm * 40u + wh * 236u) / s, g = (wl * 120u + wm * 210u + wh * 240u) / s, b = (wl * 30u + wm * 255u + wh * 250u) / s;
+        int32_t c = h / 2;
+        cv_rect(x, mid - h, 1, 2 * h + 1, RGB(r * k / 255u, g * k / 255u, b * k / 255u));
+        if (c > 0)
+            cv_rect(x, mid - c, 1, 2 * c + 1, RGB(r * br / 255u, g * br / 255u, b * br / 255u));
+        if (h > 3)                       /* (a light tip on the column: its edge) */
+            cv_rect(x, mid - h, 1, 1, RGB((r + 255u) / 2u * br / 255u, (g + 255u) / 2u * br / 255u, (b + 255u) / 2u * br / 255u));
+    } else if (st == WS_SERATO) {
         cv_rect(x, mid - h, 1, 2 * h + 1, serato_col(lo, mi, hi, br));
     } else if (st == WS_3BAND) {         /* (each band as tall as it is against the strongest, the lows behind) */
         static const uint8_t C[3][3] = {{36, 104, 255}, {255, 150, 40}, {245, 245, 245}};
