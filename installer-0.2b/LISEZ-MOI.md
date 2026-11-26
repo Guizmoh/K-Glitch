@@ -34,7 +34,8 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `0b423c7555550ebd75893ec28cb5651cf122cb9507b92c464cb949ee16e729ea`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `48ed9bbc3751abf940d18a3ad63b7e2dcc709d002a64dab44cacf29fd26fbc3c`.
 - Page FX › GLITCH : le plan des 16 touches blanches (2 rangées de 8) affiche l'effet de chaque touche pour la banque choisie (OCT-/OCT+), la touche tenue en orange, l'effet joué cerclé de blanc.
 - OCT- + OCT+ ensemble (partout) : le son bascule entre LOAF (fort, break à -12 LUFS, 3 dB de marge MAX OUT) et CHOPPAH (plus clair : break 4 dB plus bas dans le limiteur, sans marge). Le choix est sauvegardé ; le pitch revient à 0.
 - Skin RIBBON : l'onde en aplat (une couleur pleine par colonne : orange les graves, cyan les médiums, blanc les aigus), sans le dégradé pâle.
+- Skin RIBBON plus contrasté : fond plus sombre, textes et valeurs plus clairs, onde plus lumineuse.

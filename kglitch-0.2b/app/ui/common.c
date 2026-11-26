@@ -211,7 +211,7 @@ static const uint8_t SKIN_RGB[NSKINS][7][3] = {
     {{34, 32, 44}, {76, 72, 90}, {152, 148, 166}, {150, 100, 240}, {196, 166, 255}, {24, 22, 34}, {255, 255, 255}}   /* IRIS: iris violet */,
     {{21, 11, 48}, {56, 32, 116}, {170, 155, 208}, {255, 90, 200}, {140, 90, 255}, {11, 5, 24}, {244, 238, 255}}   /* GLUCKSMAN: deep violet and UV pink */,
     {{60, 12, 48}, {130, 36, 110}, {240, 170, 225}, {255, 0, 170}, {255, 70, 215}, {44, 0, 34}, {255, 232, 250}}   /* MAXENCE: a very loud pink, neon on plum */,
-    {{66, 82, 100}, {96, 110, 128}, {138, 150, 164}, {255, 136, 56}, {84, 200, 240}, {44, 57, 72}, {236, 240, 244}}   /* RIBBON (K-GLITCH 0.2b): cyan values, an orange accent, slate cards on a slate night */};
+    {{78, 98, 120}, {128, 146, 168}, {200, 210, 222}, {255, 146, 60}, {110, 222, 255}, {38, 50, 66}, {255, 255, 255}}   /* RIBBON (K-GLITCH 0.2b): cyan values, an orange accent, slate cards on a slate night */};
 static uint32_t skin_idx(void) { return (set.skin & 0x7Fu) % NSKINS; }
 static uint32_t skin_old(uint32_t s) { return s < 18u ? SKIN_OLD[s] : SKIN_LOAF_DEFAULT; }
 static uint16_t skin_block = RGB(24, 24, 30), skin_hi = RGB(255, 132, 112), skin_white = 0xFFFFu;
@@ -267,6 +267,7 @@ static void wave_col(int32_t x, int32_t mid, int32_t h, uint32_t lo, uint32_t mi
         wl = wl * wl * wl / 65025u, wm = wm * wm * wm / 65025u, wh = wh * wh * wh / 65025u;   /* (cubed: the strongest band wins) */
         s = wl + wm + wh + 1u;
         r = (wl * 255u + wm * 40u + wh * 236u) / s, g = (wl * 120u + wm * 210u + wh * 240u) / s, b = (wl * 30u + wm * 255u + wh * 250u) / s;
+        br = br * 5u / 4u > 255u ? 255u : br * 5u / 4u;   /* (brighter: contrast) */
         cv_rect(x, mid - h, 1, 2 * h + 1, RGB(r * br / 255u, g * br / 255u, b * br / 255u));   /* (flat: one colour) */
     } else if (st == WS_SERATO) {
         cv_rect(x, mid - h, 1, 2 * h + 1, serato_col(lo, mi, hi, br));
@@ -320,7 +321,7 @@ static void skin_apply(uint32_t s)
     skin_block = skin_rgb(c[5], 100u);
     skin_hi = skin_rgb(c[4], 100u);
     skin_white = skin_rgb(c[6], 100u);
-    skin_bg = s % NSKINS == SKIN_RIBBON ? RGB(20, 27, 35) : 0u;
+    skin_bg = s % NSKINS == SKIN_RIBBON ? RGB(10, 14, 20) : 0u;   /* (darker ground: more contrast) */
 }
 /* K-GLITCH 0.2b: a rounded box (RIBBON's cards and pills) */
 static void rbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
