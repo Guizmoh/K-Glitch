@@ -262,17 +262,12 @@ static void wave_col(int32_t x, int32_t mid, int32_t h, uint32_t lo, uint32_t mi
         return;
     if (st == WS_RGB && RIB) {           /* (K-GLITCH 0.2b, RIBBON: the bands in the skin's colours, the lows orange (the
                                           * kicks), the mids cyan (the snares), the highs white (the hats), mixed by their
-                                          * share; dimmer outside, the core (half its height) full: depth) */
-        uint32_t wl = lo * 255u / m, wm = mi * 255u / m, wh = hi * 255u / m, s, r, g, b, k = br * 205u / 255u;
+                                          * share; flat, one colour a column) */
+        uint32_t wl = lo * 255u / m, wm = mi * 255u / m, wh = hi * 255u / m, s, r, g, b;
         wl = wl * wl * wl / 65025u, wm = wm * wm * wm / 65025u, wh = wh * wh * wh / 65025u;   /* (cubed: the strongest band wins) */
         s = wl + wm + wh + 1u;
         r = (wl * 255u + wm * 40u + wh * 236u) / s, g = (wl * 120u + wm * 210u + wh * 240u) / s, b = (wl * 30u + wm * 255u + wh * 250u) / s;
-        int32_t c = h / 2;
-        cv_rect(x, mid - h, 1, 2 * h + 1, RGB(r * k / 255u, g * k / 255u, b * k / 255u));
-        if (c > 0)
-            cv_rect(x, mid - c, 1, 2 * c + 1, RGB(r * br / 255u, g * br / 255u, b * br / 255u));
-        if (h > 3)                       /* (a light tip on the column: its edge) */
-            cv_rect(x, mid - h, 1, 1, RGB((r + 255u) / 2u * br / 255u, (g + 255u) / 2u * br / 255u, (b + 255u) / 2u * br / 255u));
+        cv_rect(x, mid - h, 1, 2 * h + 1, RGB(r * br / 255u, g * br / 255u, b * br / 255u));   /* (flat: one colour) */
     } else if (st == WS_SERATO) {
         cv_rect(x, mid - h, 1, 2 * h + 1, serato_col(lo, mi, hi, br));
     } else if (st == WS_3BAND) {         /* (each band as tall as it is against the strongest, the lows behind) */
