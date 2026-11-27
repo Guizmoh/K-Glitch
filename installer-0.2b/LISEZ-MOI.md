@@ -34,7 +34,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `32215e7ba344396b94e77104ace4108c1df86615dee6461364d321e2fde426c0`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `5c00d1d1791500129727e0e4c49fc4c3fb2250d2d95142a083954ab0ed475776`.
 - Page FX › GLITCH : le plan des 16 touches blanches (2 rangées de 8) affiche l'effet de chaque touche pour la banque choisie (OCT-/OCT+), la touche tenue en orange, l'effet joué cerclé de blanc.
 - OCT- + OCT+ ensemble (partout) : le son bascule entre LOAF (fort, break à -12 LUFS, 3 dB de marge MAX OUT) et CHOPPAH (plus clair : break 4 dB plus bas dans le limiteur, sans marge). Le choix est sauvegardé ; le pitch revient à 0.
 - Skin RIBBON : l'onde en aplat (une couleur pleine par colonne : orange les graves, cyan les médiums, blanc les aigus), sans le dégradé pâle.
@@ -56,3 +56,12 @@ Ouvre `K-GLITCH-0.2b-breaks.html` dans Chrome, FM-1 branché en USB avec K-GLITC
 - Le TUTORIAL est retiré (place). Au premier démarrage : BEGINNER ou EXPERT.
 - Écran de mise à jour de la FM-1 : logo K-GLITCH, fond ardoise, barres cyan (écrites) et orange ; installeur aux couleurs RIBBON avec le logo.
 - Page GLITCH : SELECT et ALGORITHM changent aussi la banque des 16 touches (CHOP / DESTROY / BEAT), comme OCT- / OCT+.
+
+## Page TRIG (déclenchement des effets du couloir)
+
+FX ouvre GLITCH, FX encore ouvre **TRIG**, FX encore la chaîne FX. Sur TRIG :
+- **K1 STEP** : le pas édité (le même que sur GLITCH).
+- **K2 CHANCE** : la probabilité que l'effet de ce pas se déclenche, de 100 % à 6 % (par seizièmes).
+- **K3 CONDITION** : ALWAYS, 1:2, 2:2, 1:3, 2:3, 3:3, 1:4 ... 4:4 (le n-ième tour du couloir sur 2, 3 ou 4), FIRST / NOT FIRST (premier tour après PLAY ou pas), PREV / NOT PREV (si le dernier pas conditionnel s'est déclenché ou non).
+- **K4 DENSITY** : multiplie toutes les chances à la fois (à tourner en live).
+Les 16 cases montrent la condition de chaque pas (cyan = un effet est posé sur ce pas) ; les barres du bas, la chance.

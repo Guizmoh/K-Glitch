@@ -500,6 +500,8 @@ typedef struct {
     uint8_t kg_lane[64];                 /* (a byte a step: bits 0-4 the effect KGC_*, 5-7 its amount in sevenths) */
     uint8_t kg_hide[2];                  /* (appended: the built-in breaks hidden, a bit each, from the BREAKS page; a
                                           * shorter save: none) */
+    uint8_t kg_cnd[64];                  /* (appended: each lane step's trigger, brk_kg_cond: condition, chance) */
+    uint8_t kg_dinv;                     /* (appended: 100 - the DENSITY %, a shorter save 0: 100 %) */
 } kx2_t;
 #define KIT_BPM0 32u                     /* (rsv[32..47]: the kits' tempo; rsv[0..31] SEL WHITE's) */
 static kx2_t kx2 PLAT_POOL;

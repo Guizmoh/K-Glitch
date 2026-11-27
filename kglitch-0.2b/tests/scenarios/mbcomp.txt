@@ -8,6 +8,8 @@ tap FX
 wait 300
 tap FX   # (K-GLITCH 0.2b: FX opens GLITCH first, again the chain)
 wait 200
+tap FX   # (K-GLITCH 0.2b: then TRIG, again the chain)
+wait 200
 turn PRESET 10 10
 wait 200
 expect fx_page 0

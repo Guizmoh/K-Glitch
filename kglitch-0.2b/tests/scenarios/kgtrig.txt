@@ -1,0 +1,27 @@
+# K-GLITCH 0.2b: the GLITCH page's second page, TRIG (FX again): each lane step's CHANCE and CONDITION, the DENSITY
+#   app/build/host/k-glitch_host tests/scenarios/kgtrig.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+tap FX
+wait 300
+expect page 14
+expect kg_pg 0
+turn K2 3 10
+wait 200
+tap FX
+wait 300
+expect page 14
+expect kg_pg 1
+turn K2 -4 10
+turn K3 1 10
+turn K4 -10 10
+wait 300
+shot kg_trig.png
+tap PLAY
+wait 2000
+shot kg_trig_play.png
+tap FX
+wait 300
+expect page 2
+expect kg_pg 0

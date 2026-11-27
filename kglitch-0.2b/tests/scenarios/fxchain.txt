@@ -6,6 +6,10 @@ tap PLAY
 wait 400
 tap FX
 wait 300
+tap FX   # (K-GLITCH 0.2b: FX opens GLITCH first, then TRIG, again the chain)
+wait 300
+tap FX
+wait 300
 shot c_default.png
 expect fx_focus 0
 press SEL

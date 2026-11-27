@@ -35,6 +35,8 @@ tap FX
 wait 300
 tap FX   # (K-GLITCH 0.2b: FX opens GLITCH first, again the chain)
 wait 300
+tap FX   # (K-GLITCH 0.2b: then TRIG, again the chain)
+wait 300
 expect page 2
 expect fx_focus 0
 tap HOME

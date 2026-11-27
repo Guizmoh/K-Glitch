@@ -9,6 +9,12 @@
 static uint32_t kg_held;
 static uint32_t WK_MASK;                 /* (the white keys' bits, kg_boot) */                 /* the white keys held on the page (bit: KGC_* - 1) */
 static uint8_t kg_cur;                   /* the step edited, 0..63 */
+static uint8_t kg_pg;                    /* (the page: 0 GLITCH, 1 TRIG: each step's condition and chance; FX) */
+static const char *const KGQ_NAME[KGQ_N] = {"ALWAYS", "1:2", "2:2", "1:3", "2:3", "3:3", "1:4", "2:4", "3:4", "4:4",
+                                            "FIRST", "NOT FIRST", "PREV", "NOT PREV"};
+static const char *const KGQ_SHORT[KGQ_N] = {"ALL", "1:2", "2:2", "1:3", "2:3", "3:3", "1:4", "2:4", "3:4", "4:4",
+                                             "1ST", "!1ST", "PRE", "!PRE"};
+static uint32_t kg_chance(uint32_t k) { return 100u - (k >> 4) * 625u / 100u; }
 static const uint8_t KG_LENS[4] = {0u, 16u, 32u, 64u};
 static uint32_t kg_len(void) { return KG_LENS[kx2.kg_len & 3u]; }
 #define kg_bank ((kx2.kg_rsv & 3u) % KGC_BANKS)   /* CHOP, DESTROY, BEAT: the white keys' sixteen (OCT- / OCT+ on the page) */
@@ -23,6 +29,7 @@ static void kg_push(void)                /* the engine: the effect held (the las
         brk_kg(0u, 0, 0u);
     else
         brk_kg(e | (uint32_t)kx2.kg_amt << 8, kx2.kg_lane, kg_len());
+    brk_kg_cond(kx2.kg_cnd, 100u - (kx2.kg_dinv > 100u ? 100u : kx2.kg_dinv));
 }
 static void kg_defaults(void)
 {
@@ -31,11 +38,22 @@ static void kg_defaults(void)
     kx2.kg_amt = 60u;
     kx2.kg_rsv = 0u;
     memset(kx2.kg_lane, 0, sizeof kx2.kg_lane);
+    memset(kx2.kg_cnd, 0, sizeof kx2.kg_cnd);
+    kx2.kg_dinv = 0u;
 }
 static void kg_value(int i, char *t)
 {
     uint32_t c = kx2.kg_lane[kg_cur % 64u];
     t[0] = 0;
+    if (kg_pg && i) {                    /* (TRIG: K2 CHANCE, K3 CONDITION, K4 DENSITY) */
+        uint32_t k = kx2.kg_cnd[kg_cur % 64u];
+        int_text((int32_t)(i == 1 ? kg_chance(k) : 100u - kx2.kg_dinv), t);
+        if (i == 2)
+            t[0] = 0, text_cat(t, KGQ_NAME[(k & 15u) % KGQ_N]);
+        else
+            text_cat(t, "%");
+        return;
+    }
     if (i == 0)
         int_text(kg_cur + 1, t);
     else if (i == 1)
@@ -50,12 +68,18 @@ static void kg_value(int i, char *t)
 }
 static void kg_turn(int i, int32_t d)
 {
-    static const char *const N[4] = {"STEP", "EFFECT", "AMOUNT", "LANE"};
+    static const char *const N[2][4] = {{"STEP", "EFFECT", "AMOUNT", "LANE"}, {"STEP", "CHANCE", "CONDITION", "DENSITY"}};
     char t[16];
-    uint8_t *c = &kx2.kg_lane[kg_cur % 64u];
+    uint8_t *c = &kx2.kg_lane[kg_cur % 64u], *q = &kx2.kg_cnd[kg_cur % 64u];
     if (kx2.kg_tag != KG_TAG)
         kg_defaults();
-    if (i == 0)
+    if (kg_pg && i == 1)                 /* (CHANCE: 100 % .. 6 %, a sixteenth a click) */
+        *q = (uint8_t)((*q & 15u) | (uint32_t)clamp((int32_t)(*q >> 4) - (d > 0 ? 1 : -1), 0, 15) << 4);
+    else if (kg_pg && i == 2)
+        *q = (uint8_t)((*q & 0xF0u) | (uint32_t)clamp((int32_t)(*q & 15u) + (d > 0 ? 1 : -1), 0, KGQ_N - 1));
+    else if (kg_pg && i == 3)
+        kx2.kg_dinv = (uint8_t)(100 - clamp(100 - (int32_t)kx2.kg_dinv + d * 2, 0, 100));
+    else if (i == 0)
         kg_cur = (uint8_t)clamp((int32_t)kg_cur + d, 0, (int32_t)(kg_len() ? kg_len() : 16u) - 1);
     else if (i == 1) {
         int32_t e = clamp((int32_t)(*c & 63u) + (d > 0 ? 1 : -1), 0, KGC_N - 1);
@@ -67,7 +91,7 @@ static void kg_turn(int i, int32_t d)
     kg_push();
     set_dirty = 1u;
     kg_value(i, t);
-    app_say(N[i & 3], t);
+    app_say(N[kg_pg & 1u][i & 3], t);
     ui.redraw |= RG_BLOCKS | RG_FOOT;
 }
 /* every input: on the page the white keys are the effects (SEL + a key: its effect out of the lane); off the page,
@@ -196,7 +220,7 @@ static void draw_kg(const brk_status_t *st)
     int32_t w;
     cv_begin(240, 52, C_BLACK);
     rbox(3, 0, 234, 52, C_BLOCK);
-    cv_text(9, 2, &FONT_B, "GLITCH", C_WHITE);
+    cv_text(9, 2, &FONT_B, kg_pg ? "TRIG" : "GLITCH", C_WHITE);
     w = text_w(&FONT_T, KGC_BANK_NAME[kg_bank]) + 16;
     rbox(230 - w, 3, w, 14, C_AMB);
     cv_text(230 - w + 8, 4, &FONT_T, KGC_BANK_NAME[kg_bank], C_BLACK);
@@ -213,7 +237,17 @@ static void draw_kg(const brk_status_t *st)
         cv_text(80, 6, &FONT_T, t, ui.rec ? C_AMB : C_GRAY);
     }
     cv_rect(9, 20, 222, 1, C_AMB);
-    for (i = 0; i < 16u; i++) {          /* the white keys and their effects (this bank): held orange, playing outlined */
+    for (i = 0; kg_pg && i < 16u; i++) {   /* (TRIG: this page's sixteen steps, each its condition; an effect on it: cyan;
+                                          * the step edited outlined) */
+        uint32_t p = pg * 16u + i, k = kx2.kg_cnd[p % 64u], e = kx2.kg_lane[p % 64u] & 63u;
+        int32_t x = 8 + (int32_t)(i % 8u) * 28, y = 23 + (int32_t)(i / 8u) * 14;
+        const char *n = KGQ_SHORT[(k & 15u) % KGQ_N];
+        if (p == kg_cur)
+            rbox(x - 1, y - 1, 28, 14, C_WHITE);
+        rbox(x, y, 26, 12, e ? C_HI : C_LINE);
+        cv_text(x + (26 - text_w(&FONT_T, n)) / 2, y, &FONT_T, n, e ? C_BLACK : C_GRAY);
+    }
+    for (i = 0; !kg_pg && i < 16u; i++) {   /* the white keys and their effects (this bank): held orange, playing outlined */
         uint32_t e = kg_bank * 16u + i + 1u;
         int32_t x = 8 + (int32_t)(i % 8u) * 28, y = 23 + (int32_t)(i / 8u) * 14;
         int held = kg_held >> i & 1u;
@@ -227,7 +261,7 @@ static void draw_kg(const brk_status_t *st)
     rbox(3, 0, 234, 52, C_BLOCK);
     for (i = 0; i < 16u; i++) {
         uint32_t p = pg * 16u + i, b = kx2.kg_lane[p % 64u], e = b & 63u, lv = b >> 6;
-        int32_t x = 8 + (int32_t)i * 14, h = e ? 14 + (int32_t)(lv ? lv : 2u) * 9 : 3;
+        int32_t x = 8 + (int32_t)i * 14, h = e ? (kg_pg ? 4 + (int32_t)kg_chance(kx2.kg_cnd[p % 64u]) * 37 / 100 : 14 + (int32_t)(lv ? lv : 2u) * 9) : 3;
         uint16_t col = !e ? C_LINE : e <= 16u ? C_AMB : e <= 32u ? C_HI : RGB(255, 196, 48);
         int on = st->step >= 0 && kg_len() && (uint32_t)st->step % len == p;
         if (p == kg_cur)

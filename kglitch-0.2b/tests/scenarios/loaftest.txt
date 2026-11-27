@@ -28,6 +28,8 @@ tap FX
 wait 300
 tap FX   # (K-GLITCH 0.2b: FX opens GLITCH first, again the chain)
 wait 300
+tap FX   # (K-GLITCH 0.2b: then TRIG, again the chain)
+wait 300
 turn PRESET 20 10
 wait 300
 expect mb_pre 3

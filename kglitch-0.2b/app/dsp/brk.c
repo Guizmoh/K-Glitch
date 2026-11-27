@@ -444,6 +444,10 @@ BRK_COLD void brk_kg(uint32_t live, const uint8_t *lane, uint32_t len)
     p_kg = live;
 }
 BRK_COLD int32_t brk_kg_now(void) { return kg_fx; }
+static const uint8_t *volatile p_kgcnd;
+static volatile uint32_t p_kgden = 100u;
+static int kg_prev = 1;                  /* (the last conditional step: fired or not, PREV / !PREV) */
+BRK_COLD void brk_kg_cond(const uint8_t *cnd, uint32_t density) { p_kgcnd = cnd; p_kgden = density > 100u ? 100u : density; }
 /* the DESTROY and BEAT banks on step i (q its place in the bar, amt the AMOUNT, r a random word): 1 no hit */
 static uint32_t ch_hash(uint32_t a);
 static int kg_dest(const brk_break_t *b, uint32_t e, uint32_t i, uint32_t q, uint32_t amt, uint32_t r, int32_t *s,
@@ -615,6 +619,28 @@ static int kg_apply(const brk_break_t *b, uint32_t i, int32_t *s, int *rev, floa
         e = c & 63u;
         if (c >> 6)
             amt = (c >> 6) * 100u / 3u;
+        if (e && e < KGC_N && p_kgcnd) {   /* (K-GLITCH 0.2b: its condition and its chance) */
+            uint32_t k = p_kgcnd[i % p_kglen], cq = k & 15u, ch = 100u - (k >> 4) * 625u / 100u, go = 1u;
+            uint32_t lp = (steps_total - pat_org) / p_kglen;   /* (the lane's round since the start) */
+            if (cq >= KGQ_1_2 && cq <= KGQ_4_4) {
+                static const uint8_t D[9] = {2, 2, 3, 3, 3, 4, 4, 4, 4}, A[9] = {0, 1, 0, 1, 2, 0, 1, 2, 3};
+                go = lp % D[cq - 1u] == A[cq - 1u];
+            } else if (cq == KGQ_FIRST)
+                go = lp == 0u;
+            else if (cq == KGQ_NFIRST)
+                go = lp != 0u;
+            else if (cq == KGQ_PREV)
+                go = (uint32_t)kg_prev;
+            else if (cq == KGQ_NPREV)
+                go = (uint32_t)!kg_prev;
+            ch = ch * p_kgden / 100u;
+            if (go && ch < 100u)
+                go = ch_hash(steps_total * 0x9E3779B9u + 0x7F4A7C15u) % 100u < ch;
+            if (cq != KGQ_PREV && cq != KGQ_NPREV)
+                kg_prev = (int)go;
+            if (!go)
+                e = KGC_NONE;
+        }
     }
     if (amt > 100u)
         amt = 100u;

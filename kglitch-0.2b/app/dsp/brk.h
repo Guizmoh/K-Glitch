@@ -224,6 +224,11 @@ extern const char *const KGC_NAME[KGC_N];
 extern const char *const KGC_SHORT[KGC_N];
 void brk_kg(uint32_t live, const uint8_t *lane, uint32_t len);   /* (0.2b: lane bytes bits 0-5 the effect, 6-7 its
                                           * amount in thirds, 0 = the live amount; live bits 0-5) */
+void brk_kg_cond(const uint8_t *cnd, uint32_t density);   /* (K-GLITCH 0.2b: each lane step's trigger, a byte: bits 0-3
+                                          * the condition KGQ_*, 4-7 its chance less: 0 100 %, n 100 - n * 6.25 %; density
+                                          * 0..100 % scales every chance) */
+enum { KGQ_ALWAYS, KGQ_1_2, KGQ_2_2, KGQ_1_3, KGQ_2_3, KGQ_3_3, KGQ_1_4, KGQ_2_4, KGQ_3_4, KGQ_4_4, KGQ_FIRST, KGQ_NFIRST,
+       KGQ_PREV, KGQ_NPREV, KGQ_N };
 int32_t brk_kg_now(void);                /* the effect playing on this step (live or the lane's), 0 none */
 void brk_padset_defaults(brk_padset_t *p);
 void brk_padset(const brk_padset_t *p);  /* main loop; the render follows it at once, also while a pad is held */

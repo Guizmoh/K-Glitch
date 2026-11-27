@@ -1072,9 +1072,15 @@ static void input(void)
         if (!ui.fx_turned) {
             if (ui.fx_open) {            /* (K-GLITCH 0.2b: FX, the GLITCH page first: the rhythmic effects) */
                 ui.page = PG_KG;
+                kg_pg = 0u;
+                page_say();
+                ui.redraw |= RG_FOOT | RG_BLOCKS | RG_HEAD;
+            } else if (ui.page == PG_KG && !kg_pg) {   /* (K-GLITCH 0.2b: FX again: TRIG, the steps' conditions) */
+                kg_pg = 1u;
                 page_say();
                 ui.redraw |= RG_FOOT | RG_BLOCKS | RG_HEAD;
             } else if (ui.page == PG_KG) {   /* (FX again: the chain) */
+                kg_pg = 0u;
                 kfx_open(0);
                 ui.page = PG_FX;
                 page_say();
@@ -1895,7 +1901,8 @@ static void draw_tabs(void)
         if (x + text_w(&FONT_T, part) + 16 > 236)
             part[0] = 0;
     } else if (ui.page == PG_KG) {       /* (K-GLITCH 0.2b: EFFECTS' two: GLITCH (FX), the chain (FX again)) */
-        x = tab(x, "GLITCH", 1);
+        x = tab(x, "GLITCH", !kg_pg);
+        x = tab(x, "TRIG", kg_pg);
         x = tab(x, "FX CHAIN", 0);
         text_cat(part, KGC_BANK_NAME[kg_bank]);   /* (the white keys' bank) */
     } else {                             /* SOUNDS: the drum, and its part */
@@ -2048,6 +2055,9 @@ static float foot_norm(int i)            /* the page's knob i, 0..1, or -1 (no g
 /* the page's knob i (0..3) name, as the foot shows it (LOAF BREAKER 0.9.43: the editor's too) */
 static const char *knob_name(int i)
 {
+    static const char *const KG2[4] = {"STEP", "CHANCE", "CONDITION", "DENSITY"};   /* (K-GLITCH 0.2b: TRIG) */
+    if (ui.page == PG_KG && kg_pg)
+        return KG2[i & 3];
     static const char *const KN[NPAGES][4] = {{"GATE", "FILTER", "DRUM FLT", "SUB DECAY"},
                                               {"CMPLX", "ANCHOR", "ROLL", "FILL"},
                                               {"P1", "P2", "P3", "MIX"},
@@ -3946,8 +3956,8 @@ int app_expect(const char *what, int *got)
                                     "lane_hat", "pattern", "brk", "brk_next", "help", "drums_chain", "lobo",
                                     "ovl_on", "ovl_last", "ovl_latch", "roll_pitch_x10", "demo", "fx_page",
                                     "mb_solo", "mb_thr_low", "mb_slot2_thr_low", "trk_on", "trk_pos", "fx_p1", "kfx_fa", "kfx", "knotes", "comp", "knfn", "half_on", "intensity", "kpage", "t_type", "t_screech", "drop_style", "selk1", "selk3_fn", "khits", "trk_cur", "trk_it", "fx_type", "mb_kick", "mb_pre", "fill", "kbass1", "accel", "trk_from", "arp_fx", "arp_amt", "arp_more", "arp_thru", "ovl_rate", "kpreset", "aud_d", "kslot", "dirty", "brk_lvl", "kick_vol", "sfx_on", "sel_lock", "kick_dj", "csub", "kmorph", "kmorph_to", "ktune", "pbig", "playing", "kbar1", "kbar2", "kbar3", "selk1_fn", "selk4_fn", "kdrop", "ter_off", "terror", "mpage", "pgrp", "grp_dirty", "piano", "pcur", "hvn1", "hvn2", "hvn3", "minst", "mel_vol", "einst", "kpre", "kl_mode", "kl_note", "kl_src", "kl_end", "ab", "kview", "ksect", "wstyle", "kfocus", "rst_cool", "tut", "ezoom", "kv_ms", "beat", "lane_mask", "swing", "drop_bars", "ppre", "pfx", "pdirt", "proom", "lane_steps", "fx_scene", "keasy", "subdrv", "seq_brk", "brkview", "bk_pre", "bk_fn", "bk_key", "frz_len", "opage", "auto_save", "bhalf", "wiped", "skin", "bstut", "bgapm", "pads", "padlat", "fthru", "key", "key_n", "klen0", "rdiv0", "n_user", "n_breaks", "brk_dj", "rthru", "drv_off", "sub_off", "tok", "gate", "arp_bits", "bk_arpfx", "kit", "psmp", "kx2on", "selk", "swcat", "swval", "swfx", "building", "wslayer", "klen15", "kdec15", "broll", "stut", "fxwet", "tempo10", "kitsel", "kit0kick", "vthru", "dafter",
-                                    "lglow", "lpulse", "lon", "lstyle", "llitk", "lmidk", "ldimk", "llitb", "lmidb", "ldimb", "keqflat", "dsel", "dbars", "tpage", "kbrk", "kbmode", "kbgain", "reckey", "recfn", "recording", "trkwant", "bstep", "trk", "notesin", "duckwhat", "kswitch", "kickhold", "subfa", "dft", "swon", "strip", "kl_amt", "dbrk", "split", "split_at", "half", "half_ask", "layer", "split_b", "kdec0", "bpitch", "chaos", "cmath", "crolls", "cseed", "rkick", "rsnare", "rhat", "chsw", "kg_now", "kg_steps", "kg_held", "snd", "kg_bank"};
-    int v[217];
+                                    "lglow", "lpulse", "lon", "lstyle", "llitk", "lmidk", "ldimk", "llitb", "lmidb", "ldimb", "keqflat", "dsel", "dbars", "tpage", "kbrk", "kbmode", "kbgain", "reckey", "recfn", "recording", "trkwant", "bstep", "trk", "notesin", "duckwhat", "kswitch", "kickhold", "subfa", "dft", "swon", "strip", "kl_amt", "dbrk", "split", "split_at", "half", "half_ask", "layer", "split_b", "kdec0", "bpitch", "chaos", "cmath", "crolls", "cseed", "rkick", "rsnare", "rhat", "chsw", "kg_now", "kg_steps", "kg_held", "snd", "kg_bank", "kg_pg"};
+    int v[218];
     uint32_t i;
     v[0] = ui.page;
     v[1] = ui.gpage;
@@ -4194,6 +4204,7 @@ int app_expect(const char *what, int *got)
         v[214] = (int)kg_held;
         v[215] = (int)SND_MODE;
         v[216] = (int)kg_bank;
+        v[217] = (int)kg_pg;
     }
     v[161] = set.vinyl & 3u;             /* (0.9.54: VINYL BREAK's THRU, 0 BOTH 1 BREAK 2 KICK) */
     v[140] = kx2_at(set.kslot)->tok;     /* (0.9.45: the kick's TOK level) */
