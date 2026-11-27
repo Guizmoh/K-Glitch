@@ -41,6 +41,7 @@ BANK_CAPACITY = (0xDA000 - 0x97000) + (0xFC000 - 0xE5000) - 0x1000
 IMAGE_CAPACITY = 0x64000
 # a break decodes into the firmware's PCM buffer (app.h CH_PCM_MAX): no break longer than that
 BANK_MAX_LEN = 106496
+NO_LIMIT = True                          # (K-GLITCH 0.2b: the breaks' hits never limited)
 
 STEP = [7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97,
         107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796,
@@ -256,6 +257,10 @@ def level(x, rate, target_db, ceiling=0.98):
     as the others, whatever its few loudest hits. The limiter takes some level too, so the gain is found again until
     the result is within 0.2 dB. -> the samples, the gain (dB) and the most the limiter took off (dB)"""
     g = 10.0 ** ((target_db - loudness_db(x, rate)) / 20.0)
+    if NO_LIMIT:                             # (K-GLITCH 0.2b: no limiter, the hits whole: the peaks under the ceiling by
+        peak = max(1e-9, max(abs(v) for v in x))   # the gain alone, a break with big hits a little quieter)
+        g = min(g, ceiling / peak)
+        return [v * g for v in x], 20.0 * math.log10(g), 0.0
     for _ in range(5):
         out, most = limit([v * g for v in x], rate, ceiling)
         err = target_db - loudness_db(out, rate)
@@ -406,8 +411,9 @@ def prepare(spec, args, shown=None):
         peak = max(1e-9, max(abs(v) for v in x))
         gain_db, lim_db = 20.0 * math.log10(0.98 / peak), 0.0
         x = [v * (0.98 / peak) for v in x]
-    x = resample(x, rate, out_rate)
     max_len = getattr(args, "max_len", None) or BANK_MAX_LEN   # (the VST's longer; the pages' callers have none)
+    out_rate = min(out_rate, int((max_len - 16) * rate / len(x)))   # (K-GLITCH 0.2b: the highest rate the buffer holds)
+    x = resample(x, rate, out_rate)
     if len(x) > max_len:
         raise SystemExit(f"{shown or path}: {bars} bar(s) at {bpm:.2f} BPM are {len(x)} samples, the firmware's buffer "
                          f"holds {max_len} (fewer bars)")
@@ -446,9 +452,9 @@ def main():
     ap.add_argument("--slices", type=int, default=16, help="slices a bar (default 16)")
     ap.add_argument("--break-slices", type=int, default=0,
                     help="slices a break whatever its bars (16: one per white key) instead of --slices a bar")
-    ap.add_argument("--rate", type=int, default=22050, help="sample rate in the bank (default 22050, PRD Q4)")
+    ap.add_argument("--rate", type=int, default=32000, help="sample rate in the bank (default 22050, PRD Q4)")
     ap.add_argument("--transients", action="store_true", help="move markers to the nearest hit")
-    ap.add_argument("--loudness", type=float, default=-12.0,
+    ap.add_argument("--loudness", type=float, default=-16.0,
                     help="every break to this level, LUFS (as heard: K-weighted, gated), its peaks limited (default -12 since 0.9.70, FLEXOR: every break at the same level; -16 before; "
                          "0: peaks to full scale instead)")
     ap.add_argument("--name-prefix", default="", help="put before each name")

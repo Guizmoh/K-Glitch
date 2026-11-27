@@ -34,6 +34,8 @@ void brk_fx_flt_thru(uint32_t m) { p_fthru = m <= 2u ? m : 0u; }
 static volatile uint32_t p_late;         /* (0.9.31: the limiter left to brk_fx_add_dry, after the ARP's overlays and the
                                           * kick joining: the kick limited with the rest as ever, FLEXOR) */
 void brk_fx_late_limit(uint32_t on) { p_late = on; }
+static volatile uint32_t p_nolim;
+void brk_fx_limit_off(uint32_t on) { p_nolim = on; }
 static volatile uint32_t p_tail;         /* LOAF BREAKER (0.9.58): KILL BREAK's tail ringing: the plate after the chain
                                           * when no REVERB in it has it, fed by the throws into the reverb */
 void brk_fx_tail(uint32_t on) { p_tail = on; }
@@ -460,7 +462,7 @@ BRK_COLD void brk_fx_add_dry(float *l, float *r, const float *xl, const float *x
     for (i = 0; i < n; i++) {            /* (0.9.31, FLEXOR: then the chain's limiter on it all, as the kick always had:
                                           * added after it, only the soft clip, it came out louder and fatter) */
         float a = l[i] + xl[i], b = r[i] + xr[i], pk = brk_absf(a) > brk_absf(b) ? brk_absf(a) : brk_absf(b);
-        float want = pk * lim_gain > 0.95f ? 0.95f / pk : 1.0f;
+        float want = !p_nolim && pk * lim_gain > 0.95f ? 0.95f / pk : 1.0f;
         lim_gain += (want - lim_gain) * (want < lim_gain ? 0.5f : 0.0002f);
         l[i] = knee(a * lim_gain);
         r[i] = knee(b * lim_gain);
@@ -1267,7 +1269,7 @@ BRK_RAM static void fx_samples(const fx_q_t *q, const float *in, const float *th
             r[i] = xr;
         } else {   /* the limiter: a fast attack, a slow release, then a soft clip for what gets past */
             float pk = brk_absf(xl) > brk_absf(xr) ? brk_absf(xl) : brk_absf(xr);
-            float want = pk * lim_gain > 0.95f ? 0.95f / pk : 1.0f;
+            float want = !p_nolim && pk * lim_gain > 0.95f ? 0.95f / pk : 1.0f;
             lim_gain += (want - lim_gain) * (want < lim_gain ? 0.5f : 0.0002f);
             l[i] = knee(xl * lim_gain);
             r[i] = knee(xr * lim_gain);

@@ -498,10 +498,13 @@ typedef struct {
     uint8_t kg_tag, kg_len, kg_amt, kg_rsv;   /* (K-GLITCH 0.2b, appended: the CHOP lane, valid with KG_TAG: its length
                                           * 0..3 (OFF 16 32 64), the effects' AMOUNT 0..100; ui/kgchop.c) */
     uint8_t kg_lane[64];                 /* (a byte a step: bits 0-4 the effect KGC_*, 5-7 its amount in sevenths) */
+    uint8_t kg_hide[2];                  /* (appended: the built-in breaks hidden, a bit each, from the BREAKS page; a
+                                          * shorter save: none) */
 } kx2_t;
 #define KIT_BPM0 32u                     /* (rsv[32..47]: the kits' tempo; rsv[0..31] SEL WHITE's) */
 static kx2_t kx2 PLAT_POOL;
-#define SND_CHOP (kx2.kg_rsv & 0x80u)   /* (K-GLITCH 0.2b: OCT- + OCT+ together, the sound CHOPPAH's: the break 4 dB lower into
+#define SND_MODE ((kx2.kg_rsv >> 6) % 3u)   /* (0 LOAF, 1 CHOPPAH, 2 RAW: no limiter) */
+#define SND_CHOP (SND_MODE != 0u)   /* (K-GLITCH 0.2b: OCT- + OCT+ together, the sound CHOPPAH's: the break 4 dB lower into
                                           * the limiter (its -16 LUFS bank), no MAX OUT headroom; LOAF's: -12 LUFS, 3 dB) */
 #if LB_BIG
 /* (the VST: kx2 over several store objects, PLAT_STORE_MAX bytes each, the last one shorter) */
@@ -2662,7 +2665,7 @@ void app_render(int32_t *lr, uint32_t n, uint32_t master_q12)
         brk_status(&st);
         {                                /* the MIXER's BREAK fader (eased: no zipper), on the break and its throws */
             static float lvl = 1.0f;
-            float want = (float)set.brk_level * (SND_CHOP ? 0.0063f : 0.01f);
+            float want = (float)set.brk_level * (SND_CHOP ? 0.01f : 0.01585f);
             for (i = 0; i < m; i++) {
                 lvl += (want - lvl) * 0.002f;
                 mono[i] *= lvl;
@@ -3076,6 +3079,7 @@ void app_render(int32_t *lr, uint32_t n, uint32_t master_q12)
         /* the break through the DJ filter, the drums joining it into the chain (or around it) */
         {
             const float *drums = kick_dry ? perc : kick;   /* (the kick apart: the snare and the hat alone here) */
+            brk_fx_limit_off(SND_MODE == 2u);
             brk_fx_late_limit((uint32_t)kick_dry);   /* (0.9.31: then the limiter after the kick joins, brk_fx_add_dry) */
             brk_fx_process(mono, set.drums_chain ? drums : 0, echo, verb, set.drums_chain ? 0 : drums, l, r, m,
                            st.pads);

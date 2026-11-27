@@ -1,0 +1,20 @@
+# K-GLITCH 0.2b: the built-in breaks hidden from the BREAKS page (SysEx zone 3: 1 GET, 2 SET), ALGORITHM passing over them
+#   app/build/host/k-glitch_host tests/scenarios/kghide.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+expect brk 0
+sysex F0 7D 43 48 32 00 03 00 F7
+wait 300
+expect brk 2
+turn ALGO -1 10
+wait 300
+expect brk 4
+turn ALGO 1 10
+wait 300
+expect brk 2
+sysex F0 7D 43 48 32 00 00 00 F7
+wait 300
+turn ALGO -1 10
+wait 300
+expect brk 1

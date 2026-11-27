@@ -57,7 +57,7 @@ shot kg_home_glitch.png
 tap HOME
 wait 300
 expect page 0
-# OCT- + OCT+ together: the sound CHOPPAH's (clear), again LOAF's
+# OCT- + OCT+ together: the sound LOAF -> CHOPPAH (clear) -> RAW (no limiter) -> LOAF
 expect snd 0
 press OCT-
 press OCT+
@@ -68,6 +68,14 @@ wait 300
 expect snd 1
 expect bpitch 0
 shot kg_sound.png
+press OCT-
+press OCT+
+wait 200
+release OCT+
+release OCT-
+wait 300
+expect snd 2
+expect bpitch 0
 press OCT-
 press OCT+
 wait 200

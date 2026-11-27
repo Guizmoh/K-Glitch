@@ -238,9 +238,19 @@ static void break_ask(uint32_t i);
  * SEL + a key, both halves again; a key pressed while one of the other half is held layers and keeps the latch */
 /* ALGORITHM's break: the next or the one before, in at the next bar (a split's B: HOME › SPLIT K2; 0.9.73, FLEXOR: no
  * half latched any more, so ALGORITHM always A) */
+static int brk_hidden(uint32_t i)      /* (K-GLITCH 0.2b: a built-in break hidden from the BREAKS page) */
+{
+    return i >= n_synth && i - n_synth < n_bank && i - n_synth < 16u && kx2.kg_hide[(i - n_synth) >> 3] >> ((i - n_synth) & 7u) & 1u;
+}
 static void break_turn(int32_t d)
 {
-    break_ask((set.brk + (d > 0 ? 1u : n_breaks - 1u)) % n_breaks);
+    uint32_t b = set.brk, k;
+    for (k = 0; k < n_breaks; k++) {     /* (the next one not hidden; all hidden: as if none were) */
+        b = (b + (d > 0 ? 1u : n_breaks - 1u)) % n_breaks;
+        if (!brk_hidden(b))
+            break;
+    }
+    break_ask(b);
 }
 static void break_ask(uint32_t i)
 {
@@ -1142,12 +1152,12 @@ static void input(void)
             rec_move(-1);
     } else if ((btn & (1u << B_OCTDN | 1u << B_OCTUP)) == (1u << B_OCTDN | 1u << B_OCTUP)) {
         if (bdn & (1u << B_OCTDN | 1u << B_OCTUP)) {   /* (K-GLITCH 0.2b: both, the sound LOAF / CHOPPAH; the pitch 0) */
-            kx2.kg_rsv ^= 0x80u;
+            kx2.kg_rsv = (uint8_t)((kx2.kg_rsv & 0x3Fu) | ((SND_MODE + 1u) % 3u) << 6);
             set.pitch = 0;
             oct_used = 1u;
             changed();
             set_dirty = 1u;
-            app_say("SOUND", SND_CHOP ? "CHOPPAH (CLEAR)" : "LOAF (LOUD)");
+            app_say("SOUND", SND_MODE == 2u ? "RAW (NO LIMITER)" : SND_CHOP ? "CHOPPAH (CLEAR)" : "LOAF (LOUD)");
         }
     } else if (HOME_PG(ui.page)) {   /* (K-GLITCH 0.2b: HOME, OCT- / OCT+ are SHIFTs too: the pitch on a
                                           * tap alone, at its release; a key played while it was held: none) */
@@ -3580,6 +3590,33 @@ int app_sysex(const uint8_t *p, uint32_t n)
         len = unpack7(p + 4, n - 4u > 700u ? 700u : n - 4u, u);
         return kit_sysex(cmd, u, len);
     }
+    if (z == 3u && (cmd == 1u || cmd == 2u)) {   /* (K-GLITCH 0.2b: the built-in breaks, hidden or not: 1 GET -> {n,
+                                          * mask lo, hi, each name 11}; 2 SET {mask lo, hi}) */
+        uint8_t o[3u + 16u * 11u];
+        uint32_t k, j;
+        len = unpack7(p + 4, n - 4u > 16u ? 16u : n - 4u, a);
+        if (cmd == 2u && len >= 2u) {
+            kx2.kg_hide[0] = a[0];
+            kx2.kg_hide[1] = a[1];
+            if (brk_hidden(set.brk))
+                break_turn(1);
+            if (!playing_now())
+                (void)store_all();
+            else
+                set_dirty = 1u;
+        }
+        k = n_bank > 16u ? 16u : n_bank;
+        o[0] = (uint8_t)k;
+        o[1] = kx2.kg_hide[0];
+        o[2] = kx2.kg_hide[1];
+        for (i = 0; i < k; i++) {
+            const char *s = break_name(n_synth + i);
+            for (j = 0; j < 11u; j++, s = s && *s ? s + 1 : s)
+                o[3u + i * 11u + j] = (uint8_t)(s && *s ? *s : ' ');
+        }
+        cu_reply(0x30u | cmd, 0u, o, 3u + k * 11u);
+        return 1;
+    }
     if (z >= CU_NZ)
         return 0;
     if (!z && cmd == 13u && n >= 6u && n <= 20u) {   /* (the editor's STATUS: small, often; the canvas left alone) */
@@ -4149,7 +4186,7 @@ int app_expect(const char *what, int *got)
         for (q = 0, v[213] = 0; q < 64u; q++)
             v[213] += (kx2.kg_lane[q] & 63u) != 0u;
         v[214] = (int)kg_held;
-        v[215] = SND_CHOP ? 1 : 0;
+        v[215] = (int)SND_MODE;
     }
     v[161] = set.vinyl & 3u;             /* (0.9.54: VINYL BREAK's THRU, 0 BOTH 1 BREAK 2 KICK) */
     v[140] = kx2_at(set.kslot)->tok;     /* (0.9.45: the kick's TOK level) */

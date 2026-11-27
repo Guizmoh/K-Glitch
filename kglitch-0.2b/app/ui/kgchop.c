@@ -147,7 +147,7 @@ static void kg_bank_turn(int32_t d)      /* OCT- / OCT+ on the GLITCH page: the 
 {
     if (kx2.kg_tag != KG_TAG)
         kg_defaults();
-    kx2.kg_rsv = (uint8_t)((kx2.kg_rsv & 0x80u) | (kg_bank + KGC_BANKS + (d > 0 ? 1u : KGC_BANKS - 1u)) % KGC_BANKS);
+    kx2.kg_rsv = (uint8_t)((kx2.kg_rsv & 0xC0u) | (kg_bank + KGC_BANKS + (d > 0 ? 1u : KGC_BANKS - 1u)) % KGC_BANKS);
     set_dirty = 1u;
     app_say("BANK", KGC_BANK_NAME[kg_bank]);
     kg_push();

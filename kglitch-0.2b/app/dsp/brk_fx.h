@@ -220,6 +220,7 @@ void brk_fx_add_dry(float *l, float *r, const float *xl, const float *xr, uint32
                                           * into l and r after it all, then the limiter (brk_fx_late_limit's) */
 void brk_fx_kill_echo(uint32_t t);       /* LOAF BREAKER (0.9.60): KILL BREAK's echo: 0 off, 1 + its time (DUB's divisions) */
 void brk_fx_tail(uint32_t on);           /* LOAF BREAKER (0.9.58): 1: KILL BREAK's reverb tail rings (the plate alone, no REVERB in the chain) */
+void brk_fx_limit_off(uint32_t on);     /* K-GLITCH 0.2b: 1: no limiter, the soft clip alone (SOUND RAW) */
 void brk_fx_late_limit(uint32_t on);     /* LOAF BREAKER (0.9.31): 1: brk_fx_process leaves its limiter to brk_fx_add_dry */
 void brk_fx_kick_dj(float *x, uint32_t n, float pos);   /* GLOUPI BREAKS: the kick's filter, in place (render).
                                           * LOAF BREAKER: high-pass alone, 0 off .. 1 (below 0: off) */

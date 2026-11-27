@@ -267,6 +267,9 @@ computer.</p>
   <div class="built" id="built"></div>
   <h3>Your breaks <span id="mineCount"></span></h3>
   <div class="list" id="mine" aria-live="polite"></div>
+  <h3>Built-in breaks</h3>
+  <p class="hint">Untick a built-in break to remove it from ALGORITHM on the FM-1; tick it to bring it back.</p>
+  <div class="list" id="builtin"></div>
   <div class="row">
     <div class="meter" aria-label="The room your breaks take in the first place (140 KB)"><i id="room0"></i></div>
     <div class="meter" aria-label="The room your breaks take in the second place (92 KB)"><i id="room1"></i></div>
@@ -323,7 +326,7 @@ computer.</p>
       <label class="f">Use bars<select id="start"></select></label>
       <label class="f">Tempo (BPM)<input type="number" id="bpm" min="40" max="300" step="0.01"></label>
       <label class="f">Slices<select id="snap"><option value="0" selected>Even grid</option><option value="1">On the hits</option></select></label>
-      <label class="f">Level<select id="level"><option value="1" selected>As the built-in breaks (−12 LUFS)</option><option value="0">Loudest at full scale</option></select></label>
+      <label class="f">Level<select id="level"><option value="1" selected>As the built-in breaks (−16 LUFS, no limiter)</option><option value="0">Loudest at full scale</option></select></label>
     </div>
     <div class="facts" id="facts"></div>
     <div class="wave"><canvas id="wave" width="1100" height="150" aria-label="Your break: its waveform and slices"></canvas></div>
@@ -347,7 +350,7 @@ computer.</p>
 <script>
 "use strict";
 /* ---------------------------------------------------------------- the break, as tools/prep_breaks.py makes it */
-const RATE = 22050, MAX_LEN = 106496, NSLICES = 16, MAX_ZONE = 4;
+const RATE = 32000, MAX_LEN = 106496, NSLICES = 16, MAX_ZONE = 4;
 /* K-GLITCH: two places on the FM-1 for yours (app.c CU_ZB): 140 KB at 0x93000, 92 KB at 0xE5000; four in each */
 const ZONE_AT = [0x93000, 0xE5000], ZONE_CAP = [35 * 4096, 23 * 4096], MAX_MINE = 2 * MAX_ZONE;
 const STEP = [7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97,
@@ -416,8 +419,15 @@ function limit(y, rate, ceiling) {         /* look-ahead (2 ms) limiter, 40 ms r
   }
   return [out, most];
 }
-function level(x, rate, target = -12, ceiling = 0.98) {   /* (0.9.70, FLEXOR: every break at -12 LUFS; -16 before) */
+const NO_LIMIT = true;
+function level(x, rate, target = -16, ceiling = 0.98) {   /* (0.9.70, FLEXOR: every break at -12 LUFS; -16 before) */
   let g = Math.pow(10, (target - loudnessDb(x, rate)) / 20), out = x;
+  if (NO_LIMIT) {                        /* (K-GLITCH 0.2b: no limiter, the hits whole: the peaks held by the gain alone) */
+    let pk = 1e-9; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i]));
+    g = Math.min(g, ceiling / pk); out = new Float32Array(x.length);
+    for (let i = 0; i < x.length; i++) out[i] = x[i] * g;
+    return out;
+  }
   for (let t = 0; t < 5; t++) {
     const y = new Float32Array(x.length);
     for (let i = 0; i < x.length; i++) y[i] = x[i] * g;
@@ -755,6 +765,21 @@ function listen(h, play) {
   if (play) { audio().resume(); lp.start(); }
   renderMine();
 }
+async function builtins(mask) {           /* (K-GLITCH 0.2b: the built-in breaks, hidden or not: zone 3, 1 GET, 2 SET) */
+  let r;
+  try { r = await ask(mask === undefined ? 0x31 : 0x32, mask === undefined ? [] : [mask & 255, mask >> 8]); }
+  catch (e) { $("builtin").innerHTML = '<p class="empty">This firmware cannot hide its built-in breaks.</p>'; return; }
+  const d = r.data, n = d[0], m = d[1] | d[2] << 8, el = $("builtin");
+  el.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const name = String.fromCharCode(...d.subarray(3 + 11 * i, 14 + 11 * i)).trim();
+    const row = document.createElement("label");
+    row.className = "row";
+    row.innerHTML = `<input type="checkbox" ${m >> i & 1 ? "" : "checked"}> ${esc(name)}`;
+    row.querySelector("input").onchange = (ev) => builtins(ev.target.checked ? m & ~(1 << i) : m | 1 << i);
+    el.appendChild(row);
+  }
+}
 
 /* ---------------------------------------------------------------- the library (lib/, tools/break_lib.py) */
 let lib = [], filt = "ALL", query = "", showAll = false;
@@ -852,8 +877,8 @@ async function make() {                  /* the sample -> the break, as prep_bre
   } else x = src.x.slice(Math.round(startBar * barLen), Math.round((startBar + 2) * barLen));
   const want = Math.round(2 * barLen);
   if (x.length < want - 2) { const y = new Float32Array(want); y.set(x); x = y; }
-  x = $("level").value === "1" ? level(x, src.rate) : $("level").value === "2" ? level(x, src.rate, -12) : peakNorm(x);
-  const rate = Math.min(RATE, Math.floor(MAX_LEN / (2 * 240 / bpm)));   /* slow breaks at a lower rate, to fit */
+  x = $("level").value === "1" ? level(x, src.rate) : $("level").value === "2" ? level(x, src.rate, -16) : peakNorm(x);
+  const rate = Math.min(RATE, Math.floor((MAX_LEN - 16) / (2 * 240 / bpm)));   /* slow breaks at a lower rate, to fit */
   const oc = new OfflineAudioContext(1, Math.max(1, Math.round(x.length * rate / src.rate)), rate);
   const ab = oc.createBuffer(1, x.length, src.rate);
   ab.copyToChannel(x, 0);
@@ -922,6 +947,7 @@ async function info() {
     mine = mine.concat(l);
   }
   renderMine();
+  await builtins();
 }
 async function readBack(z, size) {
   const img = new Uint8Array(size);
