@@ -78,7 +78,8 @@ expect page 14
 expect einst 1
 wait 800
 shot nv_snare.png
-turn SELECT 3 80
+# (K-GLITCH 0.2b: on the GLITCH page SELECT is the bank; EDIT goes back to the KICK)
+tap EDIT
 wait 300
 expect page 4
 tap LFO
