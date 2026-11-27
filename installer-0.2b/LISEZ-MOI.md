@@ -39,3 +39,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - OCT- + OCT+ ensemble (partout) : le son bascule entre LOAF (fort, break à -12 LUFS, 3 dB de marge MAX OUT) et CHOPPAH (plus clair : break 4 dB plus bas dans le limiteur, sans marge). Le choix est sauvegardé ; le pitch revient à 0.
 - Skin RIBBON : l'onde en aplat (une couleur pleine par colonne : orange les graves, cyan les médiums, blanc les aigus), sans le dégradé pâle.
 - Skin RIBBON plus contrasté : fond plus sombre, textes et valeurs plus clairs, onde plus lumineuse.
+
+## Ajouter tes propres loops
+
+Ouvre `K-GLITCH-0.2b-breaks.html` dans Chrome, FM-1 branché en USB avec K-GLITCH, lecture arrêtée. Connecte, glisse tes WAV (2 mesures, le tempo est détecté ou réglable), puis envoie. Place : 232 Ko en deux zones, 5 à 7 loops. Elles arrivent après les 7 breaks intégrés, sur ALGORITHM, et restent après un redémarrage. (Pas de bibliothèque dans cette page : juste tes fichiers.)
