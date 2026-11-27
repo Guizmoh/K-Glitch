@@ -23,10 +23,11 @@
 # (*=), named and ordered by him; NUSKOOL, JUNGLE, APACHE and THEWORM out. Break Sort (10 Nov 2026, FLEXOR's listening
 # page, 0.193-0.196): AMEN20 164 and JUNGLE 175 in; AMEN04, AMEN13, IDM, AMEN10, BREAKIN and (0.200, for room) LO-FI
 # out. Before: Break Swap (9 Nov), the Break Picks tests.
-*=  cw/cw_amen20_164.wav                        164     2     2   AMEN20 164
+-=  cw/cw_amen20_164.wav                        164     2     2   AMEN20 164
 -=  cw/cw_amen19_172.wav                        172     2     4   AMEN19 172
 -=  huge/cw_amen_updown.wav                     165     2     2   UPDOWN 165
-*=  cw/gs_blu_174.wav                          174     2     2   BLU 174
+*=  cw/gs_blu_174.wav                          174     2     2   BLU06 174
+*=  cw/gs_blu_174_03.wav                       174     1     2   BLU03 174
 *=  cw/drumminbasic_176.wav                   176     2     2   BASIC 176
 -=  flexor/lil_texas_louder.wav                 175     2     2   LOUDER 175
 -=  flexor/the_satan_gangzta_cash.wav           200     2     2   SATAN 200
