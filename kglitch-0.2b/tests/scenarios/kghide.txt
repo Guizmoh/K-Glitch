@@ -18,3 +18,15 @@ wait 300
 turn ALGO -1 10
 wait 300
 expect brk 1
+# hidden, then a power-on on it: the next one shown
+sysex F0 7D 43 48 32 00 00 00 F7
+wait 300
+expect brk 1
+tap SAVE
+wait 800
+sysex F0 7D 43 48 32 00 02 00 F7
+wait 300
+expect brk 2
+turn ALGO -1 10
+wait 300
+expect brk 0

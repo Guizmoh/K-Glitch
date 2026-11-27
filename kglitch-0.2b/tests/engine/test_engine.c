@@ -2747,6 +2747,67 @@ static void test_drum_filter_kinds(void)
     CHECK(brk_fx_drum_hz(0.5f, BRK_DFT_CLASSIC) == 50.0f * brk_exp2f(3.5f), "CLASSIC's cutoff as it always was");
     brk_fx_drum_type(BRK_DFT_CLASSIC);
 }
+/* K-GLITCH 0.2b: the CHOP lane's triggers (brk_kg_cond): a condition, a chance, the density */
+static void kg_run_lane(const uint8_t *lane, const uint8_t *cnd, uint32_t den, int32_t *sls, int32_t *seen)
+{
+    uint32_t sl;
+    fresh(2);
+    brk_kg(0u, lane, 16u);
+    brk_kg_cond(cnd, den);
+    sl = brk_step_len_samples();
+    brk_play(1);
+    render(buf, sl * 64u + sl / 2u, seen, sls, 64);
+    brk_kg(0u, 0, 0u);
+    brk_kg_cond(0, 100u);
+}
+static int kg_gaps(const int32_t *a, int from, int to)   /* steps with no new hit (SKIP fired): the slice held */
+{
+    int i, n = 0;
+    for (i = from; i < to; i++)
+        n += a[i] < 0 || a[i] == a[i - 1];
+    return n;
+}
+static void test_kg_cond(void)
+{
+    static uint8_t lane[16], cnd[16];
+    int32_t q[64], n, i, ok = 0, g;
+    memset(lane, KGC_SKIP | 3u << 6, sizeof lane);   /* (every step SKIP at 100 %: no hit) */
+    memset(cnd, KGQ_ALWAYS, sizeof cnd);
+    kg_run_lane(lane, cnd, 100u, q, &n);
+    g = kg_gaps(q, 1, 64);
+    CHECK(n >= 60 && g >= 60, "ALWAYS: SKIP on every step (%d of 63 without a hit)", g);
+    kg_run_lane(lane, cnd, 0u, q, &n);
+    g = kg_gaps(q, 1, 64);
+    CHECK(g <= 6, "DENSITY 0: nothing fires (%d of 63 without a hit)", g);
+    memset(cnd, KGQ_1_2, sizeof cnd);
+    kg_run_lane(lane, cnd, 100u, q, &n);
+    for (i = 0; i < 4; i++) {
+        g = kg_gaps(q, i * 16 + 1, i * 16 + 16);
+        ok += i & 1 ? g <= 3 : g >= 14;
+    }
+    CHECK(ok == 4, "1:2: rounds 1, 3 with the effect, 2, 4 without (%d of 4 right)", ok);
+    memset(cnd, KGQ_3_4, sizeof cnd);
+    kg_run_lane(lane, cnd, 100u, q, &n);
+    for (ok = 0, i = 0; i < 4; i++) {
+        g = kg_gaps(q, i * 16 + 1, i * 16 + 16);
+        ok += i == 2 ? g >= 14 : g <= 3;
+    }
+    CHECK(ok == 4, "3:4: the third round alone (%d of 4 right)", ok);
+    memset(cnd, KGQ_ALWAYS | 8u << 4, sizeof cnd);   /* (CHANCE 50 %) */
+    kg_run_lane(lane, cnd, 100u, q, &n);
+    g = kg_gaps(q, 1, 64);
+    CHECK(g >= 18 && g <= 45, "CHANCE 50 %%: about half fire (%d of 63)", g);
+    memset(cnd, KGQ_ALWAYS, sizeof cnd);
+    kg_run_lane(lane, cnd, 50u, q, &n);
+    g = kg_gaps(q, 1, 64);
+    CHECK(g >= 18 && g <= 45, "DENSITY 50 %%: about half fire (%d of 63)", g);
+    memset(cnd, KGQ_FIRST, sizeof cnd);
+    kg_run_lane(lane, cnd, 100u, q, &n);
+    CHECK(kg_gaps(q, 1, 16) >= 14 && kg_gaps(q, 17, 64) <= 6, "FIRST: the first round only");
+    memset(cnd, KGQ_NFIRST, sizeof cnd);
+    kg_run_lane(lane, cnd, 100u, q, &n);
+    CHECK(kg_gaps(q, 1, 16) <= 3 && kg_gaps(q, 17, 64) >= 44, "NOT FIRST: every round but the first");
+}
 int main(int argc, char **argv)
 {
     if (argc > 1)
@@ -2758,6 +2819,7 @@ int main(int argc, char **argv)
     test_hold_loops();
     test_split();
     test_chaos();
+    test_kg_cond();
     test_key_loops();
     test_clock();
     test_keep_length();

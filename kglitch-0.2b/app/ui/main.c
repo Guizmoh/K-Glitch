@@ -2216,6 +2216,8 @@ static void draw_foot(const brk_status_t *st)
 void app_ui_init(void)
 {
     flexor_lay_fix(0);                   /* (0.9.58: FLEXOR LAYOUT's key 5 RISE, once) */
+    if (brk_hidden(set.brk))             /* (K-GLITCH 0.2b: the break left on, hidden since: the next one shown) */
+        break_turn(1);
     ab_take();                           /* (LOAF BREAKER: TOOLS' A/B: the kick as it was saved) */
     ui.kpreset = (uint8_t)kpre_mem(set.kslot);   /* (0.9.2: the PRESET page names the kick's own) */
     ui.blocks = (uint8_t)(set.bkeys.bk[BK_VIEW] & 1u);   /* (0.9.2: HOME's VIEW as it was left) */

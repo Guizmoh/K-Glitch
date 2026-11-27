@@ -1,0 +1,47 @@
+# K-GLITCH 0.2b: what K-GLITCH adds is kept through SAVE and a power-on: the GLITCH lane, TRIG's chance / condition /
+# density, the bank, the SOUND mode, a built-in break hidden
+#   app/build/host/k-glitch_host tests/scenarios/kgsave.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+tap FX
+wait 300
+turn K2 3 10
+turn K4 1 10
+turn ALGO 1 10
+wait 200
+tap FX
+wait 300
+expect kg_pg 1
+turn K2 -4 10
+turn K3 2 10
+turn K4 -10 10
+wait 200
+tap HOME
+wait 300
+press OCT-
+press OCT+
+wait 200
+release OCT-
+release OCT+
+wait 300
+expect snd 1
+sysex F0 7D 43 48 32 00 04 00 F7
+wait 300
+expect kg_bank 1
+tap SAVE
+wait 1500
+reboot
+wait 4200
+expect snd 1
+expect kg_bank 1
+tap FX
+wait 300
+expect page 14
+expect kg_bank 1
+tap FX
+wait 300
+shot kg_saved.png
+sysex_out
+sysex F0 7D 43 48 31 F7
+wait 100
