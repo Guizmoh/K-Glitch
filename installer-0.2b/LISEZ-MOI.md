@@ -34,7 +34,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `b09ab9c826d6b1aa5aa283caef4d43fd27dc2c365a98d2ae163c8c6678a18925`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `d850f4c21aa29da623b08292788242180f7d864e6ecbd9f1d22aa4266a5e3774`.
 - Page FX › GLITCH : le plan des 16 touches blanches (2 rangées de 8) affiche l'effet de chaque touche pour la banque choisie (OCT-/OCT+), la touche tenue en orange, l'effet joué cerclé de blanc.
 - OCT- + OCT+ ensemble (partout) : le son bascule entre LOAF (fort, break à -12 LUFS, 3 dB de marge MAX OUT) et CHOPPAH (plus clair : break 4 dB plus bas dans le limiteur, sans marge). Le choix est sauvegardé ; le pitch revient à 0.
 - Skin RIBBON : l'onde en aplat (une couleur pleine par colonne : orange les graves, cyan les médiums, blanc les aigus), sans le dégradé pâle.
@@ -53,3 +53,4 @@ Ouvre `K-GLITCH-0.2b-breaks.html` dans Chrome, FM-1 branché en USB avec K-GLITC
   - **CHOPPAH (CLEAR)** : le break sans gain ajouté, pas de marge MAX OUT.
   - **RAW (NO LIMITER)** : comme CHOPPAH mais sans limiteur, seulement un écrêtage doux de sécurité. Le meilleur pour enregistrer dans une MPC (MASTER vers les 3/4).
 - **Supprimer les breaks intégrés** : dans la page BREAKS, section *Built-in breaks*, décoche un break pour l'enlever d'ALGORITHM, recoche pour le remettre. (Il reste dans la mémoire du firmware : on ne gagne pas de place, mais il n'est plus dans ton chemin.)
+- Le TUTORIAL est retiré (place). Au premier démarrage : BEGINNER ou EXPERT.
