@@ -9,7 +9,7 @@ wait 300
 expect brk 2
 turn ALGO -1 10
 wait 300
-expect brk 4
+expect brk 5
 turn ALGO 1 10
 wait 300
 expect brk 2
