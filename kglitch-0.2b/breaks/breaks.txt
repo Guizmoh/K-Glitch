@@ -26,8 +26,12 @@
 -=  cw/cw_amen20_164.wav                        164     2     2   AMEN20 164
 -=  cw/cw_amen19_172.wav                        172     2     4   AMEN19 172
 -=  huge/cw_amen_updown.wav                     165     2     2   UPDOWN 165
-*=  cw/gs_blu_174.wav                          174     2     2   BLU06 174
+*=  cw/gs_blu_174.wav                          174     1     2   BLU06 174
 *=  cw/gs_blu_174_03.wav                       174     1     2   BLU03 174
+*=  cw/gs_blu_174_05.wav                       174     1     2   BLU05 174
+*=  cw/gs_blu_174_07.wav                       174     1     2   BLU07 174
+*=  cw/beat_down_172.wav                       172     1     2   BEATDN 172
+*=  cw/again_172.wav                           172     1     2   AGAIN 172
 *=  cw/drumminbasic_176.wav                   176     2     2   BASIC 176
 -=  flexor/lil_texas_louder.wav                 175     2     2   LOUDER 175
 -=  flexor/the_satan_gangzta_cash.wav           200     2     2   SATAN 200
@@ -103,7 +107,7 @@
 -=  huge/cw_amen_overlimit.wav                  147.37  2     4   OVERLIM 147
 -=  huge/cw_amen_freak.wav                      150.3   2     2   FREAK 150
 -=  huge/cw_amen_apache.wav                     157.19  2     4   APACHE 157
-*=  cw/cw_amen05_158.wav                        158     2     4   AMEN05 158
+-=  cw/cw_amen05_158.wav                        158     2     4   AMEN05 158
 -=  huge/cw_amen_oldskool.wav                   159.56  2     2   OLDSKOO 160
 -=  huge/cw_amen_classic.wav                    160     2     3   CLASSIC 160
 -=  huge/cw_amen_hype.wav                       160     2     2   HYPE 160
