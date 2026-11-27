@@ -38,6 +38,24 @@ def main(pkg, version, out):
         html = html.replace("{{" + key + "}}", val)
     app_js = (ROOT / "app" / "site" / "install_app.js").read_text(encoding="utf-8")
     html = html.replace("/*LIB*/", lib).replace("/*META*/", meta).replace("/*APP*/", app_js)
+    # K-GLITCH 0.2b: RIBBON's colours (slate, orange, cyan) and the K-GLITCH title over the page
+    import io
+    from PIL import Image
+    im = Image.open(ROOT / "art" / "k_glitch.png").convert("RGBA")
+    im = im.crop(im.getchannel("A").point(lambda a: 255 if a > 40 else 0).getbbox())
+    im = im.resize((360, round(360 * im.height / im.width)), Image.LANCZOS)
+    buf = io.BytesIO(); im.save(buf, "PNG", optimize=True)
+    logo = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    rib = ("--bg:#0a0e14;--fg:#ecf0f4;--dim:#8a96a4;--accent:#ff923c;--on-accent:#1a0d03;--bad:#ff6b5a;--focus:#6edeff;"
+           "--panel:#263242;--cyan:#6edeff")
+    css = ("<style>:root{" + rib.replace(";", " !important;") + " !important}"
+           "body{background:var(--bg)!important;color:var(--fg)!important}"
+           ".kg-logo{display:block;width:min(180px,50%);height:auto;margin:8px 0 4px}"
+           "progress{accent-color:var(--cyan)}progress::-webkit-progress-value{background:var(--cyan)}"
+           "progress::-webkit-progress-bar{background:var(--panel)}"
+           "button,.btn{border-radius:999px}a{color:var(--cyan)}</style>")
+    html = html.replace("</head>", css + "</head>", 1)
+    html = html.replace("<h1>", f'<img class="kg-logo" src="{logo}" alt="K-GLITCH"><h1>', 1)
     html = re.sub(r"<title>[^<]*</title>", f"<title>K-GLITCH {version} installer</title>", html, count=1)
     Path(out).write_text(html, encoding="utf-8")
     print(f"installer: {out} ({len(html)} B), K-GLITCH {version}, {product}, sha256 {hashlib.sha256(raw).hexdigest()[:16]}")

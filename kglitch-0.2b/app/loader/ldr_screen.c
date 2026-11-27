@@ -13,10 +13,11 @@
 #include "../boards/fm1/fm1_lcd_hw.h"
 #include "ldr_loaf.h"
 
-#define SCR_BG 0x0000u                              /* black */
+#define SCR_BG 0x0862u                              /* K-GLITCH 0.2b: RIBBON's slate ground */
 #define SCR_FG 0xFFFFu                              /* white: UPDATING, the mark written */
-#define SCR_AMB 0xF8C3u                             /* #ff1818 red: DO NOT UNPLUG, the two chopped bars */
-#define SCR_DIM 0x2945u                             /* #282828: the mark, not yet written */
+#define SCR_AMB 0xFC87u                             /* RIBBON's orange: DO NOT UNPLUG, the chopped bars */
+#define SCR_CYAN 0x6EFFu                            /* RIBBON's cyan: the bars written */
+#define SCR_DIM 0x2188u                             /* RIBBON's card: the bars not yet written */
 #define SCR_LOAF_Y 2u                               /* the picture's top */
 #define SCR_MARK_B 236u                             /* the mark's bars' foot (the chopped two 8 px higher) */
 #define SCR_ROWS 21u                                /* the tallest line: 5x7 glyphs at 3x */
@@ -131,7 +132,7 @@ static void scr_text(uint32_t y, const char *s, uint32_t scale, uint16_t fg)   /
 static void scr_mark(uint32_t k, int lit)          /* bar k of the mark, written (lit) or still to come */
 {
     uint32_t h = SCR_MARK_H[k], chop = k == 5u || k == 11u, y = SCR_MARK_B - (chop ? 8u : 0u) - h;
-    scr_fill(8u + k * 14u, y, 12u, h, lit ? (chop ? SCR_AMB : SCR_FG) : SCR_DIM);
+    scr_fill(8u + k * 14u, y, 12u, h, lit ? (chop ? SCR_AMB : SCR_CYAN) : SCR_DIM);
 }
 
 /* LOAF BREAKER, centred at the top: ldr_loaf.h's runs (a byte a run: bits 0-3 the grey, 4-7 the length less one),
