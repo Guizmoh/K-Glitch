@@ -34,7 +34,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `adb91d0d478bdfafa974f35008d36b483cdd49e602186b10e070b2d832270d42`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `b09ab9c826d6b1aa5aa283caef4d43fd27dc2c365a98d2ae163c8c6678a18925`.
 - Page FX › GLITCH : le plan des 16 touches blanches (2 rangées de 8) affiche l'effet de chaque touche pour la banque choisie (OCT-/OCT+), la touche tenue en orange, l'effet joué cerclé de blanc.
 - OCT- + OCT+ ensemble (partout) : le son bascule entre LOAF (fort, break à -12 LUFS, 3 dB de marge MAX OUT) et CHOPPAH (plus clair : break 4 dB plus bas dans le limiteur, sans marge). Le choix est sauvegardé ; le pitch revient à 0.
 - Skin RIBBON : l'onde en aplat (une couleur pleine par colonne : orange les graves, cyan les médiums, blanc les aigus), sans le dégradé pâle.
@@ -46,7 +46,7 @@ Ouvre `K-GLITCH-0.2b-breaks.html` dans Chrome, FM-1 branché en USB avec K-GLITC
 
 ## Qualité des loops (nouveau)
 
-- Breaks intégrés en **32 kHz** (aigus jusqu'à 16 kHz, 22 kHz avant), **-16 LUFS sans limiteur** : les attaques sont entières. 5 breaks intégrés (AMEN10 135, AMEN05 158, AMEN20 164, UPDOWN 165, AMEN13 173). AMEN19 172 et AMEN06 169 sont dans `loops/` : rajoute-les avec la page BREAKS si tu veux.
+- Breaks intégrés en **32 kHz** (aigus jusqu'à 16 kHz, 22 kHz avant), **-16 LUFS sans limiteur** : les attaques sont entières. 5 breaks intégrés (AMEN10 135, AMEN05 158, AMEN20 164, AMEN13 173, BLU 174 (2 mesures de GS_BLU_174_Drums_06, à la place d'UPDOWN, trop écrasé)). AMEN19 172 et AMEN06 169 sont dans `loops/` : rajoute-les avec la page BREAKS si tu veux.
 - Tes loops envoyées par la page BREAKS : même traitement (32 kHz au plus, -16 LUFS sans limiteur).
 - **OCT- + OCT+ ensemble** fait tourner 3 sons :
   - **LOAF (LOUD)** : le son fort d'origine (les 4 dB rendus en gain, limiteur, 3 dB MAX OUT).
