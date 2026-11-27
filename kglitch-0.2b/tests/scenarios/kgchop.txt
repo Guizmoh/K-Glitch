@@ -85,3 +85,22 @@ expect page 14
 tap FX
 wait 300
 expect page 2
+# SELECT and ALGORITHM: the bank too (on the GLITCH page)
+tap HOME
+wait 300
+tap FX
+wait 300
+expect page 14
+expect kg_bank 0
+turn SELECT 1 10
+wait 300
+expect kg_bank 1
+turn ALGO 1 10
+wait 300
+expect kg_bank 2
+turn ALGO -1 10
+wait 300
+expect kg_bank 1
+turn SELECT -1 10
+wait 300
+expect kg_bank 0
