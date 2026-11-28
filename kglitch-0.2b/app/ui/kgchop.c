@@ -31,6 +31,40 @@ static void kg_push(void)                /* the engine: the effect held (the las
         brk_kg(e | (uint32_t)kx2.kg_amt << 8, kx2.kg_lane, kg_len());
     brk_kg_cond(kx2.kg_cnd, 100u - (kx2.kg_dinv > 100u ? 100u : kx2.kg_dinv));
 }
+static uint8_t kg_bak[128], kg_bak_ok;   /* (the lane and its triggers before the last take or clear: SEL + SAVE) */
+static void kg_snap(void)
+{
+    memcpy(kg_bak, kx2.kg_lane, 64);
+    memcpy(kg_bak + 64, kx2.kg_cnd, 64);
+    kg_bak_ok = 1u;
+}
+static void kg_undo(void)                /* SEL + SAVE on GLITCH / TRIG: the lane as before the last take (again: redo) */
+{
+    uint8_t t[128];
+    if (!kg_bak_ok) {
+        app_say("UNDO", "NOTHING YET");
+        return;
+    }
+    memcpy(t, kx2.kg_lane, 64);
+    memcpy(t + 64, kx2.kg_cnd, 64);
+    memcpy(kx2.kg_lane, kg_bak, 64);
+    memcpy(kx2.kg_cnd, kg_bak + 64, 64);
+    memcpy(kg_bak, t, 128);
+    set_dirty = 1u;
+    kg_push();
+    app_say("UNDO", "GLITCH LANE");
+    ui.redraw |= RG_BLOCKS | RG_FOOT;
+}
+static void kg_clear(void)               /* SEL + REC on GLITCH / TRIG: the whole lane empty (SEL + SAVE: back) */
+{
+    kg_snap();
+    memset(kx2.kg_lane, 0, sizeof kx2.kg_lane);
+    memset(kx2.kg_cnd, 0, sizeof kx2.kg_cnd);
+    set_dirty = 1u;
+    kg_push();
+    app_say("LANE CLEARED", "SEL+SAVE: UNDO");
+    ui.redraw |= RG_BLOCKS | RG_FOOT;
+}
 static void kg_defaults(void)
 {
     kx2.kg_tag = KG_TAG;
@@ -203,6 +237,8 @@ static void kg_rec(const brk_status_t *st)
             e = kg_bank * 16u + i + 1u;
     if (st->step == last)
         return;
+    if (last < 0)                        /* (a take begins: the lane before it kept, SEL + SAVE) */
+        kg_snap();
     last = st->step;
     kx2.kg_lane[(uint32_t)st->step % len] = kg_lb(e);
     kg_cur = (uint8_t)((uint32_t)st->step % len);

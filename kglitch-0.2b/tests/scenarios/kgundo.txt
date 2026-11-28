@@ -1,0 +1,42 @@
+# K-GLITCH 0.2b: a take recorded by mistake on the GLITCH page: SEL + SAVE takes it back (again: redo); SEL + REC clears
+# the whole lane (SEL + SAVE: back)
+#   app/build/host/k-glitch_host tests/scenarios/kgundo.txt app/build/scenarios
+wait 4200
+tap HOME
+wait 300
+tap FX
+wait 300
+expect page 14
+tap PLAY
+wait 600
+tap REC
+wait 200
+key w3 down
+wait 900
+key w3 up
+wait 200
+tap REC
+wait 300
+expect kg_used >0
+press SEL
+tap SAVE
+release SEL
+wait 300
+expect kg_used 0
+press SEL
+tap SAVE
+release SEL
+wait 300
+expect kg_used >0
+press SEL
+tap REC
+release SEL
+wait 300
+expect kg_used 0
+expect recording 0
+shot kg_cleared.png
+press SEL
+tap SAVE
+release SEL
+wait 300
+expect kg_used >0

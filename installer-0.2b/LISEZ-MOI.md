@@ -34,7 +34,7 @@ Ligne de commande (Python 3, `pip install mido python-rtmidi`) : `python3 fm1_in
 - Les sons de la caisse claire, du charley et du clap jouent toujours dans les patterns, mais leurs réglages ne sont plus accessibles.
 - Le break FOCUZ 175 de FLEXOR (un sample personnel) n'est pas inclus : 7 breaks Amen libres de droits.
 - Revenir au firmware officiel : la section prévue en bas de l'installateur, ou M-UPGRADE de M-VAVE.
-- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `a8b1eda7ddb2a9b22f29abeacfb9903ab395ce5b9d92653715b8f0c0535f0a39`.
+- Paquet `k-glitch-0.2b.fwsc`, identité FM-1_4519000200, SHA-256 `b4ec52c43c00787d8047d22c1117d5422ff82fe026b382982ce5792423f51bed`.
 - Page FX › GLITCH : le plan des 16 touches blanches (2 rangées de 8) affiche l'effet de chaque touche pour la banque choisie (OCT-/OCT+), la touche tenue en orange, l'effet joué cerclé de blanc.
 - OCT- + OCT+ ensemble (partout) : le son bascule entre LOAF (fort, break à -12 LUFS, 3 dB de marge MAX OUT) et CHOPPAH (plus clair : break 4 dB plus bas dans le limiteur, sans marge). Le choix est sauvegardé ; le pitch revient à 0.
 - Skin RIBBON : l'onde en aplat (une couleur pleine par colonne : orange les graves, cyan les médiums, blanc les aigus), sans le dégradé pâle.
@@ -65,3 +65,11 @@ FX ouvre GLITCH, FX encore ouvre **TRIG**, FX encore la chaîne FX. Sur TRIG :
 - **K3 CONDITION** : ALWAYS, 1:2, 2:2, 1:3, 2:3, 3:3, 1:4 ... 4:4 (le n-ième tour du couloir sur 2, 3 ou 4), FIRST / NOT FIRST (premier tour après PLAY ou pas), PREV / NOT PREV (si le dernier pas conditionnel s'est déclenché ou non).
 - **K4 DENSITY** : multiplie toutes les chances à la fois (à tourner en live).
 Les 16 cases montrent la condition de chaque pas (cyan = un effet est posé sur ce pas) ; les barres du bas, la chance.
+
+## Annuler un REC fait par erreur
+
+Sur la page GLITCH ou TRIG (FX) :
+- **SEL + SAVE** : annule la dernière prise enregistrée dans le couloir (encore SEL + SAVE : la remet).
+- **SEL + REC** : efface tout le couloir (effets et conditions) ; SEL + SAVE juste après le ramène.
+- **SEL + une touche blanche** : enlève seulement cet effet du couloir.
+Ailleurs, SEL + SAVE reste l'annulation du pattern, et SEL + REC l'effacement du pattern (sur SEQ : de la piste).
